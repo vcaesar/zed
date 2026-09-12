@@ -242,8 +242,8 @@ func DoesExistInThisRequest(slice []string, val string) int {
 func NewBulkResponseItem(seqNo int64, index, id, result string, err error) BulkResponseItem {
 	s_err := ""
 	if err != nil {
-	        s_err = err.Error()
-	}  
+		s_err = err.Error()
+	}
 	return BulkResponseItem{
 		Index:   index,
 		Type:    "_doc",
