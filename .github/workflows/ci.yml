@@ -92,7 +92,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Test with coverage threshold
-        run: ./coverage.sh
+        run: ./sh/coverage.sh
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
