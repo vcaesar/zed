@@ -77,6 +77,7 @@ func TestIndex(t *testing.T) {
 
 		t.Run("PUT /api/:target/_mapping", func(t *testing.T) {
 			t.Run("update mappings for index", func(t *testing.T) {
+				request("DELETE", "/api/index/"+indexName+"-mapping", nil) // drop leftovers from a previous run
 				body := bytes.NewBuffer(nil)
 				body.WriteString(`{
 					"properties":{

@@ -35,6 +35,8 @@ func TestSQLMappingsAPI(t *testing.T) {
 	for _, family := range []string{"api", "es"} {
 		t.Run(family, func(t *testing.T) {
 			name := "testsqlmappingsapi_" + family
+			request(http.MethodDelete, "/api/index/"+name, nil) // drop leftovers from a previous run
+			t.Cleanup(func() { request(http.MethodDelete, "/api/index/"+name, nil) })
 			body := `{"mappings":{"sql":"CREATE TABLE users (id BIGINT, name VARCHAR(100), created_at DATETIME(6), metadata JSON)"}}`
 			path := "/es/" + name
 			if family == "api" {
