@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   frontend:
-    name: Build frontend
+    name: Frontend build & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,23 +27,21 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
-      - uses: actions/upload-artifact@v7
-        with:
-          name: frontend-dist
-          path: frontend/dist
-          retention-days: 1
-          if-no-files-found: error
+      - run: npm run test-once
+        working-directory: frontend
 
   lint:
     name: golangci-lint
-    needs: frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/setup-node@v7
         with:
-          name: frontend-dist
-          path: frontend/dist
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: frontend
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -53,7 +51,6 @@ jobs:
 
   go-test:
     name: go test (${{ matrix.os }})
-    needs: frontend
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -67,10 +64,13 @@ jobs:
       ZINC_ENABLE_TEXT_KEYWORD_MAPPING: "true"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/setup-node@v7
         with:
-          name: frontend-dist
-          path: frontend/dist
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: frontend
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -80,14 +80,16 @@ jobs:
 
   test:
     name: Test & coverage
-    needs: frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/setup-node@v7
         with:
-          name: frontend-dist
-          path: frontend/dist
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: frontend
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
