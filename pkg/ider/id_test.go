@@ -61,22 +61,3 @@ func TestGenerate_Unique(t *testing.T) {
 		seen[id] = struct{}{}
 	}
 }
-
-func TestGenerate_Unique(t *testing.T) {
-	node, err := NewNode(1)
-	assert.NoError(t, err)
-	const n = 10000
-	seen := make(map[string]struct{}, n)
-	prev := int64(0)
-	for i := 0; i < n; i++ {
-		raw, err := node.node.NextID()
-		assert.NoError(t, err)
-		assert.Greater(t, raw, prev, "ids must be strictly increasing")
-		assert.Equal(t, int64(1), raw&1023, "low 10 bits carry the node id")
-		prev = raw
-		id := base62.Encode(raw)
-		_, dup := seen[id]
-		assert.False(t, dup, "duplicate id %s", id)
-		seen[id] = struct{}{}
-	}
-}
