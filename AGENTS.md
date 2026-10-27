@@ -47,7 +47,7 @@ CI (GitHub Actions): `ci.yml` — lint, vet, build, test on ubuntu/macos/windows
 
 ## Conventions
 
-- Apache-2.0 "Copyright 2022 Zinc Labs Inc. and Contributors" header on every Go file.
+- Apache-2.0 "Copyright 2026 AtomAI. and Contributors" header on every Go file.
 - Imports: stdlib, third-party, `github.com/zincsearch/zincsearch/...`.
 - `pkg/zutils/json` instead of `encoding/json`; logging via `github.com/rs/zerolog/log`.
 - New settings: field in `pkg/config` struct with `toml:"zinc_..."` tag + default in `default.toml`.

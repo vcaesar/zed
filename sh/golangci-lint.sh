@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.." || exit 1
 
 if ! command -v golangci-lint &> /dev/null
 then
-    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $PWD/ v2.13.2
+    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $PWD/ v2.15.0
     ./golangci-lint run
     rm golangci-lint
 else
