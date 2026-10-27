@@ -225,6 +225,10 @@ func (a *AutoDateHistogramCalculator) afterMerge() {
 }
 
 func (a *AutoDateHistogramCalculator) Finish() {
+	// sub-aggregations such as top_hits sort and trim in Finish
+	for _, bucket := range a.bucketsList {
+		bucket.Finish()
+	}
 	// Calc AggregationTermsSize
 	for a.minValue+int64(a.intervals[a.currentInterval])*int64(config.Global.AggregationTermsSize) < a.maxValue {
 		a.currentInterval++

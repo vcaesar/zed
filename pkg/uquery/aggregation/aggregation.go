@@ -671,7 +671,7 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 			aggRespBuckets := make([]map[string]interface{}, 0, len(v.Buckets()))
 			for _, bucket := range v.Buckets() {
 				aggBucket := map[string]interface{}{
-					"key":           v.Key(bucket.Name()),
+					"key":           v.Key(bucket),
 					"key_as_string": bucket.Name(),
 					"doc_count":     bucket.Count(),
 				}
@@ -792,7 +792,7 @@ func topHitsResponse(name string, c *zincaggregation.TopHitsCalculator) (*meta.A
 // the calculator was built for it.
 func statsResponse(c *zincaggregation.StatsCalculator) meta.AggregationResponse {
 	count := c.Count()
-	min, max, avg, sum := c.Min(), c.Max(), c.Avg(), c.Sum()
+	min, max, avg, sum := finite(c.Min()), finite(c.Max()), finite(c.Avg()), finite(c.Sum())
 	rv := meta.AggregationResponse{
 		Count: &count,
 		Min:   &min,
@@ -804,13 +804,22 @@ func statsResponse(c *zincaggregation.StatsCalculator) meta.AggregationResponse 
 		return rv
 	}
 
-	sumOfSquares, variance, stdDeviation := c.SumOfSquares(), c.Variance(), c.StdDeviation()
+	sumOfSquares, variance, stdDeviation := finite(c.SumOfSquares()), finite(c.Variance()), finite(c.StdDeviation())
 	rv.SumOfSquares = &sumOfSquares
 	rv.Variance = &variance
 	rv.StdDeviation = &stdDeviation
 	rv.StdDeviationBounds = &meta.AggregationStdDeviationBounds{
-		Upper: avg + c.Sigma()*stdDeviation,
-		Lower: avg - c.Sigma()*stdDeviation,
+		Upper: finite(avg + c.Sigma()*stdDeviation),
+		Lower: finite(avg - c.Sigma()*stdDeviation),
 	}
 	return rv
+}
+
+// finite maps NaN and +/-Inf, which json cannot encode, to 0. Huge values
+// overflow the stats sums to Inf and the variance to NaN.
+func finite(f float64) float64 {
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return 0
+	}
+	return f
 }

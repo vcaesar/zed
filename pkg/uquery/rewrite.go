@@ -116,6 +116,8 @@ func rewriteQuery(q map[string]interface{}, exec ExecFunc) (map[string]interface
 			out[k], err = rewriteFields(v, exec, "filter")
 		case "dis_max":
 			out[k], err = rewriteFields(v, exec, "queries")
+		case "boosting":
+			out[k], err = rewriteFields(v, exec, "positive", "negative")
 		case "function_score":
 			out[k], err = rewriteFunctionScore(v, exec)
 		default:
@@ -291,6 +293,10 @@ func rewriteHasChild(v interface{}, exec ExecFunc) (map[string]interface{}, erro
 		return nil, errors.New(errors.ErrorTypeParsingException, "[has_child] requires [query] field")
 	}
 
+	// child documents may carry nested documents of their own
+	if subQuery, err = rewriteClause(subQuery, exec); err != nil {
+		return nil, err
+	}
 	parents, err := exec(filteredQuery(subQuery, meta.JoinNameField, childType), meta.JoinParentField)
 	if err != nil {
 		return nil, err
@@ -327,6 +333,10 @@ func rewriteHasParent(v interface{}, exec ExecFunc) (map[string]interface{}, err
 		return nil, errors.New(errors.ErrorTypeParsingException, "[has_parent] requires [query] field")
 	}
 
+	// parent documents may carry nested documents of their own
+	if subQuery, err = rewriteClause(subQuery, exec); err != nil {
+		return nil, err
+	}
 	ids, err := exec(filteredQuery(subQuery, meta.JoinNameField, parentType), "_id")
 	if err != nil {
 		return nil, err

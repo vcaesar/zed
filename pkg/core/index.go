@@ -17,6 +17,7 @@
 package core
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -160,6 +161,13 @@ func (index *Index) SetSettings(settings *meta.IndexSettings) error {
 	}
 	if err := meta.CheckIndexType(settings.IndexType); err != nil {
 		return err
+	}
+	// the tier tells where the data lives, only MoveIndexTier changes it
+	if settings.Tier != "" && settings.Tier != index.GetTier() {
+		if err := CheckTier(settings.Tier); err != nil {
+			return err
+		}
+		return fmt.Errorf("index tier can't be set to [%s] on creation, move the existing index instead", settings.Tier)
 	}
 
 	index.lock.Lock()

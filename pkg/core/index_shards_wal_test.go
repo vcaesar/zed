@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	blugeindex "github.com/vcaesar/riot/index"
 	"github.com/zincsearch/zincsearch/pkg/meta"
 )
@@ -86,4 +87,19 @@ func Test_walMergeDocs_WriteTo(t *testing.T) {
 		err := DeleteIndex("Test_walMergeDocs_WriteTo.index_1")
 		assert.NoError(t, err)
 	})
+}
+
+// A write racing a tier move must fail cleanly once the shard's WAL is closed.
+func TestIndexShard_writeWALClosed(t *testing.T) {
+	name := "TestIndexShard_writeWALClosed.index_1"
+	index, err := NewIndex(name, "disk", 1)
+	require.NoError(t, err)
+	require.NoError(t, StoreIndex(index))
+	t.Cleanup(func() { _ = DeleteIndex(name) })
+
+	shard := anyShard(index)
+	require.NoError(t, shard.OpenWAL())
+	require.NoError(t, shard.writeWAL([]byte(`{}`)))
+	require.NoError(t, index.Close())
+	assert.ErrorIs(t, shard.writeWAL([]byte(`{}`)), ErrIndexReadOnly)
 }

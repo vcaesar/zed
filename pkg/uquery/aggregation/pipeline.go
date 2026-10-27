@@ -85,11 +85,11 @@ func ApplyPipelines(resp map[string]meta.AggregationResponse, aggs map[string]me
 		// keyed buckets ([filters]): parent pipelines need an order, skip them
 		if keyed, ok := r.Buckets.(map[string]interface{}); ok {
 			for _, v := range keyed {
-				bucket, ok := v.(map[string]interface{})
-				if !ok {
+				bucket, ok := v.(meta.AggregationResponse)
+				if !ok || bucket.Aggregations == nil {
 					continue
 				}
-				if err := applyInBucket(bucket, agg.Aggregations); err != nil {
+				if err := ApplyPipelines(bucket.Aggregations, agg.Aggregations); err != nil {
 					return err
 				}
 			}
@@ -388,9 +388,7 @@ func movingFn(values []float64, window, shift int, fn func([]float64) float64) [
 	rv := make([]float64, len(values))
 	for i := range values {
 		start := i - window + shift
-		if start < 0 {
-			start = 0
-		}
+		start = min(max(start, 0), len(values))
 		end := i + shift
 		if end > len(values) {
 			end = len(values)

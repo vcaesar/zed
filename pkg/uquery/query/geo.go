@@ -39,13 +39,13 @@ var geoQueryOptions = map[string]bool{
 func splitGeoQuery(name string, query map[string]interface{}, mappings *meta.Mappings) (field string, value interface{}, boost float64, err error) {
 	boost = -1.0
 	for k, v := range query {
-		k = strings.ToLower(k)
+		lk := strings.ToLower(k)
 		switch {
-		case k == "boost":
+		case lk == "boost":
 			if boost, err = zutils.ToFloat64(v); err != nil {
 				return "", nil, 0, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] boost must be numeric", name))
 			}
-		case geoQueryOptions[k]:
+		case geoQueryOptions[lk]:
 			// handled by caller or ignored
 		case field != "":
 			return "", nil, 0, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] query doesn't support multiple fields", name))

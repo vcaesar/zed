@@ -217,6 +217,11 @@ func TestParseAge(t *testing.T) {
 		{value: "", wantErr: true},
 		{value: "xd", wantErr: true},
 		{value: "7y", wantErr: true},
+		{value: "-5d", wantErr: true},
+		{value: "-1h", wantErr: true},
+		{value: "infd", wantErr: true},
+		{value: "NaNd", wantErr: true},
+		{value: "1e300d", wantErr: true},
 	} {
 		t.Run(tt.value, func(t *testing.T) {
 			got, err := ParseAge(tt.value)

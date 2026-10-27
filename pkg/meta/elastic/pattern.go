@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+var globEscaper = strings.NewReplacer(`\`, `\\`, `[`, `\[`)
+
 // MatchPattern reports whether name matches the glob pattern.
 // An empty pattern matches everything, an invalid pattern falls back to
 // an exact comparison.
@@ -30,7 +32,8 @@ func MatchPattern(name, pattern string) bool {
 	if !strings.Contains(pattern, "*") && !strings.Contains(pattern, "?") {
 		return name == pattern
 	}
-	ok, err := path.Match(pattern, name)
+	// only * and ? are wildcards, [ and \ are literal in index and field names
+	ok, err := path.Match(globEscaper.Replace(pattern), name)
 	if err != nil {
 		return name == pattern
 	}

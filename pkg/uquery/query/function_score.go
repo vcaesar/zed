@@ -685,6 +685,11 @@ func (s *functionScoreSearcher) score(ctx *search.Context, dm *search.DocumentMa
 
 	score := combineBoost(q.boostMode, dm.Score, math.Min(factor, q.maxBoost))
 	score *= q.boost
+	// Elasticsearch rejects these too; json cannot even encode NaN / Inf.
+	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 {
+		return false, errors.New(errors.ErrorTypeRuntimeException,
+			fmt.Sprintf("[function_score] computed score [%v] must be a finite non-negative number", score))
+	}
 
 	if q.hasMinScore && score < q.minScore {
 		return false, nil

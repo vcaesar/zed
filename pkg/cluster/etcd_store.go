@@ -20,6 +20,7 @@ import (
 	"math"
 	"time"
 
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	client "go.etcd.io/etcd/client/v3"
 
 	"github.com/zincsearch/zincsearch/pkg/config"
@@ -71,6 +72,10 @@ func (s *EtcdStore) KeepAlive(ctx context.Context, id LeaseID) error {
 	ctx, cancel := s.ctx(ctx)
 	defer cancel()
 	_, err := s.cli.KeepAliveOnce(ctx, client.LeaseID(id))
+	if errors.Is(err, rpctypes.ErrLeaseNotFound) {
+		// expired lease: report it like MemoryStore so callers re-join
+		return errors.ErrKeyNotFound
+	}
 	return err
 }
 

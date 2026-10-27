@@ -162,7 +162,7 @@ func (index *Index) writeDocument(shard *IndexShard, mappings *meta.Mappings, do
 	if err != nil {
 		return err
 	}
-	if err := shard.wal.Write(data); err != nil {
+	if err := shard.writeWAL(data); err != nil {
 		return err
 	}
 
@@ -171,7 +171,7 @@ func (index *Index) writeDocument(shard *IndexShard, mappings *meta.Mappings, do
 		if err != nil {
 			return err
 		}
-		if err := shard.wal.Write(data); err != nil {
+		if err := shard.writeWAL(data); err != nil {
 			return err
 		}
 	}
@@ -236,7 +236,7 @@ func writeDeleteEntry(shard *IndexShard, docID string, secondShardID int64) erro
 	if err != nil {
 		return err
 	}
-	return shard.wal.Write(jstr)
+	return shard.writeWAL(jstr)
 }
 
 // findDocumentShard returns first layer shard holding docID and id of its

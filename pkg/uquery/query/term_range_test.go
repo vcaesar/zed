@@ -220,11 +220,11 @@ func TestRangeQuery(t *testing.T) {
 
 	t.Run("numeric", func(t *testing.T) {
 		tests := []struct {
-			name             string
-			query            map[string]interface{}
-			min, max         float64
-			incMin, incMax   bool
-			boost            float64
+			name           string
+			query          map[string]interface{}
+			min, max       float64
+			incMin, incMax bool
+			boost          float64
 		}{
 			{"gt/lt", map[string]interface{}{"gt": 1.0, "lt": 10.0}, 1, 10, false, false, 1},
 			{"gte/lte with boost", map[string]interface{}{"GTE": 1.0, "LTE": 10.0, "boost": 2.0}, 1, 10, true, true, 2},

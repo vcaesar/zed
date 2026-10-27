@@ -152,6 +152,10 @@ func (c *TopHitsCalculator) less(i, j int) bool {
 	if c.sortField == "" {
 		return c.hits[i].Score > c.hits[j].Score // best score first
 	}
+	// Documents without the sort field go last in both directions, as in elasticsearch.
+	if mi, mj := len(c.hits[i].sortKey) == 0, len(c.hits[j].sortKey) == 0; mi != mj {
+		return mj
+	}
 	// Doc value terms of both text and numeric fields sort in byte order.
 	cmp := bytes.Compare(c.hits[i].sortKey, c.hits[j].sortKey)
 	if c.sortDesc {
@@ -182,5 +186,5 @@ func (c *TopHitsCalculator) Hits() []TopHit {
 	if c.from >= len(c.hits) {
 		return nil
 	}
-	return c.hits[c.from:]
+	return c.hits[c.from:min(c.from+c.size, len(c.hits))]
 }

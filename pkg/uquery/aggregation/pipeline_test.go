@@ -596,3 +596,41 @@ func TestApplyPipelinesErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestMovingFnShiftPastEnd(t *testing.T) {
+	sum := func(v []float64) float64 {
+		var s float64
+		for _, x := range v {
+			s += x
+		}
+		return s
+	}
+	values := []float64{1, 2, 3, 4, 5}
+	assert.NotPanics(t, func() {
+		assert.Equal(t, []float64{2, 3, 4, 5, 0}, movingFn(values, 1, 2, sum))
+		assert.Equal(t, []float64{0, 0, 0, 0, 0}, movingFn(values, 1, 9, sum))
+	})
+}
+
+func TestApplyPipelinesKeyedFilters(t *testing.T) {
+	bucket := func(sales float64) meta.AggregationResponse {
+		return meta.AggregationResponse{Aggregations: salesResponse(f(sales), f(sales*2))}
+	}
+	resp := map[string]meta.AggregationResponse{
+		"by_type": {Buckets: map[string]interface{}{"a": bucket(1), "b": bucket(10)}},
+	}
+	aggs := map[string]meta.Aggregations{
+		"by_type": {
+			Filters: &meta.AggregationFilters{},
+			Aggregations: histogramAggs(map[string]meta.Aggregations{
+				"sales":  {Sum: &meta.AggregationMetric{Field: "price"}},
+				"cumsum": {CumulativeSum: &meta.AggregationPipeline{BucketsPath: "sales"}},
+			}),
+		},
+	}
+
+	require.NoError(t, ApplyPipelines(resp, aggs))
+	keyed := resp["by_type"].Buckets.(map[string]interface{})
+	assert.Equal(t, []float64{1, 3}, bucketValues(t, keyed["a"].(meta.AggregationResponse).Aggregations, "sales_per_month", "cumsum"))
+	assert.Equal(t, []float64{10, 30}, bucketValues(t, keyed["b"].(meta.AggregationResponse).Aggregations, "sales_per_month", "cumsum"))
+}

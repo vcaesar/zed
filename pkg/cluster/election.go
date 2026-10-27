@@ -41,9 +41,10 @@ type Election struct {
 	ttl      time.Duration
 	interval time.Duration
 
-	mu     sync.RWMutex
-	leader string
-	lease  LeaseID
+	mu      sync.RWMutex
+	leader  string
+	lease   LeaseID
+	renewed time.Time // start of the last successful grant or renewal
 }
 
 // NewElection builds an election for nodeID over `<prefix>leader`.
@@ -70,17 +71,24 @@ func (e *Election) Leader() string {
 	return e.leader
 }
 
-// IsLeader reports whether the local node last won the election.
+// IsLeader reports whether the local node last won the election and its
+// lease cannot have expired yet: when renewals keep failing, another node
+// may already have taken the key.
 func (e *Election) IsLeader() bool {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.leader == e.nodeID && e.lease != NoLease
+	return e.leader == e.nodeID && e.lease != NoLease && time.Since(e.renewed) < e.ttl
 }
 
 func (e *Election) set(leader string, lease LeaseID) {
+	e.setRenewed(leader, lease, time.Time{})
+}
+
+func (e *Election) setRenewed(leader string, lease LeaseID, renewed time.Time) {
 	e.mu.Lock()
 	e.leader = leader
 	e.lease = lease
+	e.renewed = renewed
 	e.mu.Unlock()
 }
 
@@ -93,8 +101,12 @@ func (e *Election) Campaign(ctx context.Context) (bool, error) {
 	e.mu.RUnlock()
 
 	if leading && lease != NoLease {
+		start := time.Now()
 		err := e.store.KeepAlive(ctx, lease)
 		if err == nil {
+			e.mu.Lock()
+			e.renewed = start
+			e.mu.Unlock()
 			return true, nil
 		}
 		if !errors.Is(err, errors.ErrKeyNotFound) {
@@ -104,6 +116,7 @@ func (e *Election) Campaign(ctx context.Context) (bool, error) {
 		e.set("", NoLease)
 	}
 
+	start := time.Now()
 	lease, err := e.store.Grant(ctx, e.ttl)
 	if err != nil {
 		return false, err
@@ -114,7 +127,7 @@ func (e *Election) Campaign(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	if won {
-		e.set(e.nodeID, lease)
+		e.setRenewed(e.nodeID, lease, start)
 		log.Info().Str("node", e.nodeID).Msg("cluster: elected leader")
 		return true, nil
 	}

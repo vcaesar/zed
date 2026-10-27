@@ -445,6 +445,14 @@ func TestIndex_Settings(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("tier", func(t *testing.T) {
+		assert.NoError(t, index.SetSettings(&meta.IndexSettings{Tier: TierHot}))
+		assert.Error(t, index.SetSettings(&meta.IndexSettings{Tier: "frozen"}))
+		assert.Error(t, index.SetSettings(&meta.IndexSettings{Tier: TierCold}))
+		assert.Equal(t, TierHot, index.GetTier())
+		assert.False(t, index.IsReadOnly())
+	})
+
 	t.Run("mapping", func(t *testing.T) {
 		err := index.SetMappings(&meta.Mappings{
 			Properties: map[string]meta.Property{

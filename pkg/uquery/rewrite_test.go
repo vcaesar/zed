@@ -192,6 +192,11 @@ func TestRewrite_Recursion(t *testing.T) {
 			want:  map[string]interface{}{"dis_max": map[string]interface{}{"queries": []interface{}{wantIDs}}},
 		},
 		{
+			name:  "boosting",
+			query: map[string]interface{}{"boosting": map[string]interface{}{"positive": nested, "negative": nested, "negative_boost": 0.5}},
+			want:  map[string]interface{}{"boosting": map[string]interface{}{"positive": wantIDs, "negative": wantIDs, "negative_boost": 0.5}},
+		},
+		{
 			name: "function_score query and filter",
 			query: map[string]interface{}{"function_score": map[string]interface{}{
 				"query":     nested,
@@ -310,4 +315,28 @@ func TestRewrite_QueryTypes(t *testing.T) {
 		require.Len(t, calls, 1)
 		assert.Equal(t, meta.NestedParentField, calls[0].collectField)
 	})
+}
+
+// A nested query inside has_child / has_parent is resolved before the
+// join query runs, otherwise it would match the hidden nested documents.
+func TestRewrite_NestedInsideJoin(t *testing.T) {
+	nested := map[string]interface{}{"nested": map[string]interface{}{"path": "comments", "query": matchQuery("comments.name", "john")}}
+	wantInner := map[string]interface{}{"terms": map[string]interface{}{"_id": []string{"1"}}}
+	tests := []struct {
+		name      string
+		query     map[string]interface{}
+		joinValue string
+	}{
+		{name: "has_child", query: map[string]interface{}{"has_child": map[string]interface{}{"type": "answer", "query": nested}}, joinValue: "answer"},
+		{name: "has_parent", query: map[string]interface{}{"has_parent": map[string]interface{}{"parent_type": "question", "query": nested}}, joinValue: "question"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls []execCall
+			_, err := Rewrite(tt.query, fakeExec(&calls, "1"))
+			require.NoError(t, err)
+			require.Len(t, calls, 2)
+			assert.Equal(t, filteredQuery(wantInner, meta.JoinNameField, tt.joinValue), calls[1].sub)
+		})
+	}
 }

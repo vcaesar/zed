@@ -23,6 +23,7 @@ import (
 
 	"github.com/zincsearch/zincsearch/pkg/core"
 	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
 )
 
 // Translate parses sql and returns the query DSL it maps to.
@@ -88,21 +89,7 @@ func indexFields(indexes []string) FieldTypes {
 }
 
 func matchesAny(indexName string, patterns []string) bool {
-	for _, pattern := range patterns {
-		switch {
-		case strings.HasPrefix(pattern, "*"):
-			if strings.HasSuffix(indexName, pattern[1:]) {
-				return true
-			}
-		case strings.HasSuffix(pattern, "*"):
-			if strings.HasPrefix(indexName, pattern[:len(pattern)-1]) {
-				return true
-			}
-		case indexName == pattern:
-			return true
-		}
-	}
-	return false
+	return elastic.MatchAnyPattern(indexName, patterns)
 }
 
 func buildResponse(stmt *Statement, fields FieldTypes, resp *meta.SearchResponse, fetchSize int) (*Response, error) {
@@ -191,6 +178,7 @@ func aggregatedResponse(stmt *Statement, fields FieldTypes, resp *meta.SearchRes
 	}
 	rows = filterRows(stmt, result.Columns, rows)
 	sortRows(stmt, result.Columns, rows)
+	rows = rows[min(stmt.Offset, len(rows)):]
 	if stmt.HasLimit && len(rows) > stmt.Size {
 		rows = rows[:stmt.Size]
 	}

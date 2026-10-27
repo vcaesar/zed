@@ -236,12 +236,19 @@ func (s *IndexShard) GetReaders(timeMin, timeMax int64) ([]*riot.Reader, error) 
 			break
 		}
 	}
-	if err := eg.Wait(); err != nil {
-		return nil, err
-	}
+	err := eg.Wait()
 	close(chs)
 	for r := range chs {
 		rs = append(rs, r)
+	}
+	if err != nil {
+		// close the readers the other shards already opened
+		for _, r := range rs {
+			if cerr := r.Close(); cerr != nil {
+				log.Error().Err(cerr).Str("index", s.GetIndexName()).Msg("close reader")
+			}
+		}
+		return nil, err
 	}
 	return rs, nil
 }
