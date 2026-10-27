@@ -26,6 +26,8 @@ zinc_batch_size = 1024
 zinc_max_results = 10000
 zinc_aggregation_terms_size = 1000
 zinc_max_document_size = 1000000
+# Local disk LRU cache for indexes on object storage (s3/minio/gcs/oss), kept under <zinc_data_path>/objcache. 0 disables.
+zinc_object_cache_size = 10737418240
 zinc_wal_sync_interval = 1000000000
 zinc_wal_redolog_no_sync = false
 zinc_swagger_enable = true
@@ -33,6 +35,18 @@ zinc_log_level = "debug"
 
 [Cluster]
 zinc_cluster_name = "ZincCluster"
+zinc_cluster_enable = false
+zinc_cluster_node_id = ""
+zinc_cluster_advertise_addr = ""
+zinc_cluster_partitions = 256
+zinc_cluster_heartbeat_interval = 5000000000
+zinc_cluster_heartbeat_ttl = 15000000000
+zinc_cluster_replicas = 1
+
+[Tier]
+zinc_tier_enable = false
+zinc_tier_check_interval = 600000000000
+zinc_tier_cold_storage_type = "s3"
 
 [Shard]
 zinc_shard_goroutine_num = 3
@@ -41,6 +55,30 @@ zinc_shard_max_size = 1073741824
 
 [Etcd]
 zinc_etcd_prefix = "/zinc"
+
+[S3]
+# Object store for indexes created with storage_type = "s3" (MinIO or any S3-compatible endpoint works).
+zinc_s3_endpoint = "s3.amazonaws.com"
+zinc_s3_bucket = ""
+zinc_s3_region = ""
+zinc_s3_access_key_id = ""
+zinc_s3_secret_access_key = ""
+zinc_s3_use_ssl = true
+
+[GCS]
+# Google Cloud Storage for indexes created with storage_type = "gcs", via the S3-interoperable API (HMAC keys).
+zinc_gcs_endpoint = "storage.googleapis.com"
+zinc_gcs_bucket = ""
+zinc_gcs_access_key_id = ""
+zinc_gcs_secret_access_key = ""
+
+[OSS]
+# Alibaba Cloud OSS for indexes created with storage_type = "oss", e.g. endpoint "oss-cn-hangzhou.aliyuncs.com".
+zinc_oss_endpoint = ""
+zinc_oss_bucket = ""
+zinc_oss_region = ""
+zinc_oss_access_key_id = ""
+zinc_oss_secret_access_key = ""
 
 [Plugin.GSE]
 zinc_plugin_gse_enable = false

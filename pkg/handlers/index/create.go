@@ -80,7 +80,7 @@ func CreateES(c *gin.Context) {
 	}
 
 	// default the storage_type to disk, to provide the best possible integration
-	newIndex.StorageType = "disk"
+	newIndex.StorageType = core.StorageTypeDisk
 
 	err := CreateIndexWorker(&newIndex, indexName)
 	if err != nil {
@@ -96,7 +96,12 @@ func CreateES(c *gin.Context) {
 }
 
 func CreateIndexWorker(newIndex *meta.IndexSimple, indexName string) error {
-	newIndex.StorageType = "disk"
+	if newIndex.StorageType == "" {
+		newIndex.StorageType = core.StorageTypeDisk
+	}
+	if err := core.CheckStorageType(newIndex.StorageType); err != nil {
+		return err
+	}
 	if newIndex.Name == "" && indexName != "" {
 		newIndex.Name = indexName
 	}
@@ -136,13 +141,19 @@ func CreateIndexWorker(newIndex *meta.IndexSimple, indexName string) error {
 	}
 
 	// update settings
-	_ = index.SetSettings(newIndex.Settings)
+	if err := index.SetSettings(newIndex.Settings); err != nil {
+		return err
+	}
 
 	// update analyzers
-	_ = index.SetAnalyzers(analyzers)
+	if err := index.SetAnalyzers(analyzers); err != nil {
+		return err
+	}
 
 	// update mappings
-	_ = index.SetMappings(mappings)
+	if err := index.SetMappings(mappings); err != nil {
+		return err
+	}
 
 	// store index
 	if err = core.StoreIndex(index); err != nil {

@@ -33,6 +33,39 @@ import (
 
 var indexNameRe = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
+const (
+	StorageTypeDisk  = "disk"
+	StorageTypeS3    = "s3"
+	StorageTypeMinIO = "minio" // alias of s3: MinIO is S3-compatible and shares the [S3] config
+	StorageTypeGCS   = "gcs"   // Google Cloud Storage, [GCS] config
+	StorageTypeOSS   = "oss"   // Alibaba Cloud OSS, [OSS] config
+)
+
+// CheckStorageType validates storage_type and confirms the backend is usable.
+func CheckStorageType(storageType string) error {
+	switch storageType {
+	case StorageTypeDisk:
+		return nil
+	case StorageTypeS3, StorageTypeMinIO:
+		if config.Global.S3.Bucket == "" {
+			return fmt.Errorf("storage_type [%s] requires ZINC_S3_BUCKET to be configured", storageType)
+		}
+		return nil
+	case StorageTypeGCS:
+		if config.Global.GCS.Bucket == "" {
+			return fmt.Errorf("storage_type [%s] requires ZINC_GCS_BUCKET to be configured", storageType)
+		}
+		return nil
+	case StorageTypeOSS:
+		if config.Global.OSS.Bucket == "" {
+			return fmt.Errorf("storage_type [%s] requires ZINC_OSS_BUCKET to be configured", storageType)
+		}
+		return nil
+	default:
+		return fmt.Errorf("storage_type [%s] is invalid, just accept [disk, s3, minio, gcs, oss]", storageType)
+	}
+}
+
 func CheckIndexName(name string) error {
 	if name == "" {
 		return fmt.Errorf("index name cannot be empty")
@@ -53,7 +86,10 @@ func NewIndex(name, storageType string, shardNum int64) (*Index, error) {
 	}
 
 	if storageType == "" {
-		storageType = "disk"
+		storageType = StorageTypeDisk
+	}
+	if err := CheckStorageType(storageType); err != nil {
+		return nil, err
 	}
 
 	if shardNum <= 0 {
@@ -120,17 +156,49 @@ func NewIndex(name, storageType string, shardNum int64) (*Index, error) {
 
 // LoadIndexWriter load the index writer from the storage
 func OpenIndexWriter(name string, storageType string, defaultSearchAnalyzer *analysis.Analyzer, timeRange ...int64) (*riot.Writer, error) {
-	cfg := getOpenConfig(name, storageType, defaultSearchAnalyzer, timeRange...)
+	cfg, err := getOpenConfig(name, storageType, defaultSearchAnalyzer, timeRange...)
+	if err != nil {
+		return nil, err
+	}
 	return riot.OpenWriter(cfg)
 }
 
-func getOpenConfig(name string, storageType string, defaultSearchAnalyzer *analysis.Analyzer, timeRange ...int64) riot.Config {
-	dataPath := config.Global.DataPath
-	cfg := directory.GetDiskConfig(dataPath, name, timeRange...)
+// OpenIndexReader opens the index read-only, without a writer or WAL, so cold
+// indexes on object storage can be searched from any node at the same time.
+func OpenIndexReader(name string, storageType string, defaultSearchAnalyzer *analysis.Analyzer, timeRange ...int64) (*riot.Reader, error) {
+	cfg, err := getOpenConfig(name, storageType, defaultSearchAnalyzer, timeRange...)
+	if err != nil {
+		return nil, err
+	}
+	return riot.OpenReader(cfg)
+}
+
+func getOpenConfig(name string, storageType string, defaultSearchAnalyzer *analysis.Analyzer, timeRange ...int64) (riot.Config, error) {
+	var cfg riot.Config
+	var err error
+	switch storageType {
+	case StorageTypeS3, StorageTypeMinIO:
+		cfg, err = directory.GetS3Config(name, timeRange...)
+		if err != nil {
+			return cfg, err
+		}
+	case StorageTypeGCS:
+		cfg, err = directory.GetGCSConfig(name, timeRange...)
+		if err != nil {
+			return cfg, err
+		}
+	case StorageTypeOSS:
+		cfg, err = directory.GetOSSConfig(name, timeRange...)
+		if err != nil {
+			return cfg, err
+		}
+	default:
+		cfg = directory.GetDiskConfig(config.Global.DataPath, name, timeRange...)
+	}
 	if defaultSearchAnalyzer != nil {
 		cfg.DefaultSearchAnalyzer = defaultSearchAnalyzer
 	}
-	return cfg
+	return cfg, nil
 }
 
 // storeIndex stores the index to metadata

@@ -61,18 +61,45 @@ type config struct {
 	MaxResults                int           `toml:"zinc_max_results"`
 	AggregationTermsSize      int           `toml:"zinc_aggregation_terms_size"`
 	MaxDocumentSize           int           `toml:"zinc_max_document_size"`   // Max size for a single document . Default = 1 MB = 1024 * 1024
+	ObjectCacheSize           int64         `toml:"zinc_object_cache_size"`   // local disk LRU cache for object storage indexes, bytes, 0 disables
 	WalSyncInterval           time.Duration `toml:"zinc_wal_sync_interval"`   // sync wal to disk, 1s, 10ms
 	WalRedoLogNoSync          bool          `toml:"zinc_wal_redolog_no_sync"` // control sync after every write
 	ZincSwaggerEnable         bool          `toml:"zinc_swagger_enable"`
 	LogLevel                  string        `toml:"zinc_log_level"`
 	Cluster                   cluster
+	Tier                      tier
 	Shard                     shard
 	Etcd                      etcd
+	S3                        S3Config
+	GCS                       GCSConfig
+	OSS                       OSSConfig
 	Plugin                    plugin
 }
 
 type cluster struct {
 	Name string `toml:"zinc_cluster_name"`
+	// Enable turns on multi-node mode: membership, index ownership and
+	// request routing are coordinated through etcd ([Etcd] section).
+	Enable bool `toml:"zinc_cluster_enable"`
+	// NodeID must be unique and stable per node; defaults to hostname.
+	NodeID string `toml:"zinc_cluster_node_id"`
+	// AdvertiseAddr is the http(s)://host:port other nodes use to reach this node.
+	AdvertiseAddr string `toml:"zinc_cluster_advertise_addr"`
+	// Partitions is the fixed number of ownership buckets indexes hash into.
+	Partitions        int           `toml:"zinc_cluster_partitions"`
+	HeartbeatInterval time.Duration `toml:"zinc_cluster_heartbeat_interval"`
+	HeartbeatTTL      time.Duration `toml:"zinc_cluster_heartbeat_ttl"`
+	// Replicas is the number of extra nodes that keep a warm read-only copy of
+	// each partition's object-storage indexes for failover reads.
+	Replicas int `toml:"zinc_cluster_replicas"`
+}
+
+type tier struct {
+	// Enable runs the background hot/warm/cold lifecycle mover.
+	Enable        bool          `toml:"zinc_tier_enable"`
+	CheckInterval time.Duration `toml:"zinc_tier_check_interval"`
+	// ColdStorageType is where cold indexes are moved: s3, gcs or oss.
+	ColdStorageType string `toml:"zinc_tier_cold_storage_type"`
 }
 
 type shard struct {
@@ -89,6 +116,36 @@ type etcd struct {
 	Prefix    string   `toml:"zinc_etcd_prefix"`
 	Username  string   `toml:"zinc_etcd_username"`
 	Password  string   `toml:"zinc_etcd_password"`
+}
+
+// S3Config configures the object store used by indexes created with storage_type "s3".
+// Works with AWS S3, MinIO and any S3-compatible endpoint.
+type S3Config struct {
+	Endpoint        string `toml:"zinc_s3_endpoint"`
+	Bucket          string `toml:"zinc_s3_bucket"`
+	Region          string `toml:"zinc_s3_region"`
+	AccessKeyID     string `toml:"zinc_s3_access_key_id"`
+	SecretAccessKey string `toml:"zinc_s3_secret_access_key"`
+	UseSSL          bool   `toml:"zinc_s3_use_ssl"`
+}
+
+// GCSConfig configures Google Cloud Storage used by indexes created with storage_type "gcs".
+// Access goes through the S3-interoperable XML API of GCS, so HMAC keys are required.
+type GCSConfig struct {
+	Endpoint        string `toml:"zinc_gcs_endpoint"`
+	Bucket          string `toml:"zinc_gcs_bucket"`
+	AccessKeyID     string `toml:"zinc_gcs_access_key_id"`
+	SecretAccessKey string `toml:"zinc_gcs_secret_access_key"`
+}
+
+// OSSConfig configures Alibaba Cloud OSS used by indexes created with storage_type "oss", via its S3-
+// compatible API.
+type OSSConfig struct {
+	Endpoint        string `toml:"zinc_oss_endpoint"`
+	Bucket          string `toml:"zinc_oss_bucket"`
+	Region          string `toml:"zinc_oss_region"`
+	AccessKeyID     string `toml:"zinc_oss_access_key_id"`
+	SecretAccessKey string `toml:"zinc_oss_secret_access_key"`
 }
 
 type plugin struct {

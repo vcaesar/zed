@@ -4,8 +4,16 @@ import { isAxiosError } from 'axios';
 import indexService from '../../services/index';
 import templateService from '../../services/template';
 import { ErrorMessage, Modal } from './Common';
+import { validateMappings } from './mappings';
 
 export type Schema = { settings?: Record<string, unknown>; mappings?: Record<string, unknown> };
+export const STORAGE_TYPES = ['disk', 's3', 'minio', 'gcs', 'oss'];
+const STORAGE_HINTS: Record<string, string> = {
+  s3: 'Requires the server [S3] settings (ZINC_S3_BUCKET, ZINC_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
+  minio: 'Requires the server [S3] settings (ZINC_S3_BUCKET, ZINC_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
+  gcs: 'Requires the server [GCS] settings (ZINC_GCS_BUCKET and HMAC keys ZINC_GCS_ACCESS_KEY_ID / ZINC_GCS_SECRET_ACCESS_KEY).',
+  oss: 'Requires the server [OSS] settings (ZINC_OSS_BUCKET, ZINC_OSS_ENDPOINT, credentials).',
+};
 export type TemplateRecord = {
   name: string;
   index_template: { index_patterns: string[]; priority?: number; template?: Schema };
@@ -33,6 +41,7 @@ export default function SchemaEditor(
 ) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState(value?.name || '');
+  const [storageType, setStorageType] = useState('disk');
   const [patterns, setPatterns] = useState(value?.index_template.index_patterns.join(', ') || '');
   const [number, setNumber] = useState(value?.index_template.priority?.toString() || '');
   const [settings, setSettings] = useState(
@@ -49,7 +58,8 @@ export default function SchemaEditor(
   let jsonError = '';
   if (step === 1 || (step === 2 && format === 'json')) {
     try {
-      parseObject(step === 1 ? settings : mappings);
+      const parsed = parseObject(step === 1 ? settings : mappings);
+      if (step === 2) validateMappings(parsed);
     } catch (err) {
       jsonError = (err as Error).message;
     }
@@ -65,6 +75,7 @@ export default function SchemaEditor(
     if (typeof result.sql === 'string' && !result.sql.trim()) {
       throw new Error('CREATE TABLE SQL is required.');
     }
+    validateMappings(result);
     return result;
   }
   function payload() {
@@ -72,7 +83,7 @@ export default function SchemaEditor(
     return kind === 'index'
       ? {
         name,
-        storage_type: 'disk',
+        storage_type: storageType,
         ...(number !== '' ? { shard_num: Number(number) } : {}),
         ...schema,
       }
@@ -171,9 +182,16 @@ export default function SchemaEditor(
             {kind === 'index'
               ? (
                 <label>
-                  Storage Type<Select className='block w-full' value='disk' onValueChange={() => {}}>
-                    <option>disk</option>
+                  Storage Type<Select
+                    className='block w-full'
+                    value={storageType}
+                    onValueChange={setStorageType}
+                  >
+                    {STORAGE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </Select>
+                  {storageType !== 'disk' && (
+                    <p>{STORAGE_HINTS[storageType]}</p>
+                  )}
                 </label>
               )
               : (
@@ -249,7 +267,7 @@ export default function SchemaEditor(
               <code>
                 {step === 1
                   ? '{"analysis":{"analyzer":{"default":{"type":"standard"}}}}'
-                  : '{"properties":{"content":{"type":"text"}}}'}
+                  : '{"properties":{"content":{"type":"text"},"location":{"type":"geo_point"},"embedding":{"type":"vector","dims":3}}}'}
               </code>
             </p>
           </>

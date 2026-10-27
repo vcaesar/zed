@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/zincsearch/zincsearch/pkg/config"
 )
 
 func TestNewIndex(t *testing.T) {
@@ -60,6 +62,22 @@ func TestNewIndex(t *testing.T) {
 			args: args{
 				name:        "",
 				storageType: "disk",
+			},
+			wantErr: true,
+		},
+		{
+			name: "s3 unconfigured",
+			args: args{
+				name:        "TestNewIndex.index_s3",
+				storageType: "s3",
+			},
+			wantErr: true,
+		},
+		{
+			name: "unknown storage",
+			args: args{
+				name:        "TestNewIndex.index_bad",
+				storageType: "floppy",
 			},
 			wantErr: true,
 		},
@@ -175,4 +193,58 @@ func TestCheckIndexName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckStorageType(t *testing.T) {
+	tests := []struct {
+		name        string
+		storageType string
+		bucket      string
+		wantErr     bool
+	}{
+		{name: "disk", storageType: StorageTypeDisk},
+		{name: "s3 configured", storageType: StorageTypeS3, bucket: "zinc"},
+		{name: "minio configured", storageType: StorageTypeMinIO, bucket: "zinc"},
+		{name: "gcs configured", storageType: StorageTypeGCS, bucket: "zinc"},
+		{name: "oss configured", storageType: StorageTypeOSS, bucket: "zinc"},
+		{name: "s3 unconfigured", storageType: StorageTypeS3, wantErr: true},
+		{name: "gcs unconfigured", storageType: StorageTypeGCS, wantErr: true},
+		{name: "oss unconfigured", storageType: StorageTypeOSS, wantErr: true},
+		{name: "unknown", storageType: "floppy", bucket: "zinc", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldS3, oldGCS, oldOSS := config.Global.S3.Bucket, config.Global.GCS.Bucket, config.Global.OSS.Bucket
+			config.Global.S3.Bucket, config.Global.GCS.Bucket, config.Global.OSS.Bucket = tt.bucket, tt.bucket, tt.bucket
+			defer func() {
+				config.Global.S3.Bucket, config.Global.GCS.Bucket, config.Global.OSS.Bucket = oldS3, oldGCS, oldOSS
+			}()
+			err := CheckStorageType(tt.storageType)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestGetOpenConfig(t *testing.T) {
+	t.Run("disk", func(t *testing.T) {
+		cfg, err := getOpenConfig("TestGetOpenConfig.index_1", StorageTypeDisk, nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg.DefaultSearchAnalyzer)
+	})
+	t.Run("s3 unconfigured", func(t *testing.T) {
+		_, err := getOpenConfig("TestGetOpenConfig.index_2", StorageTypeS3, nil)
+		assert.Error(t, err)
+		_, err = OpenIndexWriter("TestGetOpenConfig.index_2", StorageTypeMinIO, nil)
+		assert.Error(t, err)
+	})
+	t.Run("gcs and oss unconfigured", func(t *testing.T) {
+		_, err := getOpenConfig("TestGetOpenConfig.index_3", StorageTypeGCS, nil)
+		assert.Error(t, err)
+		_, err = getOpenConfig("TestGetOpenConfig.index_4", StorageTypeOSS, nil)
+		assert.Error(t, err)
+	})
 }

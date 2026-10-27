@@ -100,6 +100,26 @@ func TestCreate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "create with unconfigured s3 storage",
+			args: args{
+				code:   http.StatusBadRequest,
+				data:   `{"name":"TestIndexCreate.index_7","storage_type":"s3"}`,
+				params: map[string]string{"target": ""},
+				result: "ZINC_S3_BUCKET",
+			},
+			wantErr: true,
+		},
+		{
+			name: "create with unknown storage",
+			args: args{
+				code:   http.StatusBadRequest,
+				data:   `{"name":"TestIndexCreate.index_8","storage_type":"floppy"}`,
+				params: map[string]string{"target": ""},
+				result: "storage_type [floppy] is invalid",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
