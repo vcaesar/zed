@@ -40,6 +40,7 @@ func TestSQLMappingsTypes(t *testing.T) {
 		{"BOOL", "bool"}, {"BOOLEAN", "bool"},
 		{"DATE", "date"}, {"DATETIME(6)", "date"}, {"TIMESTAMP", "date"},
 		{"TIME", "keyword"}, {"JSON", ""},
+		{"POINT", "geo_point"}, {"VECTOR", "vector"}, {"VECTOR(3)", "vector"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.sqlType, func(t *testing.T) {

@@ -65,6 +65,13 @@ func sqlProperties(ddl string) (map[string]interface{}, error) {
 		case "json":
 			// Like JSON object mappings, child fields are inferred during ingestion.
 			prop["type"] = "object"
+		case "point":
+			prop["type"] = "geo_point"
+		case "vector":
+			prop["type"] = "vector"
+			if column.Type.Length != nil {
+				prop["dims"] = *column.Type.Length
+			}
 		default:
 			return nil, fmt.Errorf("SQL column [%s] has unsupported type [%s]", name, typ)
 		}
