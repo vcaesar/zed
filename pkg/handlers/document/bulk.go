@@ -79,6 +79,7 @@ func ESBulk(c *gin.Context) {
 
 	ret, err := BulkWorker(target, c.Request.Body)
 	if err != nil {
+		ret.Errors = true
 		ret.Error = err.Error()
 	}
 
@@ -107,6 +108,7 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 
 	var doc map[string]interface{}
 	var err error
+	var documentErr error
 	for scanner.Scan() { // Read each line
 		for k := range doc {
 			delete(doc, k)
@@ -142,30 +144,22 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 			}
 			indexName := suppliedIndexName.(string)
 			operation := suppliedOperation.(string)
-			switch operation {
-			case "index":
-				bulkRes.Items = append(bulkRes.Items, map[string]BulkResponseItem{
-					"index": NewBulkResponseItem(bulkRes.Count, indexName, docID, "created", nil),
-				})
-			case "create":
-				bulkRes.Items = append(bulkRes.Items, map[string]BulkResponseItem{
-					"index": NewBulkResponseItem(bulkRes.Count, indexName, docID, "created", nil),
-				})
-			case "update":
-				bulkRes.Items = append(bulkRes.Items, map[string]BulkResponseItem{
-					"index": NewBulkResponseItem(bulkRes.Count, indexName, docID, "updated", nil),
-				})
-			default:
-			}
-
 			newIndex, _, err := core.GetOrCreateIndex(indexName, "", 0)
-			if err != nil {
-				return bulkRes, err
+			if err == nil {
+				err = newIndex.CreateDocument(docID, doc, update)
 			}
-
-			err = newIndex.CreateDocument(docID, doc, update)
+			result := "created"
+			if operation == "update" {
+				result = "updated"
+			}
+			bulkRes.Items = append(bulkRes.Items, map[string]BulkResponseItem{
+				operation: NewBulkResponseItem(bulkRes.Count, indexName, docID, result, err),
+			})
 			if err != nil {
-				return bulkRes, err
+				bulkRes.Errors = true
+				if documentErr == nil {
+					documentErr = err
+				}
 			}
 
 		} else { // This branch will process the metadata line in the request. Each metadata line is preceded by a data line.
@@ -173,7 +167,7 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 			for k, v := range doc {
 				vm, ok := v.(map[string]interface{})
 				if !ok {
-					return nil, errors.New("bulk index data format error")
+					return bulkRes, errors.New("bulk index data format error")
 				}
 				for k := range lastLineMetaData {
 					delete(lastLineMetaData, k)
@@ -189,7 +183,7 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 						lastLineMetaData["_index"] = target
 					}
 					if lastLineMetaData["_index"] == "" {
-						return nil, errors.New("bulk index data format error")
+						return bulkRes, errors.New("bulk index data format error")
 					}
 					lastLineMetaData["_id"] = vm["_id"]
 				case "delete":
@@ -200,7 +194,7 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 						indexName = vm["_index"].(string)
 					}
 					if indexName == "" {
-						return nil, errors.New("bulk index data format error")
+						return bulkRes, errors.New("bulk index data format error")
 					}
 
 					newIndex, _, err := core.GetOrCreateIndex(indexName, "", 0)
@@ -226,7 +220,7 @@ func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {
 		return bulkRes, err
 	}
 
-	return bulkRes, nil
+	return bulkRes, documentErr
 }
 
 // DoesExistInThisRequest takes a slice and looks for an element in it. If found it will
@@ -242,8 +236,11 @@ func DoesExistInThisRequest(slice []string, val string) int {
 
 func NewBulkResponseItem(seqNo int64, index, id, result string, err error) BulkResponseItem {
 	s_err := ""
+	status, successful, failed := http.StatusOK, 1, 0
 	if err != nil {
 		s_err = err.Error()
+		status, successful, failed = http.StatusBadRequest, 0, 1
+		result = ""
 	}
 	return BulkResponseItem{
 		Index:   index,
@@ -253,10 +250,10 @@ func NewBulkResponseItem(seqNo int64, index, id, result string, err error) BulkR
 		Result:  result,
 		Shards: BulkResponseItemShard{
 			Total:      1,
-			Successful: 1,
-			Failed:     0,
+			Successful: successful,
+			Failed:     failed,
 		},
-		Status:      200,
+		Status:      status,
 		SeqNo:       globalSeqNo + seqNo,
 		PrimaryTerm: 1,
 		Error:       s_err,

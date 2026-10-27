@@ -124,7 +124,10 @@ func SetMapping(c *gin.Context) {
 				mappings.Properties[k] = v
 			}
 		}
-		_ = index.SetMappings(mappings)
+		if err := index.SetMappings(mappings); err != nil {
+			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			return
+		}
 	}
 
 	// store index

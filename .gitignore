@@ -14,7 +14,10 @@ miniodata
 # Test binary, built with `go test -c`
 *.test
 
-/test
+/test/*
+!/test/api/
+/test/api/*
+!/test/api/logs_test.go
 .v0
 v0
 .codg

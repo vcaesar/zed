@@ -21,6 +21,7 @@ import (
 	"github.com/vcaesar/riot/analysis"
 
 	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/zincsearch/zincsearch/pkg/logs"
 	"github.com/zincsearch/zincsearch/pkg/meta"
 	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
 	"github.com/zincsearch/zincsearch/pkg/uquery/mappings"
@@ -47,10 +48,13 @@ func Request(data map[string]interface{}) (*meta.Index, error) {
 		if err := json.Unmarshal(vjson, settings); err != nil {
 			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[index] settings parse error: %s", err.Error()))
 		}
+		if err := meta.CheckIndexType(settings.IndexType); err != nil {
+			return nil, err
+		}
 		if analyzers, err = zincanalysis.RequestAnalyzer(settings.Analysis); err != nil {
 			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[index] settings.analysis parse error: %s", err.Error()))
 		}
-		if settings != nil && (settings.NumberOfShards > 0 || settings.NumberOfReplicas > 0 || settings.Analysis != nil) {
+		if settings.IndexType != "" || settings.NumberOfShards > 0 || settings.NumberOfReplicas > 0 || settings.Analysis != nil {
 			index.Settings = settings
 		}
 	}
@@ -64,6 +68,11 @@ func Request(data map[string]interface{}) (*meta.Index, error) {
 		mappings, err := mappings.Request(analyzers, v)
 		if err != nil {
 			return nil, err
+		}
+		if index.Settings != nil && index.Settings.IndexType == meta.IndexTypeLogs && mappings != nil {
+			if err := logs.ValidateMappings(mappings); err != nil {
+				return nil, err
+			}
 		}
 		index.Mappings = mappings
 	}
