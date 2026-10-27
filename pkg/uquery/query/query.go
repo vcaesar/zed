@@ -70,6 +70,34 @@ func Query(query interface{}, mappings *meta.Mappings, analyzers map[string]*ana
 			if subq, err = BoostingQuery(v); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[boosting] failed to parse field").Cause(err)
 			}
+		case "constant_score":
+			if subq, err = ConstantScoreQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[constant_score] failed to parse field").Cause(err)
+			}
+		case "dis_max":
+			if subq, err = DisMaxQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[dis_max] failed to parse field").Cause(err)
+			}
+		case "function_score":
+			if subq, err = FunctionScoreQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[function_score] failed to parse field").Cause(err)
+			}
+		case "nested":
+			if subq, err = NestedQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[nested] failed to parse field").Cause(err)
+			}
+		case "has_child":
+			if subq, err = HasChildQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[has_child] failed to parse field").Cause(err)
+			}
+		case "has_parent":
+			if subq, err = HasParentQuery(v, mappings, analyzers); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[has_parent] failed to parse field").Cause(err)
+			}
+		case "parent_id":
+			if subq, err = ParentIDQuery(v); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[parent_id] failed to parse field").Cause(err)
+			}
 		case "match":
 			if subq, err = MatchQuery(v, mappings, analyzers); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[match] failed to parse field").Cause(err)
@@ -151,20 +179,24 @@ func Query(query interface{}, mappings *meta.Mappings, analyzers map[string]*ana
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[terms_set] failed to parse field").Cause(err)
 			}
 		case "geo_bounding_box":
-			if subq, err = GeoBoundingBoxQuery(v); err != nil {
+			if subq, err = GeoBoundingBoxQuery(v, mappings); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[geo_bounding_box] failed to parse field").Cause(err)
 			}
 		case "geo_distance":
-			if subq, err = GeoDistanceQuery(v); err != nil {
+			if subq, err = GeoDistanceQuery(v, mappings); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[geo_distance] failed to parse field").Cause(err)
 			}
 		case "geo_polygon":
-			if subq, err = GeoPolygonQuery(v); err != nil {
+			if subq, err = GeoPolygonQuery(v, mappings); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[geo_polygon] failed to parse field").Cause(err)
 			}
 		case "geo_shape":
 			if subq, err = GeoShapeQuery(v); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[geo_shape] failed to parse field").Cause(err)
+			}
+		case "knn":
+			if subq, err = KnnQuery(v, mappings); err != nil {
+				return nil, errors.New(errors.ErrorTypeXContentParseException, "[knn] failed to parse field").Cause(err)
 			}
 		default:
 			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] query doesn't support", k))
