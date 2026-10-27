@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -151,6 +152,9 @@ func (s *IndexShard) NewShard() error {
 
 // GetWriter return the newest shard writer or special shard writer
 func (s *IndexShard) GetWriter(shardID ...int64) (*riot.Writer, error) {
+	if s.root.IsCold() {
+		return nil, ErrIndexReadOnly
+	}
 	var id int64
 	if len(shardID) == 1 {
 		id = shardID[0]
@@ -218,13 +222,12 @@ func (s *IndexShard) GetReaders(timeMin, timeMax int64) ([]*riot.Reader, error) 
 			continue
 		}
 		eg.Go(func() error {
-			w, err := s.GetWriter(i)
+			r, err := s.openReader(i)
 			if err != nil {
 				return err
 			}
-			r, err := w.Reader()
-			if err != nil {
-				return err
+			if r == nil {
+				return nil // cold shard without data
 			}
 			chs <- r
 			return nil
@@ -315,18 +318,17 @@ func (s *IndexShard) FindShardByDocID(docID string) (int64, error) {
 
 	// check id store by which shard
 	shardID := int64(-1)
-	writers, err := s.GetWriters()
+	shardNum, err := s.prepareReaders()
 	if err != nil {
 		return shardID, err
 	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.Global.Shard.GoroutineNum)
-	for id := int64(len(writers)) - 1; id >= 0; id-- {
+	for id := shardNum - 1; id >= 0; id-- {
 		id := id
-		w := writers[id]
 		eg.Go(func() error {
-			r, err := w.Reader()
+			r, err := s.openReader(id)
 			if err != nil {
 				log.Error().Err(err).
 					Str("index", s.GetIndexName()).
@@ -334,6 +336,9 @@ func (s *IndexShard) FindShardByDocID(docID string) (int64, error) {
 					Int64("second shard", id).
 					Msg("failed to get reader")
 				return nil // not check err, if returns err with cancel all goroutines.
+			}
+			if r == nil {
+				return nil // cold shard without data
 			}
 			defer r.Close()
 			dmi, err := r.Search(ctx, request)
@@ -368,18 +373,17 @@ func (s *IndexShard) FindDocumentByDocID(docID string) (*meta.Hit, error) {
 
 	// check id store by which shard
 	var hit *meta.Hit
-	writers, err := s.GetWriters()
+	shardNum, err := s.prepareReaders()
 	if err != nil {
 		return nil, err
 	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.Global.Shard.GoroutineNum)
-	for id := int64(len(writers)) - 1; id >= 0; id-- {
+	for id := shardNum - 1; id >= 0; id-- {
 		id := id
-		w := writers[id]
 		eg.Go(func() error {
-			r, err := w.Reader()
+			r, err := s.openReader(id)
 			if err != nil {
 				log.Error().Err(err).
 					Str("index", s.GetIndexName()).
@@ -387,6 +391,9 @@ func (s *IndexShard) FindDocumentByDocID(docID string) (*meta.Hit, error) {
 					Int64("second shard", id).
 					Msg("failed to get reader")
 				return nil // not check err, if returns err with cancel all goroutines.
+			}
+			if r == nil {
+				return nil // cold shard without data
 			}
 			defer r.Close()
 			dmi, err := r.Search(ctx, request)

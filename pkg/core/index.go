@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/zincsearch/zincsearch/pkg/logs"
 	"github.com/zincsearch/zincsearch/pkg/meta"
 	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
 	"github.com/zincsearch/zincsearch/pkg/zutils/hash/rendezvous"
@@ -35,7 +37,10 @@ type Index struct {
 	shards       map[string]*IndexShard
 	shardNum     int64
 	shardHashing *rendezvous.Rendezvous
-	lock         sync.RWMutex
+	// readOnly is set for cold indexes: they live on object storage, are open
+	// on every node at once and reject every write. Read without the index lock.
+	readOnly atomic.Bool
+	lock     sync.RWMutex
 }
 
 func (index *Index) MarshalJSON() ([]byte, error) {
@@ -66,7 +71,19 @@ func (index *Index) GetName() string {
 }
 
 func (index *Index) GetStorageType() string {
-	return index.ref.StorageType
+	index.lock.RLock()
+	s := index.ref.StorageType
+	index.lock.RUnlock()
+	return s
+}
+
+func (index *Index) GetIndexType() string {
+	index.lock.RLock()
+	defer index.lock.RUnlock()
+	if index.ref.Settings == nil || index.ref.Settings.IndexType == "" {
+		return meta.IndexTypeStandard
+	}
+	return index.ref.Settings.IndexType
 }
 
 func (index *Index) GetMappings() *meta.Mappings {
@@ -115,14 +132,23 @@ func (index *Index) UseTemplate() error {
 
 	if template.Template.Settings != nil {
 		// update settings
-		_ = index.SetSettings(template.Template.Settings)
+		if err := index.SetSettings(template.Template.Settings); err != nil {
+			return err
+		}
 		// update analyzers
-		analyzers, _ := zincanalysis.RequestAnalyzer(template.Template.Settings.Analysis)
-		_ = index.SetAnalyzers(analyzers)
+		analyzers, err := zincanalysis.RequestAnalyzer(template.Template.Settings.Analysis)
+		if err != nil {
+			return err
+		}
+		if err := index.SetAnalyzers(analyzers); err != nil {
+			return err
+		}
 	}
 
 	if template.Template.Mappings != nil {
-		_ = index.SetMappings(template.Template.Mappings)
+		if err := index.SetMappings(template.Template.Mappings); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -132,16 +158,37 @@ func (index *Index) SetSettings(settings *meta.IndexSettings) error {
 	if settings == nil {
 		return nil
 	}
+	if err := meta.CheckIndexType(settings.IndexType); err != nil {
+		return err
+	}
 
 	index.lock.Lock()
+	defer index.lock.Unlock()
+	if settings.IndexType == meta.IndexTypeLogs {
+		if index.ref.Mappings == nil {
+			index.ref.Mappings = meta.NewMappings()
+		}
+		if err := logs.ApplyDefaults(index.ref.Mappings); err != nil {
+			return err
+		}
+	}
 	if index.ref.Settings == nil {
 		index.ref.Settings = new(meta.IndexSettings)
+	}
+	if settings.IndexType != "" {
+		index.ref.Settings.IndexType = settings.IndexType
 	}
 	if settings.NumberOfReplicas > 0 {
 		index.ref.Settings.NumberOfReplicas = settings.NumberOfReplicas
 	}
 	if settings.NumberOfShards > 0 && index.ref.Settings.NumberOfShards == 0 {
 		index.ref.Settings.NumberOfShards = settings.NumberOfShards
+	}
+	if settings.Tier != "" {
+		index.ref.Settings.Tier = settings.Tier
+	}
+	if settings.Lifecycle != nil {
+		index.ref.Settings.Lifecycle = settings.Lifecycle
 	}
 	if settings.Analysis != nil {
 		if index.ref.Settings.Analysis == nil {
@@ -180,7 +227,6 @@ func (index *Index) SetSettings(settings *meta.IndexSettings) error {
 			}
 		}
 	}
-	index.lock.Unlock()
 
 	return nil
 }
@@ -200,6 +246,11 @@ func (index *Index) SetAnalyzers(analyzers map[string]*analysis.Analyzer) error 
 func (index *Index) SetMappings(mappings *meta.Mappings) error {
 	if mappings == nil {
 		mappings = meta.NewMappings()
+	}
+	if index.GetIndexType() == meta.IndexTypeLogs {
+		if err := logs.ValidateMappings(mappings); err != nil {
+			return err
+		}
 	}
 
 	// custom analyzer just for text field

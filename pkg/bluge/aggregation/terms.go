@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -52,6 +53,14 @@ func NewTermsAggregation(field search.FieldSource, valueType int, size int) *Ter
 	}
 	rv.aggregations["count"] = aggregations.CountMatches()
 	return rv
+}
+
+// SetOrder configures the bucket order. key is [OrderByCount] (the default),
+// [OrderByKey] or the name of a sub-aggregation, optionally suffixed with the
+// metric to read, e.g "grades.avg".
+func (t *TermsAggregation) SetOrder(key string, asc bool) {
+	t.lessFunc = orderLessFunc(key)
+	t.desc = !asc
 }
 
 func (t *TermsAggregation) Fields() []string {

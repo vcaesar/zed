@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -99,6 +100,26 @@ func TestCreate(t *testing.T) {
 				result:     `"message":"ok"`,
 			},
 			wantErr: false,
+		},
+		{
+			name: "create with unconfigured s3 storage",
+			args: args{
+				code:   http.StatusBadRequest,
+				data:   `{"name":"TestIndexCreate.index_7","storage_type":"s3"}`,
+				params: map[string]string{"target": ""},
+				result: "ZINC_S3_BUCKET",
+			},
+			wantErr: true,
+		},
+		{
+			name: "create with unknown storage",
+			args: args{
+				code:   http.StatusBadRequest,
+				data:   `{"name":"TestIndexCreate.index_8","storage_type":"floppy"}`,
+				params: map[string]string{"target": ""},
+				result: "storage_type [floppy] is invalid",
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

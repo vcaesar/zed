@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -28,11 +29,12 @@ type Mappings struct {
 }
 
 type Property struct {
-	Type           string `json:"type"` // text, keyword, date, numeric, boolean, geo_point
+	Type           string `json:"type"` // text, keyword, date, numeric, boolean, geo_point, vector, nested, join
 	Analyzer       string `json:"analyzer,omitempty"`
 	SearchAnalyzer string `json:"search_analyzer,omitempty"`
 	Format         string `json:"format,omitempty"`    // date format yyyy-MM-dd HH:mm:ss || yyyy-MM-dd || epoch_millis
 	TimeZone       string `json:"time_zone,omitempty"` // date format time_zone
+	Dims           int    `json:"dims,omitempty"`      // vector dimension, 0 accepts any
 	Index          bool   `json:"index"`
 	Store          bool   `json:"store"`
 	Sortable       bool   `json:"sortable"`
@@ -45,7 +47,24 @@ type Property struct {
 	//
 	// Currently, only "text" fields support the Fields parameter.
 	Fields map[string]Property `json:"fields,omitempty"`
+	// Properties holds the sub-fields of a "nested" property. Each element of
+	// the nested array is indexed as its own hidden document tagged with
+	// NestedPathField / NestedParentField so nested queries and aggregations
+	// keep per-object semantics.
+	Properties map[string]Property `json:"properties,omitempty"`
+	// Relations defines parent -> children for a "join" property, e.g.
+	// {"question": ["answer", "comment"]}. Documents set the field to
+	// {"name": "answer", "parent": "<parent _id>"} or just "question".
+	Relations map[string][]string `json:"relations,omitempty"`
 }
+
+// Hidden fields used for nested and join documents.
+const (
+	NestedPathField   = "_nested_path"   // keyword: nested property path, only on hidden nested docs
+	NestedParentField = "_nested_parent" // keyword: _id of the root document
+	JoinNameField     = "_join_name"     // keyword: relation name (parent or child type)
+	JoinParentField   = "_join_parent"   // keyword: _id of the parent document
+)
 
 func NewMappings() *Mappings {
 	return &Mappings{
@@ -67,7 +86,7 @@ func NewProperty(typ string) Property {
 		Highlightable:  false,
 		Fields:         make(map[string]Property),
 	}
-	if typ == "text" {
+	if typ == "text" || typ == "vector" {
 		p.Sortable = false
 		p.Aggregatable = false
 	}
@@ -92,6 +111,8 @@ func (p *Property) DeepClone() Property {
 	prop.Analyzer = p.Analyzer
 	prop.SearchAnalyzer = p.SearchAnalyzer
 	prop.Format = p.Format
+	prop.TimeZone = p.TimeZone
+	prop.Dims = p.Dims
 	prop.Index = p.Index
 	prop.Store = p.Store
 	prop.Sortable = p.Sortable
@@ -104,6 +125,18 @@ func (p *Property) DeepClone() Property {
 		}
 	} else {
 		prop.Fields = nil
+	}
+	if p.Properties != nil {
+		prop.Properties = make(map[string]Property, len(p.Properties))
+		for k, v := range p.Properties {
+			prop.Properties[k] = v.DeepClone()
+		}
+	}
+	if p.Relations != nil {
+		prop.Relations = make(map[string][]string, len(p.Relations))
+		for k, v := range p.Relations {
+			prop.Relations[k] = append([]string(nil), v...)
+		}
 	}
 
 	return prop

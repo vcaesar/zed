@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -24,17 +25,27 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/zincsearch/zincsearch"
 	"github.com/zincsearch/zincsearch/pkg/zutils/json"
 )
 
 func TestApiBase(t *testing.T) {
+	front, err := zincsearch.GetFrontendAssets()
+	require.NoError(t, err)
 	t.Run("test base api", func(t *testing.T) {
 		r := server()
 		t.Run("/", func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/", nil)
 			resp := httptest.NewRecorder()
 			r.ServeHTTP(resp, req)
-			assert.Equal(t, http.StatusFound, resp.Code)
+			if front == nil {
+				assert.Equal(t, http.StatusOK, resp.Code)
+				assert.Empty(t, resp.Header().Get("Location"))
+			} else {
+				assert.Equal(t, http.StatusFound, resp.Code)
+			}
 		})
 		t.Run("/version", func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/version", nil)
@@ -66,6 +77,10 @@ func TestApiBase(t *testing.T) {
 				req := httptest.NewRequest(http.MethodGet, path, nil)
 				resp := httptest.NewRecorder()
 				r.ServeHTTP(resp, req)
+				if front == nil {
+					assert.Equal(t, http.StatusNotFound, resp.Code)
+					return
+				}
 				assert.Equal(t, http.StatusOK, resp.Code)
 				assert.Contains(t, resp.Body.String(), `id="root"`)
 				assert.Contains(t, resp.Body.String(), `/ui/assets/`)
@@ -82,7 +97,11 @@ func TestApiBase(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/ui/", nil)
 			resp := httptest.NewRecorder()
 			r.ServeHTTP(resp, req)
-			assert.Equal(t, http.StatusOK, resp.Code)
+			if front == nil {
+				assert.Equal(t, http.StatusNotFound, resp.Code)
+			} else {
+				assert.Equal(t, http.StatusOK, resp.Code)
+			}
 		})
 		t.Run("no route logging", func(t *testing.T) {
 			var buf bytes.Buffer
@@ -91,7 +110,11 @@ func TestApiBase(t *testing.T) {
 			defer func() { log.Logger = orig }()
 
 			r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/ui/search", nil))
-			assert.NotContains(t, buf.String(), `"code":404`)
+			if front == nil {
+				assert.Contains(t, buf.String(), `"code":404`)
+			} else {
+				assert.NotContains(t, buf.String(), `"code":404`)
+			}
 
 			buf.Reset()
 			r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/nope", nil))

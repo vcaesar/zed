@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -106,6 +107,9 @@ func LoadZincIndexesFromMetadata(version string) error {
 		for id := range index.shards {
 			index.shardHashing.Add(id)
 		}
+
+		// a cold index is read-only on every node that loads it
+		index.applyTier(index.GetTier())
 
 		log.Info().Msgf("Loading  index... [%s:%s] shards[%d:%d]", index.ref.Name, index.ref.StorageType, index.ref.ShardNum, totalShardNum)
 

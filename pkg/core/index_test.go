@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,10 +18,13 @@ package core
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	segment "github.com/vcaesar/bluge_segment_api"
+	"github.com/vcaesar/ice/vec"
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/analyzer"
@@ -301,6 +305,115 @@ func TestIndex_BuildBlugeDocumentFromJSON(t *testing.T) {
 		err := DeleteIndex(indexName)
 		assert.NoError(t, err)
 	})
+}
+
+func TestIndex_BuildBlugeDocumentFromJSON_GeoPoint(t *testing.T) {
+	indexName := "TestIndex_BuildBlugeDocumentFromJSON_GeoPoint.index_1"
+	index, err := NewIndex(indexName, "disk", 2)
+	assert.NoError(t, err)
+	assert.NoError(t, StoreIndex(index))
+	index.GetMappings().SetProperty("location", meta.NewProperty("geo_point"))
+	defer func() { assert.NoError(t, DeleteIndex(indexName)) }()
+
+	tests := []struct {
+		name    string
+		value   interface{}
+		wantErr bool
+	}{
+		{name: "object", value: map[string]interface{}{"lat": 41.12, "lon": -71.34}},
+		{name: "geojson", value: map[string]interface{}{"type": "Point", "coordinates": []interface{}{-71.34, 41.12}}},
+		{name: "array", value: []interface{}{-71.34, 41.12}},
+		{name: "string", value: "41.12,-71.34"},
+		{name: "geohash", value: "drm3btev3e86"},
+		{name: "invalid", value: "not a point", wantErr: true},
+		{name: "out of range", value: []interface{}{-71.34, 100.0}, wantErr: true},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			docID := strconv.Itoa(i)
+			shard := index.GetShardByDocID(docID)
+			got, err := shard.CheckDocument(docID, map[string]interface{}{"location": tt.value}, false, 0)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+
+			var doc map[string]interface{}
+			assert.NoError(t, json.Unmarshal(got, &doc))
+			bdoc, err := shard.BuildBlugeDocumentFromJSON(docID, doc)
+			assert.NoError(t, err)
+
+			found := false
+			bdoc.EachField(func(f segment.Field) {
+				if f.Name() != "location" {
+					return
+				}
+				found = true
+				lon, lat, err := riot.DecodeGeoLonLat(f.Value())
+				assert.NoError(t, err)
+				assert.InDelta(t, -71.34, lon, 0.0001)
+				assert.InDelta(t, 41.12, lat, 0.0001)
+			})
+			assert.True(t, found, "geo field not indexed")
+		})
+	}
+}
+
+func TestIndex_BuildBlugeDocumentFromJSON_Vector(t *testing.T) {
+	indexName := "TestIndex_BuildBlugeDocumentFromJSON_Vector.index_1"
+	index, err := NewIndex(indexName, "disk", 2)
+	assert.NoError(t, err)
+	assert.NoError(t, StoreIndex(index))
+	prop := meta.NewProperty("vector")
+	prop.Dims = 3
+	index.GetMappings().SetProperty("embedding", prop)
+	index.GetMappings().SetProperty("any", meta.NewProperty("vector"))
+	defer func() { assert.NoError(t, DeleteIndex(indexName)) }()
+
+	tests := []struct {
+		name    string
+		field   string
+		value   interface{}
+		want    []float32
+		wantErr bool
+	}{
+		{name: "floats", field: "embedding", value: []interface{}{1.0, 2.0, 3.0}, want: []float32{1, 2, 3}},
+		{name: "ints", field: "embedding", value: []interface{}{1, 2, 3}, want: []float32{1, 2, 3}},
+		{name: "any dims", field: "any", value: []interface{}{0.5, -0.5}, want: []float32{0.5, -0.5}},
+		{name: "wrong dims", field: "embedding", value: []interface{}{1.0, 2.0}, wantErr: true},
+		{name: "not numeric", field: "embedding", value: []interface{}{"a", "b", "c"}, wantErr: true},
+		{name: "scalar", field: "embedding", value: 1.0, wantErr: true},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			docID := strconv.Itoa(i)
+			shard := index.GetShardByDocID(docID)
+			got, err := shard.CheckDocument(docID, map[string]interface{}{tt.field: tt.value}, false, 0)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+
+			var doc map[string]interface{}
+			assert.NoError(t, json.Unmarshal(got, &doc))
+			bdoc, err := shard.BuildBlugeDocumentFromJSON(docID, doc)
+			assert.NoError(t, err)
+
+			count := 0
+			bdoc.EachField(func(f segment.Field) {
+				if f.Name() != tt.field {
+					return
+				}
+				count++
+				decoded, err := vec.Decode(f.Value())
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, decoded)
+			})
+			assert.Equal(t, 1, count, "vector must be indexed as a single field")
+		})
+	}
 }
 
 func TestIndex_Settings(t *testing.T) {

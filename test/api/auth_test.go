@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -122,6 +123,38 @@ func TestAuth(t *testing.T) {
 				body.WriteString(`xxx`)
 				resp := request("PUT", "/api/user", body)
 				assert.Equal(t, http.StatusBadRequest, resp.Code)
+			})
+		})
+
+		t.Run("PUT /api/account", func(t *testing.T) {
+			username := "user1"
+			password := "123456"
+			newPassword := "654321"
+			t.Run("with wrong password", func(t *testing.T) {
+				body := bytes.NewBuffer(nil)
+				fmt.Fprintf(body, `{"_id":"%s","password":"xxx","new_password":"%s"}`, username, newPassword)
+				resp := request("PUT", "/api/account", body)
+				assert.Equal(t, http.StatusUnauthorized, resp.Code)
+			})
+			t.Run("with nothing to change", func(t *testing.T) {
+				body := bytes.NewBuffer(nil)
+				fmt.Fprintf(body, `{"_id":"%s","password":"%s"}`, username, password)
+				resp := request("PUT", "/api/account", body)
+				assert.Equal(t, http.StatusBadRequest, resp.Code)
+			})
+			t.Run("with correct password", func(t *testing.T) {
+				body := bytes.NewBuffer(nil)
+				fmt.Fprintf(body, `{"_id":"%s","password":"%s","name":"Renamed","new_password":"%s"}`, username, password, newPassword)
+				resp := request("PUT", "/api/account", body)
+				assert.Equal(t, http.StatusOK, resp.Code)
+				assert.Contains(t, resp.Body.String(), `"name":"Renamed"`)
+
+				// old password rejected, new password accepted, name persisted
+				_, ok := auth.VerifyCredentials(username, password)
+				assert.False(t, ok)
+				user, ok := auth.VerifyCredentials(username, newPassword)
+				assert.True(t, ok)
+				assert.Equal(t, "Renamed", user.Name)
 			})
 		})
 

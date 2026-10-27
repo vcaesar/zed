@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -83,6 +84,11 @@ func SetSettings(c *gin.Context) {
 		return
 	}
 
+	if err := meta.CheckIndexType(settings.IndexType); err != nil {
+		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		return
+	}
+
 	analyzers, err := zincanalysis.RequestAnalyzer(settings.Analysis)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
@@ -99,6 +105,10 @@ func SetSettings(c *gin.Context) {
 		return
 	}
 	if exists {
+		if settings.IndexType != "" && settings.IndexType != index.GetIndexType() {
+			c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "can't update index_type for existing index"})
+			return
+		}
 		// it can only change settings.NumberOfReplicas when index exists
 		if settings.NumberOfReplicas > 0 {
 			indexSettings := index.GetSettings()
@@ -108,10 +118,20 @@ func SetSettings(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "can't update analyzer for existing index"})
 			return
 		}
+		// attach the lifecycle policy before storing, the tier move stores again
+		if settings.Lifecycle != nil {
+			_ = index.SetSettings(&meta.IndexSettings{Lifecycle: settings.Lifecycle})
+		}
 		// store index
 		if err := core.StoreIndex(index); err != nil {
 			c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 			return
+		}
+		if settings.Tier != "" && settings.Tier != index.GetTier() {
+			if err := core.MoveIndexTier(indexName, settings.Tier); err != nil {
+				c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
+				return
+			}
 		}
 
 		c.JSON(http.StatusOK, meta.HTTPResponse{Message: "ok"})
@@ -119,10 +139,16 @@ func SetSettings(c *gin.Context) {
 	}
 
 	// update settings
-	_ = index.SetSettings(settings)
+	if err := index.SetSettings(settings); err != nil {
+		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		return
+	}
 
 	// update analyzers
-	_ = index.SetAnalyzers(analyzers)
+	if err := index.SetAnalyzers(analyzers); err != nil {
+		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		return
+	}
 
 	// store index
 	if err := core.StoreIndex(index); err != nil {

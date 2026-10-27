@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -69,10 +70,84 @@ type Query struct {
 	Term              map[string]*TermQuery              `json:"term,omitempty"`                // simple, TermQuery
 	Terms             map[string]*TermsQuery             `json:"terms,omitempty"`               // .
 	TermsSet          map[string]*TermsSetQuery          `json:"terms_set,omitempty"`           // TODO: not implemented
-	GeoBoundingBox    interface{}                        `json:"geo_bounding_box,omitempty"`    // TODO: not implemented
-	GeoDistance       interface{}                        `json:"geo_distance,omitempty"`        // TODO: not implemented
-	GeoPolygon        interface{}                        `json:"geo_polygon,omitempty"`         // TODO: not implemented
+	GeoBoundingBox    interface{}                        `json:"geo_bounding_box,omitempty"`    // simple, GeoBoundingBoxQuery
+	GeoDistance       interface{}                        `json:"geo_distance,omitempty"`        // simple, GeoDistanceQuery
+	GeoPolygon        interface{}                        `json:"geo_polygon,omitempty"`         // simple, GeoPolygonQuery
 	GeoShape          interface{}                        `json:"geo_shape,omitempty"`           // TODO: not implemented
+	Knn               interface{}                        `json:"knn,omitempty"`                 // simple, KnnQuery
+	ConstantScore     *ConstantScoreQuery                `json:"constant_score,omitempty"`      // .
+	DisMax            *DisMaxQuery                       `json:"dis_max,omitempty"`             // .
+	Nested            *NestedQuery                       `json:"nested,omitempty"`              // .
+	HasChild          *HasChildQuery                     `json:"has_child,omitempty"`           // .
+	HasParent         *HasParentQuery                    `json:"has_parent,omitempty"`          // .
+	ParentID          *ParentIDQuery                     `json:"parent_id,omitempty"`           // .
+	FunctionScore     *FunctionScoreQuery                `json:"function_score,omitempty"`      // .
+}
+
+// NestedQuery
+// {"nested": {"path": "comments", "query": {query}, "score_mode": "avg"}}
+type NestedQuery struct {
+	Path      string      `json:"path"`
+	Query     interface{} `json:"query"`
+	ScoreMode string      `json:"score_mode,omitempty"` // avg, sum, min, max, none
+}
+
+// HasChildQuery
+// {"has_child": {"type": "answer", "query": {query}, "score_mode": "none", "min_children": 1}}
+type HasChildQuery struct {
+	Type        string      `json:"type"`
+	Query       interface{} `json:"query"`
+	ScoreMode   string      `json:"score_mode,omitempty"`
+	MinChildren int         `json:"min_children,omitempty"`
+	MaxChildren int         `json:"max_children,omitempty"`
+}
+
+// HasParentQuery
+// {"has_parent": {"parent_type": "question", "query": {query}, "score": false}}
+type HasParentQuery struct {
+	ParentType string      `json:"parent_type"`
+	Query      interface{} `json:"query"`
+	Score      bool        `json:"score,omitempty"`
+}
+
+// ParentIDQuery
+// {"parent_id": {"type": "answer", "id": "1"}}
+type ParentIDQuery struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
+// FunctionScoreQuery
+// {"function_score": {"query": {query}, "functions": [...], "boost_mode": "multiply", "score_mode": "multiply", "max_boost": 10, "min_score": 0}}
+// A single function may also be given inline (weight, field_value_factor, random_score, gauss/exp/linear).
+type FunctionScoreQuery struct {
+	Query            interface{}              `json:"query,omitempty"`
+	Functions        []map[string]interface{} `json:"functions,omitempty"`
+	BoostMode        string                   `json:"boost_mode,omitempty"` // multiply, replace, sum, avg, max, min
+	ScoreMode        string                   `json:"score_mode,omitempty"` // multiply, sum, avg, first, max, min
+	MaxBoost         float64                  `json:"max_boost,omitempty"`
+	MinScore         float64                  `json:"min_score,omitempty"`
+	Boost            float64                  `json:"boost,omitempty"`
+	Weight           *float64                 `json:"weight,omitempty"`
+	FieldValueFactor map[string]interface{}   `json:"field_value_factor,omitempty"`
+	RandomScore      map[string]interface{}   `json:"random_score,omitempty"`
+	Gauss            map[string]interface{}   `json:"gauss,omitempty"`
+	Exp              map[string]interface{}   `json:"exp,omitempty"`
+	Linear           map[string]interface{}   `json:"linear,omitempty"`
+}
+
+// ConstantScoreQuery
+// {"constant_score": {"filter": {query}, "boost": 1.2}}
+type ConstantScoreQuery struct {
+	Filter interface{} `json:"filter"`
+	Boost  float64     `json:"boost,omitempty"`
+}
+
+// DisMaxQuery
+// {"dis_max": {"queries": [query1, query2], "tie_breaker": 0.7}}
+type DisMaxQuery struct {
+	Queries    []interface{} `json:"queries"`
+	TieBreaker float64       `json:"tie_breaker,omitempty"`
 }
 
 type QueryForSDK struct {
@@ -283,6 +358,11 @@ type Aggregations struct {
 	Min               *AggregationMetric            `json:"min"`
 	Sum               *AggregationMetric            `json:"sum"`
 	Count             *AggregationMetric            `json:"count"`
+	ValueCount        *AggregationMetric            `json:"value_count"`
+	Stats             *AggregationMetric            `json:"stats"`
+	ExtendedStats     *AggregationExtendedStats     `json:"extended_stats"`
+	Percentiles       *AggregationPercentiles       `json:"percentiles"`
+	Missing           *AggregationMetric            `json:"missing"`
 	Cardinality       *AggregationMetric            `json:"cardinality"`
 	Terms             *AggregationsTerms            `json:"terms"`
 	Range             *AggregationRange             `json:"range"`
@@ -291,12 +371,45 @@ type Aggregations struct {
 	DateHistogram     *AggregationDateHistogram     `json:"date_histogram"`
 	AutoDateHistogram *AggregationAutoDateHistogram `json:"auto_date_histogram"`
 	IPRange           *AggregationIPRange           `json:"ip_range"` // TODO: not implemented
-	Aggregations      map[string]Aggregations       `json:"aggs"`     // nested aggregations
+	// bucket aggregations
+	Filter          interface{}                 `json:"filter"`  // {query}
+	Filters         *AggregationFilters         `json:"filters"` // {"filters": {"name": {query}}}
+	Global          *struct{}                   `json:"global"`
+	MultiTerms      *AggregationMultiTerms      `json:"multi_terms"`
+	TopHits         *AggregationTopHits         `json:"top_hits"`
+	PercentileRanks *AggregationPercentileRanks `json:"percentile_ranks"`
+	Nested          *AggregationNested          `json:"nested"`
+	ReverseNested   *AggregationNested          `json:"reverse_nested"`
+	// pipeline aggregations (evaluated on the response tree after bucket aggregations)
+	AvgBucket      *AggregationPipeline     `json:"avg_bucket"`
+	SumBucket      *AggregationPipeline     `json:"sum_bucket"`
+	MinBucket      *AggregationPipeline     `json:"min_bucket"`
+	MaxBucket      *AggregationPipeline     `json:"max_bucket"`
+	StatsBucket    *AggregationPipeline     `json:"stats_bucket"`
+	CumulativeSum  *AggregationPipeline     `json:"cumulative_sum"`
+	Derivative     *AggregationPipeline     `json:"derivative"`
+	SerialDiff     *AggregationSerialDiff   `json:"serial_diff"`
+	MovingFn       *AggregationMovingFn     `json:"moving_fn"`
+	BucketScript   *AggregationBucketScript `json:"bucket_script"`
+	BucketSelector *AggregationBucketScript `json:"bucket_selector"`
+	BucketSort     *AggregationBucketSort   `json:"bucket_sort"`
+	Aggregations   map[string]Aggregations  `json:"aggs"` // nested aggregations
 }
 
 type AggregationMetric struct {
 	Field       string `json:"field"`
 	WeightField string `json:"weight_field"` // Field name to be used for setting weight for primary field for weighted average aggregation
+}
+
+type AggregationExtendedStats struct {
+	Field string  `json:"field"`
+	Sigma float64 `json:"sigma"` // std_deviation_bounds multiplier, default 2
+}
+
+type AggregationPercentiles struct {
+	Field    string    `json:"field"`
+	Percents []float64 `json:"percents"` // default [1, 5, 25, 50, 75, 95, 99]
+	Keyed    bool      `json:"keyed"`
 }
 
 type AggregationsTerms struct {

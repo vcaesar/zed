@@ -1,0 +1,173 @@
+# pkg/cluster
+
+Multi-node ZincSearch: membership, index ownership, fenced handoff, request
+routing and scatter-gather search. Coordination state lives in etcd, index
+data does not.
+
+## Model
+
+Every index hashes to one of `zinc_cluster_partitions` (256 by default)
+partitions, and every partition is owned by exactly one node:
+
+```
+index name --fnv1a--> partition --etcd--> owner node
+```
+
+The owner is the only node that writes the index. Reads go to the owner too,
+so a read always sees the owner's WAL.
+
+The ownership map lives in etcd under
+`<zinc_etcd_prefix>/cluster/<zinc_cluster_name>/`:
+
+| key | meaning |
+| --- | --- |
+| `nodes/<id>` | member record, written under a lease, disappears when the node dies |
+| `leader` | leader lock, created with a lease, whoever creates it rebalances |
+| `assign/<partition>` | `{"owner": "<node id>"}`, its etcd mod revision is the **epoch** |
+
+The epoch is never written by us: it is the store revision of the assignment
+key, so it grows on every handoff and can be used as a fencing token.
+
+## Fenced handoff
+
+The hole in a plain "ownership map in etcd" design is the transfer window:
+the new owner starts serving while the old owner is still finishing requests
+it admitted before the move.
+
+Every request that lands on the owner records the epoch it was admitted with
+(`ClusterEpochKey` in the gin context). After a mutating handler returns, the
+middleware checks the epoch again:
+
+* unchanged: the buffered response is sent as is
+* changed (or we are no longer the owner): `409 {"error":"partition moved","owner":"<id>"}`
+
+Clients retry on 409; the retry is routed to the new owner.
+
+This closes the window in which a stale owner could report success for a
+write the cluster no longer counts as its own. It does **not** roll back a
+WAL append that already happened - a write accepted before the handoff stays
+in the old owner's WAL. Keep that in mind when a partition moves while a bulk
+load is running.
+
+## Request routing
+
+`routes.ClusterRoute()` is installed before the API routes, so it covers
+every `:target` route:
+
+| case | behaviour |
+| --- | --- |
+| clustering disabled | nothing happens, single node build |
+| partition unassigned | served locally |
+| another node owns it | `httputil.ReverseProxy` to its advertise address, `Authorization` copied, `X-Zinc-Forwarded-By: <node>` set |
+| already forwarded, still not ours | `508 Loop Detected` |
+| we own it, read | served locally |
+| we own it, write | served locally, then the epoch is re-checked (see above) |
+| `a,b`, `logs-*`, `_all` on `/es/.../_search` | split per owner, `POST /api/_internal/search` in parallel (at most 8 in flight), responses merged |
+
+`/api/:target/_search` speaks the v1 query format and is never scattered.
+
+Scatter-gather asks every owner, including this node, over HTTP. That costs
+one loopback request but keeps one code path, and the internal endpoint never
+scatters again, so there is no recursion.
+
+Merging (`MergeSearch`):
+
+* hits: re-sorted by score, or by the single sort field when the query has
+  one, then cut to `from`/`size`
+* `total` summed, `max_score` maximum, `took` the slowest node
+* `count`/`sum`/`value_count` summed, `max`/`min` reduced, `avg` weighted by
+  the `_partial {count, sum}` counters each node attaches
+* bucket aggregations unioned by key, `doc_count` summed, sub-aggregations
+  merged recursively
+* everything else (`cardinality`, `percentiles`, `stats`, `top_hits`,
+  pipelines) keeps the first node's value and logs a warning - those are
+  approximations across nodes
+
+## Configuration
+
+```toml
+zinc_cluster_enable = true
+zinc_cluster_name = "prod"
+zinc_cluster_node_id = ""                 # defaults to the hostname
+zinc_cluster_advertise_addr = "http://10.0.0.1:4080"
+zinc_cluster_partitions = 256
+zinc_cluster_heartbeat_interval = 5000000000   # 5s, in ns
+zinc_cluster_heartbeat_ttl = 15000000000       # 15s, in ns
+
+zinc_etcd_endpoints = ["http://10.0.0.10:2379"]
+zinc_etcd_prefix = "/zinc"
+```
+
+Every setting is also an environment variable in upper case
+(`ZINC_CLUSTER_ENABLE`, `ZINC_ETCD_ENDPOINTS`, ...).
+
+### Three nodes with a shared etcd
+
+```shell
+# etcd (single node is fine for a test, run three for production)
+docker run -d --name etcd -p 2379:2379 \
+  -e ALLOW_NONE_AUTHENTICATION=yes \
+  -e ETCD_ADVERTISE_CLIENT_URLS=http://10.0.0.10:2379 \
+  -e ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379 \
+  bitnami/etcd:latest
+
+# node 1..3, same on every host with its own id and address
+export ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=Complexpass#123
+export ZINC_CLUSTER_ENABLE=true
+export ZINC_CLUSTER_NAME=prod
+export ZINC_ETCD_ENDPOINTS=http://10.0.0.10:2379
+export ZINC_METADATA_STORAGE=etcd          # share index metadata, see limits
+export ZINC_CLUSTER_NODE_ID=node-1
+export ZINC_CLUSTER_ADVERTISE_ADDR=http://10.0.0.1:4080
+./zincsearch
+```
+
+Check the cluster:
+
+```shell
+curl -u admin:Complexpass#123 http://10.0.0.1:4080/api/cluster/nodes
+curl -u admin:Complexpass#123 'http://10.0.0.1:4080/api/cluster/partitions?index=logs-2024'
+curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
+```
+
+## Guarantees
+
+* one writer per index at any time, enforced by the ownership map
+* handoffs are fenced by the partition epoch, a write admitted by the old
+  owner cannot be reported as successful after the move
+* leadership is only used to compute the assignment; every assignment write
+  is a compare-and-swap, so two leaders during a partition cannot corrupt the
+  map
+* rebalancing is stable: adding or removing a node moves about
+  `partitions / nodes` partitions, the rest stay where they are
+* a node that dies loses its lease, its partitions are reassigned within
+  `zinc_cluster_heartbeat_ttl`
+* indexes on object storage (`s3`, `gcs`, `oss`) are readable by whichever
+  node takes over, so they survive node loss
+
+## Limits
+
+* **disk indexes are not replicated**. When a node dies its `disk` indexes
+  are unavailable until it comes back, even though the partition is
+  reassigned. Use object storage for data that must survive a node.
+* **index metadata must be shared** for pattern search and routing to see
+  every index: run with `ZINC_METADATA_STORAGE=etcd`. With the default bolt
+  storage each node only knows its own indexes.
+* `zinc_cluster_replicas` is accepted but read replicas are not implemented
+  yet, reads always go to the owner.
+* a 409 is not retried for the client, the caller has to repeat the request
+* `cardinality`, `percentiles`, `stats` and `top_hits` are approximated in a
+  scatter-gather search, the first responding owner wins
+* an `avg` is weighted by the number of documents each node matched, which is
+  exact only when the averaged field is present in every matched document
+* the WAL is local to the owner: a write accepted just before a handoff is
+  not undone by the fence, it is simply no longer visible through the new
+  owner until the old owner's WAL is applied
+
+## Tests
+
+```shell
+go test ./pkg/cluster/...                    # unit tests, in-memory store
+ZINC_ETCD_ENDPOINTS=http://127.0.0.1:2379 \
+  go test ./pkg/cluster/ -run TestEtcdStoreIntegration   # against a real etcd
+```

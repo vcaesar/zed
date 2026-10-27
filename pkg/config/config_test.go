@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -77,6 +78,10 @@ func TestConfig(t *testing.T) {
 
 		assert.Equal(t, []string{"localhost:2379"}, c.Etcd.Endpoints)
 
+		assert.Equal(t, "s3.amazonaws.com", c.S3.Endpoint)
+		assert.Equal(t, "", c.S3.Bucket)
+		assert.Equal(t, true, c.S3.UseSSL)
+
 		assert.Equal(t, false, c.Plugin.GSE.Enable)
 		assert.Equal(t, "small", c.Plugin.GSE.DictEmbed)
 		assert.Equal(t, "./plugins/gse/dict", c.Plugin.GSE.DictPath)
@@ -125,6 +130,23 @@ func TestSentryDSNOverride(t *testing.T) {
 	assert.Equal(t, customDSN, mustLoad(t).SentryDSN)
 }
 
+func TestS3Override(t *testing.T) {
+	isolate(t)
+	t.Setenv("ZINC_S3_ENDPOINT", "localhost:9000")
+	t.Setenv("ZINC_S3_BUCKET", "zinc")
+	t.Setenv("ZINC_S3_REGION", "us-east-1")
+	t.Setenv("ZINC_S3_ACCESS_KEY_ID", "minioadmin")
+	t.Setenv("ZINC_S3_SECRET_ACCESS_KEY", "minioadmin")
+	t.Setenv("ZINC_S3_USE_SSL", "false")
+	c := mustLoad(t)
+	assert.Equal(t, "localhost:9000", c.S3.Endpoint)
+	assert.Equal(t, "zinc", c.S3.Bucket)
+	assert.Equal(t, "us-east-1", c.S3.Region)
+	assert.Equal(t, "minioadmin", c.S3.AccessKeyID)
+	assert.Equal(t, "minioadmin", c.S3.SecretAccessKey)
+	assert.Equal(t, false, c.S3.UseSSL)
+}
+
 func TestTOMLDefaults(t *testing.T) {
 	c := new(config)
 	decoder := toml.NewDecoder(bytes.NewReader(defaultConfig)).DisallowUnknownFields()
@@ -152,7 +174,14 @@ func TestTOMLDefaults(t *testing.T) {
 	assert.False(t, c.WalRedoLogNoSync)
 	assert.True(t, c.ZincSwaggerEnable)
 	assert.Equal(t, "debug", c.LogLevel)
-	assert.Equal(t, cluster{Name: "ZincCluster"}, c.Cluster)
+	assert.Equal(t, cluster{
+		Name:              "ZincCluster",
+		Partitions:        256,
+		HeartbeatInterval: 5 * time.Second,
+		HeartbeatTTL:      15 * time.Second,
+		Replicas:          1,
+	}, c.Cluster)
+	assert.Equal(t, tier{CheckInterval: 10 * time.Minute, ColdStorageType: "s3"}, c.Tier)
 	assert.Equal(t, shard{GoroutineNum: 3, Num: 3, MaxSize: 1073741824}, c.Shard)
 	assert.Equal(t, etcd{Prefix: "/zinc"}, c.Etcd)
 	assert.Equal(t, gse{

@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -124,7 +125,10 @@ func SetMapping(c *gin.Context) {
 				mappings.Properties[k] = v
 			}
 		}
-		_ = index.SetMappings(mappings)
+		if err := index.SetMappings(mappings); err != nil {
+			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			return
+		}
 	}
 
 	// store index

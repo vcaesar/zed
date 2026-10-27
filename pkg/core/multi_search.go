@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -79,6 +80,12 @@ func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchRespon
 			reader.Close()
 		}
 	}()
+
+	// nested and join queries are resolved before query is parsed, and hidden
+	// nested documents are excluded from results.
+	if err := rewriteJoinQuery(query, mappings, analyzers, readers); err != nil {
+		return nil, err
+	}
 
 	_, err := uquery.ParseQueryDSL(query, mappings, analyzers)
 	if err != nil {

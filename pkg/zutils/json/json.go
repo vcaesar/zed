@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,9 +16,15 @@
 
 package json
 
-import "github.com/goccy/go-json"
+import (
+	stdjson "encoding/json"
+
+	"github.com/goccy/go-json"
+)
 
 var (
 	Marshal   = json.Marshal
 	Unmarshal = json.Unmarshal
+	// Valid uses the standard library scanner: it allocates nothing, whereas goccy's builds a value tree.
+	Valid = stdjson.Valid
 )

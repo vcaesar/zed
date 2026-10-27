@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -35,6 +36,10 @@ func FormatResponse(resp *meta.SearchResponse, q *meta.ZincQuery, buckets *searc
 			delete(resp.Aggregations, "count")
 			delete(resp.Aggregations, "duration")
 			delete(resp.Aggregations, "max_score")
+		}
+		// pipeline aggregations read the rendered tree, they must run last
+		if err := aggregation.ApplyPipelines(resp.Aggregations, q.Aggregations); err != nil {
+			return err
 		}
 	}
 

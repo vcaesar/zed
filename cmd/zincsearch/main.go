@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -31,6 +33,9 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"github.com/rs/zerolog/log"
 
+	"github.com/zincsearch/zincsearch"
+	"github.com/zincsearch/zincsearch/pkg/webbuild"
+	"github.com/zincsearch/zincsearch/pkg/cluster"
 	"github.com/zincsearch/zincsearch/pkg/config"
 	"github.com/zincsearch/zincsearch/pkg/core"
 	"github.com/zincsearch/zincsearch/pkg/meta"
@@ -53,6 +58,28 @@ import (
 // @BasePath        /
 // @schemes http https
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "web" {
+		os.Args = append(os.Args[:1], os.Args[2:]...)
+		front, err := zincsearch.GetFrontendAssets()
+		if err != nil {
+			log.Fatal().Err(err).Msg("frontend assets")
+		}
+		if front == nil {
+			binary, err := webbuild.Build()
+			if err != nil {
+				log.Fatal().Err(err).Msg("build web binary")
+			}
+			// Package initializers opened storage; release it before restarting.
+			if err := errors.Join(core.ZINC_INDEX_LIST.Close(), metadata.Close()); err != nil {
+				log.Fatal().Err(err).Msg("close storage before web startup")
+			}
+			if err := webbuild.Run(binary, os.Args[1:]); err != nil {
+				log.Fatal().Err(err).Msg("run web binary")
+			}
+			return
+		}
+	}
+
 	// Version
 	if len(os.Args) > 1 && os.Args[1] == "version" {
 		fmt.Printf("zinc version %s\n", meta.Version)
@@ -70,6 +97,16 @@ func main() {
 	// HTTP init
 	app := gin.New()
 	routes.Setup(app)
+
+	// Join the cluster before serving, so the first request already routes
+	// to the node that owns the index. No-op unless clustering is enabled.
+	if err := cluster.Start(context.Background()); err != nil {
+		log.Fatal().Err(err).Msg("Cluster start")
+	}
+
+	// Move indexes between hot, warm and cold by their lifecycle.
+	// No-op unless tiering is enabled.
+	core.StartTiering(context.Background())
 
 	// Run the server
 	PORT := config.Global.ServerPort
@@ -92,6 +129,8 @@ func main() {
 		}
 
 		log.Info().Msg("Index closing...")
+		// leave the cluster, peers stop routing here
+		cluster.Stop()
 		// close indexes
 		err := core.ZINC_INDEX_LIST.Close()
 		log.Info().Err(err).Msgf("Index closed")

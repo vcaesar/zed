@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/vcaesar/riot"
+	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/search"
 	"github.com/vcaesar/riot/search/highlight"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/zincsearch/zincsearch/pkg/meta"
 	"github.com/zincsearch/zincsearch/pkg/uquery"
 	"github.com/zincsearch/zincsearch/pkg/uquery/fields"
+	uquerydsl "github.com/zincsearch/zincsearch/pkg/uquery/query"
 	"github.com/zincsearch/zincsearch/pkg/uquery/source"
 	"github.com/zincsearch/zincsearch/pkg/uquery/timerange"
 )
@@ -35,10 +38,6 @@ import (
 func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) {
 	mappings := index.GetMappings()
 	analyzers := index.GetAnalyzers()
-	_, err := uquery.ParseQueryDSL(query, mappings, analyzers)
-	if err != nil {
-		return nil, err
-	}
 
 	timeMin, timeMax := timerange.Query(query.Query)
 	readers, err := index.GetReaders(timeMin, timeMax)
@@ -51,6 +50,16 @@ func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) 
 			reader.Close()
 		}
 	}()
+
+	// nested and join queries are resolved before query is parsed, and hidden
+	// nested documents are excluded from results.
+	if err := rewriteJoinQuery(query, mappings, analyzers, readers); err != nil {
+		return nil, err
+	}
+
+	if _, err = uquery.ParseQueryDSL(query, mappings, analyzers); err != nil {
+		return nil, err
+	}
 
 	ctx := context.Background()
 	var cancel context.CancelFunc
@@ -174,4 +183,104 @@ func searchV2(shardNum, readerNum int64, dmi search.DocumentMatchIterator, query
 	}
 
 	return resp, nil
+}
+
+// rewriteJoinQuery resolves nested and join clauses of query and hides nested
+// documents from results.
+//
+// Riot has no block join support: nested array elements and join children are
+// indexed as own documents, so `nested`, `has_child` and `has_parent` clauses
+// are resolved by extra search over same readers, and result is pushed back
+// into query as list of document ids (see uquery.Rewrite).
+func rewriteJoinQuery(query *meta.ZincQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer, readers []*riot.Reader) error {
+	paths := nestedPaths(mappings)
+	if len(paths) == 0 {
+		if _, ok := mappings.GetProperty(meta.JoinNameField); !ok {
+			return nil // no nested or join mapping, nothing to rewrite
+		}
+	}
+
+	exec := func(sub map[string]interface{}, collectField string) ([]string, error) {
+		return collectFieldValues(readers, sub, collectField, mappings, analyzers)
+	}
+	rewritten, err := uquery.Rewrite(query.Query, exec)
+	if err != nil {
+		return err
+	}
+
+	query.Query = excludeNestedDocuments(rewritten, paths)
+
+	return nil
+}
+
+// excludeNestedDocuments wraps query so that hidden nested documents are
+// neither returned nor counted in hits.total.
+func excludeNestedDocuments(query interface{}, paths []string) interface{} {
+	if len(paths) == 0 {
+		return query
+	}
+	if query == nil {
+		query = map[string]interface{}{"match_all": map[string]interface{}{}}
+	}
+	return map[string]interface{}{
+		"bool": map[string]interface{}{
+			"must": query,
+			"must_not": map[string]interface{}{
+				"terms": map[string]interface{}{meta.NestedPathField: paths},
+			},
+		},
+	}
+}
+
+// collectFieldValues runs sub query over readers and returns value of field
+// for every match, one entry per match. Hidden documents are not excluded,
+// sub query searches them on purpose.
+func collectFieldValues(readers []*riot.Reader, sub map[string]interface{}, field string, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) ([]string, error) {
+	subQuery, err := uquerydsl.Query(sub, mappings, analyzers)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := uquery.RewriteLimit() + 1
+	ctx := context.Background()
+	values := make([]string, 0, 16)
+	for _, reader := range readers {
+		request := riot.NewTopNSearch(limit, subQuery)
+		if field != "_id" {
+			// sorting by collected field makes collector load its doc values
+			request.SortBy([]string{field})
+		}
+		dmi, err := reader.Search(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		next, err := dmi.Next()
+		for err == nil && next != nil {
+			if field == "_id" {
+				var id string
+				if verr := next.VisitStoredFields(func(name string, value []byte) bool {
+					if name == "_id" {
+						id = string(value)
+						return false
+					}
+					return true
+				}); verr != nil {
+					return nil, verr
+				}
+				if id != "" {
+					values = append(values, id)
+				}
+			} else {
+				for _, value := range next.DocValues(field) {
+					values = append(values, string(value))
+				}
+			}
+			next, err = dmi.Next()
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
 }

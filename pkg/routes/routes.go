@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -28,6 +29,7 @@ import (
 	"github.com/zincsearch/zincsearch"
 	"github.com/zincsearch/zincsearch/pkg/config"
 	"github.com/zincsearch/zincsearch/pkg/handlers/auth"
+	"github.com/zincsearch/zincsearch/pkg/handlers/cluster"
 	"github.com/zincsearch/zincsearch/pkg/handlers/document"
 	"github.com/zincsearch/zincsearch/pkg/handlers/index"
 	"github.com/zincsearch/zincsearch/pkg/handlers/search"
@@ -47,16 +49,21 @@ func SetRoutes(r *gin.Engine) {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.GET("/", meta.GUI)
 	r.GET("/version", meta.GetVersion)
 	r.GET("/healthz", meta.GetHealthz)
 
 	front, err := zincsearch.GetFrontendAssets()
 	if err != nil {
-		log.Err(err)
+		log.Error().Err(err).Msg("frontend assets")
 	}
 
-	if config.Global.ZincSwaggerEnable {
+	if front != nil {
+		r.GET("/", meta.GUI)
+	} else {
+		r.GET("/", meta.GetVersion)
+	}
+
+	if front != nil && config.Global.ZincSwaggerEnable {
 		swagger, err := swaggerHandler(front)
 		if err != nil {
 			log.Error().Err(err).Msg("swagger ui assets")
@@ -69,10 +76,12 @@ func SetRoutes(r *gin.Engine) {
 	}
 
 	// UI
-	HTTPCacheForUI(r)
-	r.StaticFS("/ui/", http.FS(front))
+	if front != nil {
+		HTTPCacheForUI(r)
+		r.StaticFS("/ui/", http.FS(front))
+	}
 	r.NoRoute(func(c *gin.Context) {
-		if c.Request.Method == http.MethodGet && strings.HasPrefix(c.Request.URL.Path, "/ui/") &&
+		if front != nil && c.Request.Method == http.MethodGet && strings.HasPrefix(c.Request.URL.Path, "/ui/") &&
 			!strings.HasPrefix(c.Request.URL.Path, "/ui/assets/") {
 			index, err := fs.ReadFile(front, "index.html")
 			if err != nil {
@@ -125,6 +134,11 @@ func SetRoutes(r *gin.Engine) {
 
 	// search
 	r.POST("/api/:target/_search", AuthMiddleware("search.SearchV1"), search.SearchV1)
+	r.GET("/api/:target/_count", AuthMiddleware("search.Count"), search.Count)
+	r.POST("/api/:target/_count", AuthMiddleware("search.Count"), search.Count)
+
+	// reindex
+	r.POST("/api/_reindex", AuthMiddleware("index.Reindex"), index.Reindex)
 
 	// document
 	// Document Bulk update/insert
@@ -164,6 +178,25 @@ func SetRoutes(r *gin.Engine) {
 	r.POST("/es/:target/_search", AuthMiddleware("search.SearchDSL"), ESMiddleware, IndexAliasMiddleware, search.SearchDSL)
 	r.POST("/es/:target/_msearch", AuthMiddleware("search.MultipleSearch"), ESMiddleware, IndexAliasMiddleware, search.MultipleSearch)
 	r.POST("/es/:target/_delete_by_query", AuthMiddleware("search.DeleteByQuery"), IndexAliasMiddleware, search.DeleteByQuery)
+
+	r.GET("/es/_count", AuthMiddleware("search.Count"), ESMiddleware, IndexAliasMiddleware, search.Count)
+	r.POST("/es/_count", AuthMiddleware("search.Count"), ESMiddleware, IndexAliasMiddleware, search.Count)
+	r.GET("/es/:target/_count", AuthMiddleware("search.Count"), ESMiddleware, IndexAliasMiddleware, search.Count)
+	r.POST("/es/:target/_count", AuthMiddleware("search.Count"), ESMiddleware, IndexAliasMiddleware, search.Count)
+
+	r.GET("/es/_field_caps", AuthMiddleware("index.FieldCaps"), ESMiddleware, index.FieldCaps)
+	r.POST("/es/_field_caps", AuthMiddleware("index.FieldCaps"), ESMiddleware, index.FieldCaps)
+	r.GET("/es/:target/_field_caps", AuthMiddleware("index.FieldCaps"), ESMiddleware, IndexAliasMiddleware, index.FieldCaps)
+	r.POST("/es/:target/_field_caps", AuthMiddleware("index.FieldCaps"), ESMiddleware, IndexAliasMiddleware, index.FieldCaps)
+
+	r.POST("/es/_reindex", AuthMiddleware("index.Reindex"), ESMiddleware, index.Reindex)
+
+	// cluster, zincsearch is single node so these are mostly static
+	r.GET("/es/_cluster/health", AuthMiddleware("cluster.Health"), ESMiddleware, cluster.Health)
+	r.GET("/es/_cluster/health/:target", AuthMiddleware("cluster.Health"), ESMiddleware, cluster.Health)
+	r.GET("/es/_cat/health", AuthMiddleware("cluster.CatHealth"), ESMiddleware, cluster.CatHealth)
+	r.GET("/es/_cat/indices", AuthMiddleware("cluster.CatIndices"), ESMiddleware, cluster.CatIndices)
+	r.GET("/es/_cat/indices/:target", AuthMiddleware("cluster.CatIndices"), ESMiddleware, cluster.CatIndices)
 
 	r.GET("/es/_index_template", AuthMiddleware("index.ListTemplate"), ESMiddleware, index.ListTemplate)
 	r.POST("/es/_index_template", AuthMiddleware("index.CreateTemplate"), ESMiddleware, index.CreateTemplate)

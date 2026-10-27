@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -75,12 +76,22 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 				return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] should be an object", field))
 			}
 
-			if subMappings, err := Request(analyzers, prop); err == nil {
-				for k, v := range subMappings.ListProperty() {
-					mappings.SetProperty(field+"."+k, v)
-				}
-			} else {
+			subMappings, err := Request(analyzers, prop)
+			if err != nil {
 				return nil, err
+			}
+			subProperties := subMappings.ListProperty()
+			for k, v := range subProperties {
+				mappings.SetProperty(field+"."+k, v)
+			}
+
+			// nested property keeps its sub-fields, every element of nested
+			// array is indexed as own hidden document.
+			if propType, ok := prop["type"].(string); ok && strings.ToLower(propType) == "nested" {
+				nestedProp := newNestedProperty()
+				nestedProp.Properties = subProperties
+				mappings.SetProperty(field, nestedProp)
+				setNestedFields(mappings)
 			}
 
 			continue
@@ -137,7 +148,26 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 			newProp = meta.NewProperty("bool")
 		case "time", "datetime":
 			newProp = meta.NewProperty("date")
-		case "flattened", "object", "nested", "wildcard", "byte", "alias", "geo_point", "ip", "ip_range", "scaled_float":
+		case "geo_point", "geo":
+			newProp = meta.NewProperty("geo_point")
+		case "vector", "dense_vector", "knn_vector":
+			newProp = meta.NewProperty("vector")
+		case "nested":
+			// nested property without declared sub-fields, sub-fields of
+			// nested documents are mapped dynamically.
+			newProp = newNestedProperty()
+			setNestedFields(mappings)
+		case "join":
+			newProp = meta.NewProperty("join")
+			newProp.Sortable = false
+			newProp.Aggregatable = false
+			relations, err := parseRelations(field, prop["relations"])
+			if err != nil {
+				return nil, err
+			}
+			newProp.Relations = relations
+			setJoinFields(mappings)
+		case "flattened", "object", "wildcard", "byte", "alias", "ip", "ip_range", "scaled_float":
 			// ignore
 		default:
 			return nil, errors.New(errors.ErrorTypeXContentParseException, fmt.Sprintf("[mappings] properties [%s] doesn't support type [%s]", field, propTypeStr))
@@ -161,6 +191,12 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 				}
 			case "index":
 				newProp.Index = v.(bool)
+			case "dims", "dimension":
+				dims, err := zutils.ToInt(v)
+				if err != nil || dims <= 0 {
+					return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims must be a positive integer", field))
+				}
+				newProp.Dims = dims
 			case "store":
 				newProp.Store = v.(bool)
 			case "sortable":
@@ -177,6 +213,15 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 
 		if newProp.Highlightable {
 			newProp.Store = true
+		}
+
+		if newProp.Type == "vector" {
+			// vector fields are stored-only: no terms, doc values or highlights
+			newProp.Sortable = false
+			newProp.Aggregatable = false
+			newProp.Highlightable = false
+		} else if newProp.Dims != 0 {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims is only valid for type [vector]", field))
 		}
 
 		if newProp.Type != "" {
@@ -209,6 +254,82 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 	}
 
 	return mappings, nil
+}
+
+// newNestedProperty returns property of "nested" type. Nested property holds
+// no value of its own, every element of nested array is indexed as hidden
+// document, so it is neither sortable nor aggregatable.
+func newNestedProperty() meta.Property {
+	prop := meta.NewProperty("nested")
+	prop.Sortable = false
+	prop.Aggregatable = false
+	return prop
+}
+
+// setNestedFields registers hidden fields tagging nested documents.
+func setNestedFields(mappings *meta.Mappings) {
+	for _, field := range []string{meta.NestedPathField, meta.NestedParentField} {
+		if _, ok := mappings.GetProperty(field); !ok {
+			mappings.SetProperty(field, meta.NewProperty("keyword"))
+		}
+	}
+}
+
+// setJoinFields registers hidden fields tagging join documents.
+func setJoinFields(mappings *meta.Mappings) {
+	for _, field := range []string{meta.JoinNameField, meta.JoinParentField} {
+		if _, ok := mappings.GetProperty(field); !ok {
+			mappings.SetProperty(field, meta.NewProperty("keyword"))
+		}
+	}
+}
+
+// parseRelations parses relations of "join" property, mapping name of parent
+// relation to names of its children: {"question": ["answer", "comment"]}.
+func parseRelations(field string, v interface{}) (map[string][]string, error) {
+	raw, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] join requires [relations] object", field))
+	}
+	if len(raw) == 0 {
+		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] join requires [relations] object", field))
+	}
+
+	relations := make(map[string][]string, len(raw))
+	for parent, children := range raw {
+		if parent == "" {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] relations name should be non-empty", field))
+		}
+		var names []string
+		switch children := children.(type) {
+		case string:
+			names = []string{children}
+		case []interface{}:
+			for _, child := range children {
+				name, ok := child.(string)
+				if !ok {
+					return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] relations [%s] should be string or array of strings", field, parent))
+				}
+				names = append(names, name)
+			}
+		default:
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] relations [%s] should be string or array of strings", field, parent))
+		}
+
+		seen := make(map[string]struct{}, len(names))
+		for _, name := range names {
+			if name == "" || name == parent {
+				return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] relations [%s] has invalid child [%s]", field, parent, name))
+			}
+			if _, ok := seen[name]; ok {
+				return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] relations [%s] has duplicated child [%s]", field, parent, name))
+			}
+			seen[name] = struct{}{}
+		}
+		relations[parent] = names
+	}
+
+	return relations, nil
 }
 
 // convertToField converst v to type map[string]meta.Property.

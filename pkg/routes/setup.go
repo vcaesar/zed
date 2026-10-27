@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -25,6 +26,9 @@ func Setup(app *gin.Engine) {
 		AccessLog(app)
 		SetPProf(app)
 	}
-	SetPrometheus(app) // Set up Prometheus.
-	SetRoutes(app)     // Set up all API routes.
+	SetPrometheus(app)    // Set up Prometheus.
+	SetClusterRoutes(app) // Cluster endpoints and ownership routing, must precede SetRoutes.
+	SetTierRoutes(app)    // Data tier / ILM endpoints and read-only guard, must precede SetRoutes.
+	SetSQLRoutes(app)     // ES SQL endpoints.
+	SetRoutes(app)        // Set up all API routes.
 }

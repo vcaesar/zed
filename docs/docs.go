@@ -2939,6 +2939,10 @@ const docTemplate = `{
                 "analysis": {
                     "$ref": "#/definitions/meta.IndexAnalysis"
                 },
+                "index_type": {
+                    "description": "IndexType selects the document profile; empty preserves standard indexes.",
+                    "type": "string"
+                },
                 "number_of_replicas": {
                     "type": "integer"
                 },

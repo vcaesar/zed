@@ -20,6 +20,7 @@ builds:
     # zinc_plugin_gse_dict_embed=big then falls back to the small dict.
     tags:
       - ne
+      - web
     ldflags:
       - -s -w
       - -X github.com/zincsearch/zincsearch/pkg/meta.Version={{.Version}}

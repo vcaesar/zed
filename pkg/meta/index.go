@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -14,6 +15,22 @@
  */
 
 package meta
+
+import "fmt"
+
+const (
+	IndexTypeStandard = "standard"
+	IndexTypeLogs     = "logs"
+)
+
+func CheckIndexType(indexType string) error {
+	switch indexType {
+	case "", IndexTypeStandard, IndexTypeLogs:
+		return nil
+	default:
+		return fmt.Errorf("index_type [%s] is invalid, just accept [standard, logs]", indexType)
+	}
+}
 
 type Index struct {
 	ShardNum    int64                  `json:"shard_num"`
@@ -56,9 +73,27 @@ type IndexSimple struct {
 }
 
 type IndexSettings struct {
+	// IndexType selects the document profile; empty preserves standard indexes.
+	IndexType        string         `json:"index_type,omitempty"`
 	NumberOfShards   int64          `json:"number_of_shards,omitempty"`
 	NumberOfReplicas int64          `json:"number_of_replicas,omitempty"`
 	Analysis         *IndexAnalysis `json:"analysis,omitempty"`
+	// Tier is the current data tier: hot (local disk, writable), warm
+	// (object storage, writable) or cold (object storage, read-only,
+	// shared by every node). Empty means hot.
+	Tier string `json:"tier,omitempty"`
+	// Lifecycle drives automatic tier transitions by index age.
+	Lifecycle *IndexLifecycle `json:"lifecycle,omitempty"`
+}
+
+// IndexLifecycle mirrors a minimal ILM policy: move the index to the next
+// tier once its newest document is older than the given duration ("7d", "30d").
+type IndexLifecycle struct {
+	Policy    string `json:"policy,omitempty"`
+	WarmAfter string `json:"warm_after,omitempty"`
+	ColdAfter string `json:"cold_after,omitempty"`
+	// DeleteAfter removes the index entirely; empty keeps it forever.
+	DeleteAfter string `json:"delete_after,omitempty"`
 }
 
 type IndexAnalysis struct {

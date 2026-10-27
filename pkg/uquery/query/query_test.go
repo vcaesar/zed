@@ -1,4 +1,5 @@
 /* Copyright 2022 Zinc Labs Inc. and Contributors
+* Copyright 2026 AtomAI
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -213,14 +214,12 @@ func TestParseFuzziness(t *testing.T) {
 
 func TestNotImplementedQueries(t *testing.T) {
 	tests := map[string]func(map[string]interface{}) (riot.Query, error){
-		"boosting":         BoostingQuery,
-		"combined_fields":  CombinedFieldsQuery,
-		"exists":           ExistsQuery,
-		"terms_set":        TermsSetQuery,
-		"geo_bounding_box": GeoBoundingBoxQuery,
-		"geo_distance":     GeoDistanceQuery,
-		"geo_polygon":      GeoPolygonQuery,
-		"geo_shape":        GeoShapeQuery,
+		"boosting":        BoostingQuery,
+		"combined_fields": CombinedFieldsQuery,
+		"exists":          ExistsQuery,
+		"terms_set":       TermsSetQuery,
+		// geo_bounding_box/geo_distance/geo_polygon are implemented (see geo_test.go)
+		"geo_shape": GeoShapeQuery,
 	}
 	for name, fn := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -276,6 +275,8 @@ func TestQuery(t *testing.T) {
 			{map[string]interface{}{"wildcard": map[string]interface{}{"tag": "a*"}}, &riot.WildcardQuery{}},
 			{map[string]interface{}{"term": map[string]interface{}{"tag": "a"}}, &riot.TermQuery{}},
 			{map[string]interface{}{"terms": map[string]interface{}{"tag": []interface{}{"a"}}}, &riot.BooleanQuery{}},
+			{map[string]interface{}{"constant_score": map[string]interface{}{"filter": termOn("tag", "a")}}, &constantScoreQuery{}},
+			{map[string]interface{}{"dis_max": map[string]interface{}{"queries": []interface{}{termOn("tag", "a")}}}, &riot.BooleanQuery{}},
 		}
 		for _, tt := range tests {
 			for k := range tt.query {
@@ -297,7 +298,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("sub-query errors are wrapped", func(t *testing.T) {
 		for _, k := range []string{"bool", "boosting", "match", "match_bool_prefix", "match_phrase", "match_phrase_prefix",
-			"combined_fields", "query_string", "simple_query_string", "exists", "ids", "range", "regexp",
+			"combined_fields", "constant_score", "dis_max", "query_string", "simple_query_string", "exists", "ids", "range", "regexp",
 			"prefix", "fuzzy", "wildcard", "term", "terms", "terms_set", "geo_bounding_box", "geo_distance", "geo_polygon", "geo_shape"} {
 			t.Run(k, func(t *testing.T) {
 				// two fields (or a bad child) is rejected by every parser that validates input
