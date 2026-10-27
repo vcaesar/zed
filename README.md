@@ -37,6 +37,7 @@ go + gin + react
 6. Schema less - No need to define schema upfront and different documents in the same index can have different fields.
 7. Index storage in disk
 8. aggregation support
+9. Opt-in [logs indexes](./pkg/logs/README.md) with event-time normalization and log search defaults
 
 # Documentation
 
@@ -63,6 +64,46 @@ Check [Quickstart](https://zincsearch-docs.zinc.dev/quickstart/)
 ZincSearch has hundreds of production installations.
 
 ## Build
+
+Source builds are **API-only by default**: no Node.js, npm, or `frontend/` directory is needed.
+Set first-start credentials via `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
+(or `conf/zinc.toml`), then run from the repository root:
+
+```sh
+go run cmd/zincsearch/main.go      # API-only, :4080
+go run cmd/zincsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zincsearch/: go run main.go [web]
+```
+
+`web` requires the source checkout, Go, Node.js 24+ and npm. It runs `npm ci`,
+`npm run build`, and `go build -tags web`, producing `test/zincsearch-web`
+(`.exe` on Windows). The resulting binary embeds all UI assets and can be copied
+to another host without frontend files or Node.js. Startup retains the caller's
+working directory, configuration, and environment. A binary already built with
+`-tags web` starts directly without rebuilding, with or without the `web` argument.
+
+For manual builds:
+
+```sh
+go build -o zincsearch ./cmd/zincsearch  # API-only
+(cd frontend && npm ci && npm run build)
+go build -tags web -o zincsearch ./cmd/zincsearch
+```
+
+API-only nodes return version JSON at `/`; `/ui/` and the Swagger UI are disabled.
+Web builds redirect `/` to `/ui/` and serve Swagger when enabled in configuration.
+`sh/build.sh`, release binaries, and the standard Docker image still include the UI.
+
+The experimental multi-node document store lives in `distribution/cmd`, not the
+empty `cmd/distr/` directory. It never requires frontend assets:
+
+```sh
+(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
+```
+
+Use a distinct ID, data directory, Raft address and gRPC address for each node;
+see [distribution/README.md](./distribution/README.md) for joins and TLS. This is
+an independent replicated document store, not a distributed ZincSearch REST/UI server.
 
 - CI (lint, `go test` on Linux/macOS/Windows, coverage): [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) → https://github.com/zincsearch/zincsearch/actions/workflows/ci.yml
 - Nightly dev image `ghcr.io/zincsearch/zincsearch-dev:nightly`: [`.github/workflows/nightly.yml`](./.github/workflows/nightly.yml) → https://github.com/zincsearch/zincsearch/actions/workflows/nightly.yml

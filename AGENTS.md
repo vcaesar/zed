@@ -5,7 +5,7 @@ ZincSearch — lightweight Elasticsearch alternative. Go 1.25 server (`github.co
 ## Layout
 
 - `cmd/zincsearch/main.go` — entrypoint (telemetry, gin server, shutdown); swag annotation root.
-- `embed.go` — `//go:embed frontend/dist`; the UI is compiled into the binary.
+- `embed.go` — `//go:embed frontend/dist` behind the `web` build tag; default builds are API-only. `pkg/webbuild` handles the source CLI's opt-in `web` rebuild.
 - `pkg/config` — `config.Global`: embedded `default.toml` → optional `./conf/zinc.toml` → env vars. Field tag `toml:"zinc_server_port"` is both the TOML key and, uppercased, the env var. Durations in ns, sizes in bytes. No `.env`, no `ZINC_CONFIG_FILE`.
 - `pkg/routes` — `/api/...` (native) and `/es/...` (Elasticsearch-compatible), auth middleware, pprof (debug only), swagger.
 - `pkg/handlers/{auth,index,document,search}` — gin handlers.
@@ -21,10 +21,12 @@ ZincSearch — lightweight Elasticsearch alternative. Go 1.25 server (`github.co
 Node.js 24 + npm; keep `frontend/package-lock.json` in sync.
 
 ```shell
-cd frontend && npm ci && npm run build && cd ..   # REQUIRED before any go build/test
-./sh/build.sh                                     # frontend + versioned static binary
-go build -o zincsearch cmd/zincsearch/main.go
-ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=... go run cmd/zincsearch/main.go  # :4080
+go build -o zincsearch cmd/zincsearch/main.go      # API-only, no frontend needed
+./sh/build.sh                                     # frontend + versioned web binary
+ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=... go run cmd/zincsearch/main.go  # API-only :4080
+go run cmd/zincsearch/main.go web                  # npm ci/build + tagged rebuild + start
+cd frontend && npm ci && npm run build && cd ..   # only needed for -tags web builds/tests
+go build -tags web -o zincsearch cmd/zincsearch/main.go
 cd frontend && npm run dev                        # UI dev server
 ./sh/develop.sh                                   # reflex live-reload
 ```
@@ -54,7 +56,7 @@ CI (GitHub Actions): `ci.yml` — lint, vet, build, test on ubuntu/macos/windows
 
 ## Pitfalls
 
-- `go build`/`go test`/gopls fail with `pattern frontend/dist: no matching files found` until the UI is built; rebuild after frontend changes.
+- Only `-tags web` builds/tests require `frontend/dist`; rebuild assets after frontend changes. Plain Go builds/tests must work without `frontend/`. The `web` command requires a source checkout and writes `test/zincsearch-web`; concurrent node launches serialize on `test/zincsearch-web.lock`.
 - Tests create `data/` under `pkg/` and `test/`; `sh/test.sh` cleans them, plain `go test` does not.
 - First run needs `ZINC_FIRST_ADMIN_USER`/`ZINC_FIRST_ADMIN_PASSWORD`; never commit a `./conf/zinc.toml` with real credentials.
 - `ZINC_METADATA_STORAGE=etcd` tests need a running etcd with auth (`test/README.md`).
