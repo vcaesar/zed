@@ -1,4 +1,4 @@
-/* Copyright 2022 Zinc Labs Inc. and Contributors
+/* Copyright 2026 AtomAI
 *
 * Licensed under Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with License.
