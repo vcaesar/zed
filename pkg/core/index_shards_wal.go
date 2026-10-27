@@ -36,6 +36,18 @@ import (
 // MaxBatchSize used to limit memory
 const MaxBatchSize = 10240
 
+// writeWAL appends data to the WAL. A tier move closes the shard, and with
+// it the WAL, after a write may have passed its read-only check: fail that
+// write instead of dereferencing the closed WAL.
+func (s *IndexShard) writeWAL(data []byte) error {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if s.wal == nil {
+		return ErrIndexReadOnly
+	}
+	return s.wal.Write(data)
+}
+
 // OpenWAL open WAL for index
 func (s *IndexShard) OpenWAL() error {
 	if atomic.LoadUint64(&s.open) == 1 {

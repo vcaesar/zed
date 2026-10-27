@@ -161,3 +161,44 @@ func TestCoordinatorRebalanceOnce(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
 }
+
+// failingKeepAlive is a store whose lease renewals fail with a transient error.
+type failingKeepAlive struct {
+	Store
+	fail bool
+}
+
+func (s *failingKeepAlive) KeepAlive(ctx context.Context, id LeaseID) error {
+	if s.fail {
+		return context.DeadlineExceeded
+	}
+	return s.Store.KeepAlive(ctx, id)
+}
+
+// A leader whose renewals keep failing must stop acting as leader once its
+// lease may have expired, another node may own the key by then.
+func TestElectionLeadershipExpiresWithoutRenewal(t *testing.T) {
+	ctx := context.Background()
+	store := &failingKeepAlive{Store: NewMemoryStore()}
+	defer func() { require.NoError(t, store.Close()) }()
+
+	ttl := 50 * time.Millisecond
+	election := NewElection(store, "/test/", "node-a", ttl, time.Second)
+	won, err := election.Campaign(ctx)
+	require.NoError(t, err)
+	require.True(t, won)
+	assert.True(t, election.IsLeader())
+
+	store.fail = true
+	_, err = election.Campaign(ctx)
+	require.Error(t, err)
+	time.Sleep(ttl)
+	assert.False(t, election.IsLeader())
+
+	// a successful renewal restores it
+	store.fail = false
+	won, err = election.Campaign(ctx)
+	require.NoError(t, err)
+	assert.True(t, won)
+	assert.True(t, election.IsLeader())
+}

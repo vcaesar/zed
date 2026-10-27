@@ -163,6 +163,10 @@ func Stop() {
 		return
 	}
 
+	// stop the loops first, a heartbeat or campaign after Leave / Resign
+	// would register this node again
+	n.cancel()
+	n.wg.Wait()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := n.election.Resign(ctx); err != nil {
@@ -171,8 +175,6 @@ func Stop() {
 	if err := n.membership.Leave(ctx); err != nil {
 		log.Error().Err(err).Msg("cluster: leave")
 	}
-	n.cancel()
-	n.wg.Wait()
 	if err := n.store.Close(); err != nil {
 		log.Error().Err(err).Msg("cluster: close store")
 	}

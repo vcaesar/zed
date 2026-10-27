@@ -36,7 +36,10 @@ func TestMatchPattern(t *testing.T) {
 		{name: "suffix glob", value: "abc", pattern: "*bc", want: true},
 		{name: "glob mismatch", value: "abc", pattern: "b*", want: false},
 		{name: "question mark", value: "abc", pattern: "a?c", want: true},
-		{name: "invalid pattern falls back", value: "a[c", pattern: "a[c*", want: false},
+		{name: "bracket is literal", value: "a[c", pattern: "a[c*", want: true},
+		{name: "bracket is not a class", value: "logs1-x", pattern: "logs[1]-*", want: false},
+		{name: "literal bracket name", value: "logs[1]-x", pattern: "logs[1]-*", want: true},
+		{name: "backslash is literal", value: `a\b`, pattern: `a\*`, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

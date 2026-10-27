@@ -246,6 +246,8 @@ func TestMatchesAny(t *testing.T) {
 		{name: "suffix wildcard", index: "app-logs", patterns: []string{"*-logs"}, want: true},
 		{name: "second pattern", index: "metrics", patterns: []string{"logs", "metrics"}, want: true},
 		{name: "no match", index: "metrics", patterns: []string{"logs-*"}, want: false},
+		{name: "infix wildcard", index: "logs-app-prod", patterns: []string{"logs-*-prod"}, want: true},
+		{name: "question mark", index: "logs-1", patterns: []string{"logs-?"}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -291,4 +293,27 @@ func TestLiteralValues(t *testing.T) {
 			assert.Equal(t, tt.want, field["value"])
 		})
 	}
+}
+
+func TestAggregatedResponseOffset(t *testing.T) {
+	stmt, err := Parse(`SELECT level, COUNT(*) FROM logs GROUP BY level ORDER BY level LIMIT 2 OFFSET 1`)
+	require.NoError(t, err)
+	buckets := []map[string]interface{}{}
+	for _, level := range []string{"a", "b", "c", "d"} {
+		buckets = append(buckets, map[string]interface{}{"key": level, "doc_count": uint64(1)})
+	}
+	resp := &meta.SearchResponse{Aggregations: map[string]meta.AggregationResponse{
+		GroupAggName: {Buckets: buckets},
+	}}
+
+	got, err := aggregatedResponse(stmt, testFields, resp)
+	require.NoError(t, err)
+	require.Len(t, got.Rows, 2)
+	assert.Equal(t, "b", got.Rows[0][0])
+	assert.Equal(t, "c", got.Rows[1][0])
+
+	stmt.Offset = 9
+	got, err = aggregatedResponse(stmt, testFields, resp)
+	require.NoError(t, err)
+	assert.Empty(t, got.Rows)
 }

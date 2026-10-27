@@ -88,7 +88,7 @@ func (a *MultiTermsAggregation) Calculator() search.Calculator {
 		lessFunc:     a.lessFunc,
 		desc:         a.desc,
 		bucketsMap:   make(map[string]*search.Bucket),
-		keys:         make(map[string][]string),
+		keys:         make(map[*search.Bucket][]string),
 	}
 }
 
@@ -105,8 +105,14 @@ type MultiTermsCalculator struct {
 	desc     bool
 
 	bucketsList []*search.Bucket
-	bucketsMap  map[string]*search.Bucket
-	keys        map[string][]string
+	bucketsMap  map[string]*search.Bucket // by multiTermsID, unambiguous unlike the bucket name
+	keys        map[*search.Bucket][]string
+}
+
+// multiTermsID joins the terms with a byte that cannot collide the way
+// MultiTermsKeySeparator does: ("a|b","c") and ("a","b|c") stay distinct.
+func multiTermsID(key []string) string {
+	return strings.Join(key, "\x00")
 }
 
 // term renders the first value of one field, mirroring TermsCalculator.
@@ -147,16 +153,16 @@ func (a *MultiTermsCalculator) Consume(d *search.DocumentMatch) {
 		key = append(key, term)
 	}
 
-	name := strings.Join(key, MultiTermsKeySeparator)
-	if bucket, ok := a.bucketsMap[name]; ok {
+	id := multiTermsID(key)
+	if bucket, ok := a.bucketsMap[id]; ok {
 		bucket.Consume(d)
 		return
 	}
-	bucket := search.NewBucket(name, a.aggregations)
+	bucket := search.NewBucket(strings.Join(key, MultiTermsKeySeparator), a.aggregations)
 	bucket.Consume(d)
-	a.bucketsMap[name] = bucket
+	a.bucketsMap[id] = bucket
 	a.bucketsList = append(a.bucketsList, bucket)
-	a.keys[name] = key
+	a.keys[bucket] = key
 }
 
 func (a *MultiTermsCalculator) Merge(other search.Calculator) {
@@ -165,13 +171,15 @@ func (a *MultiTermsCalculator) Merge(other search.Calculator) {
 		return
 	}
 	for _, bucket := range o.bucketsList {
-		if local, ok := a.bucketsMap[bucket.Name()]; ok {
+		key := o.keys[bucket]
+		id := multiTermsID(key)
+		if local, ok := a.bucketsMap[id]; ok {
 			local.Merge(bucket)
 			continue
 		}
-		a.bucketsMap[bucket.Name()] = bucket
+		a.bucketsMap[id] = bucket
 		a.bucketsList = append(a.bucketsList, bucket)
-		a.keys[bucket.Name()] = o.keys[bucket.Name()]
+		a.keys[bucket] = key
 	}
 	a.Finish()
 }
@@ -187,6 +195,11 @@ func (a *MultiTermsCalculator) Finish() {
 		return a.lessFunc(a.bucketsList[i], a.bucketsList[j])
 	})
 	if a.size > 0 && a.size < len(a.bucketsList) {
+		// forget the trimmed buckets, a later Merge must not count into them
+		for _, bucket := range a.bucketsList[a.size:] {
+			delete(a.bucketsMap, multiTermsID(a.keys[bucket]))
+			delete(a.keys, bucket)
+		}
 		a.bucketsList = a.bucketsList[:a.size]
 	}
 }
@@ -196,6 +209,6 @@ func (a *MultiTermsCalculator) Buckets() []*search.Bucket {
 }
 
 // Key returns the per field terms of a bucket.
-func (a *MultiTermsCalculator) Key(name string) []string {
-	return a.keys[name]
+func (a *MultiTermsCalculator) Key(bucket *search.Bucket) []string {
+	return a.keys[bucket]
 }

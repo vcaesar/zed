@@ -114,7 +114,7 @@ func TestMultiTermsCalculatorSkipsIncompleteDocuments(t *testing.T) {
 		[]float64{30, 30, -1},
 	))
 	assert.Equal(t, []string{"sf|30"}, bucketNames(calc.Buckets()))
-	assert.Equal(t, []string{"sf", "30"}, calc.Key("sf|30"))
+	assert.Equal(t, []string{"sf", "30"}, calc.Key(calc.Buckets()[0]))
 }
 
 func TestMultiTermsCalculatorMerge(t *testing.T) {
@@ -131,4 +131,33 @@ func TestMultiTermsAggregationFields(t *testing.T) {
 	agg := newCityAgeAggregation(10)
 	agg.AddAggregation("avg_age", aggregations.Avg(search.Field("age")))
 	assert.ElementsMatch(t, []string{"city", "age", "age"}, agg.Fields())
+}
+
+// Terms containing the separator must not fold distinct combinations together.
+func TestMultiTermsCalculatorSeparatorInTerm(t *testing.T) {
+	agg := NewMultiTermsAggregation(
+		[]search.FieldSource{search.Field("a"), search.Field("b")},
+		[]int{TextValueSource, TextValueSource},
+		10,
+	)
+	doc := func(a, b string) *search.DocumentMatch {
+		return newTestMatch(t, []string{"a", "b"}, map[string][][]byte{"a": textTerms(a), "b": textTerms(b)})
+	}
+	calc := runMultiTerms(t, agg, []*search.DocumentMatch{doc("x|y", "z"), doc("x", "y|z")})
+	buckets := calc.Buckets()
+	if assert.Len(t, buckets, 2) {
+		assert.ElementsMatch(t, [][]string{{"x|y", "z"}, {"x", "y|z"}}, [][]string{calc.Key(buckets[0]), calc.Key(buckets[1])})
+	}
+}
+
+// A bucket trimmed by Finish must not absorb the counts of a later Merge.
+func TestMultiTermsCalculatorMergeAfterTrim(t *testing.T) {
+	agg := newCityAgeAggregation(1)
+	left := runMultiTerms(t, agg, cityAgeDocs(t, []string{"sf", "sf", "la"}, []float64{30, 30, 40}))
+	right := runMultiTerms(t, agg, cityAgeDocs(t, []string{"la", "la", "la"}, []float64{40, 40, 40}))
+
+	left.Merge(right)
+	assert.Equal(t, []string{"la|40"}, bucketNames(left.Buckets()))
+	assert.Equal(t, uint64(3), left.Buckets()[0].Count())
+	assert.Equal(t, []string{"la", "40"}, left.Key(left.Buckets()[0]))
 }

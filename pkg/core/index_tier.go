@@ -268,6 +268,8 @@ func MoveIndexTier(name, tier string) error {
 	if err := index.flushAndClose(); err != nil {
 		return restore(fmt.Errorf("tier move [%s]: flush: %w", name, err))
 	}
+	// draining the WAL may have rolled over to a new second layer shard
+	names = index.shardDataNames()
 	if err := copyShards(from, storageType, names); err != nil {
 		return restore(fmt.Errorf("tier move [%s]: copy: %w", name, err))
 	}
@@ -277,6 +279,11 @@ func MoveIndexTier(name, tier string) error {
 	}
 
 	index.applyTier(tier)
+	// a search during the copy reopens writers on the old location, drop
+	// them so the next request opens the new one before the old copy goes
+	if err := index.Close(); err != nil {
+		return fmt.Errorf("tier move [%s]: close old location: %w", name, err)
+	}
 	if err := index.reopen(); err != nil {
 		return fmt.Errorf("tier move [%s]: reopen: %w", name, err)
 	}

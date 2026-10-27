@@ -159,3 +159,52 @@ func TestTopHitsCalculatorStoredFieldsError(t *testing.T) {
 	assert.ErrorIs(t, calc.Err(), assert.AnError)
 	assert.Empty(t, calc.Hits())
 }
+
+func TestTopHitsCalculatorMissingSortLast(t *testing.T) {
+	missing := &search.DocumentMatch{Number: 1, Score: 1}
+	missing.SetReader(&storedStubReader{stored: map[string]string{"_id": "m"}})
+	require.NoError(t, missing.LoadDocumentValues(search.NewSearchContext(0, 0), []string{"age"}))
+
+	for _, desc := range []bool{false, true} {
+		docs := []*search.DocumentMatch{missing, topHitsDoc(t, "a", 1, 30), topHitsDoc(t, "b", 1, 10)}
+		calc := runTopHits(t, NewTopHitsAggregation(3, 0, "age", desc), docs)
+		assert.Equal(t, "m", topHitIDs(calc.Hits())[2], "desc=%v", desc)
+	}
+}
+
+func TestTopHitsUnderBucketAggregations(t *testing.T) {
+	doc := func(id, city string, score float64) *search.DocumentMatch {
+		d := &search.DocumentMatch{Number: 1, Score: score}
+		d.SetReader(&storedStubReader{
+			docVals: map[string][][]byte{"city": textTerms(city), "ts": numTerms(1)},
+			stored:  map[string]string{"_id": id},
+		})
+		require.NoError(t, d.LoadDocumentValues(search.NewSearchContext(0, 0), []string{"city", "ts"}))
+		return d
+	}
+	docs := []*search.DocumentMatch{doc("a", "sf", 1), doc("b", "sf", 3), doc("c", "sf", 2)}
+
+	tests := []struct {
+		name string
+		agg  interface {
+			search.Aggregation
+			AddAggregation(string, search.Aggregation)
+		}
+	}{
+		{name: "terms", agg: NewTermsAggregation(search.Field("city"), TextValueSource, 10)},
+		{name: "histogram", agg: NewHistogramAggregation(search.Field("ts"), 10, 0, nil, nil, 1, 10)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.agg.AddAggregation("top", NewTopHitsAggregation(2, 0, "", false))
+			calc := tt.agg.Calculator().(search.BucketCalculator)
+			for _, d := range docs {
+				calc.Consume(d)
+			}
+			calc.Finish()
+			require.Len(t, calc.Buckets(), 1)
+			top := calc.Buckets()[0].Aggregations()["top"].(*TopHitsCalculator)
+			assert.Equal(t, []string{"b", "c"}, topHitIDs(top.Hits()))
+		})
+	}
+}

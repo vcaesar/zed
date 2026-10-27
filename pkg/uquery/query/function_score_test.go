@@ -562,3 +562,37 @@ func TestFunctionScoreQuery_Parse(t *testing.T) {
 		assert.NoError(t, fsq.Validate())
 	})
 }
+
+// Negative or non-finite scores are rejected as elasticsearch does; NaN / Inf
+// would otherwise break the json response.
+func TestFunctionScoreQuery_InvalidScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		factor map[string]interface{}
+	}{
+		{name: "negative", factor: map[string]interface{}{"field": "age", "factor": -1.0}},
+		{name: "infinite", factor: map[string]interface{}{"field": "age", "factor": 1e308, "modifier": "square"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := newFunctionScoreIndex(t)
+			defer func() { assert.NoError(t, writer.Close()) }()
+			reader, err := writer.Reader()
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, reader.Close()) }()
+
+			q, err := FunctionScoreQuery(map[string]interface{}{
+				"query":              matchAll(),
+				"field_value_factor": tt.factor,
+				"max_boost":          math.Inf(1),
+			}, testMappings(), nil)
+			require.NoError(t, err)
+
+			dmi, err := reader.Search(context.Background(), riot.NewTopNSearch(10, q))
+			if err == nil {
+				_, err = dmi.Next()
+			}
+			assert.ErrorContains(t, err, "finite non-negative")
+		})
+	}
+}

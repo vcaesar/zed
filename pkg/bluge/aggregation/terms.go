@@ -60,6 +60,10 @@ func NewTermsAggregation(field search.FieldSource, valueType int, size int) *Ter
 // metric to read, e.g "grades.avg".
 func (t *TermsAggregation) SetOrder(key string, asc bool) {
 	t.lessFunc = orderLessFunc(key)
+	if key == OrderByKey && t.srcType != NumericValueSource && t.srcType != NumericValuesSource {
+		// keyword keys order lexically even when they look like numbers
+		t.lessFunc = func(a, b *search.Bucket) bool { return a.Name() < b.Name() }
+	}
 	t.desc = !asc
 }
 
@@ -256,6 +260,10 @@ func (a *TermsCalculator) Merge(other search.Calculator) {
 }
 
 func (a *TermsCalculator) Finish() {
+	// sub-aggregations such as top_hits sort and trim in Finish
+	for _, bucket := range a.bucketsList {
+		bucket.Finish()
+	}
 	// sort the buckets
 	if a.desc {
 		a.sortFunc(sort.Reverse(a))

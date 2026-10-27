@@ -450,3 +450,16 @@ func TestResponseMetricUnchanged(t *testing.T) {
 	)
 	assert.JSONEq(t, `{"value":2.5}`, marshalAgg(t, resp["my_agg"]))
 }
+
+// Values near MaxFloat64 overflow sum_of_squares to +Inf and the variance to
+// NaN; the response must still marshal.
+func TestResponseExtendedStatsOverflowIsJSONSafe(t *testing.T) {
+	resp := responseFor(t,
+		map[string]meta.Aggregations{"my_agg": {ExtendedStats: &meta.AggregationExtendedStats{Field: "age"}}},
+		ageDocs(t, 1e300, 1e300),
+	)
+	var got map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(marshalAgg(t, resp["my_agg"])), &got))
+	assert.Equal(t, float64(0), got["sum_of_squares"])
+	assert.Equal(t, float64(0), got["variance"])
+}

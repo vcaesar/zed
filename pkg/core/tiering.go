@@ -18,6 +18,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -215,11 +216,18 @@ func ParseAge(value string) (time.Duration, error) {
 		if err != nil {
 			return 0, fmt.Errorf("invalid age [%s]: %w", value, err)
 		}
+		// also rejects NaN and Inf, whose conversion is undefined
+		if !(n >= 0 && n*float64(24*time.Hour) <= math.MaxInt64) {
+			return 0, fmt.Errorf("invalid age [%s]: out of range", value)
+		}
 		return time.Duration(n * float64(24*time.Hour)), nil
 	}
 	d, err := time.ParseDuration(value)
 	if err != nil {
 		return 0, fmt.Errorf("invalid age [%s]: %w", value, err)
+	}
+	if d < 0 {
+		return 0, fmt.Errorf("invalid age [%s]: negative", value)
 	}
 	return d, nil
 }

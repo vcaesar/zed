@@ -34,13 +34,13 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/zincsearch/zincsearch"
-	"github.com/zincsearch/zincsearch/pkg/webbuild"
 	"github.com/zincsearch/zincsearch/pkg/cluster"
 	"github.com/zincsearch/zincsearch/pkg/config"
 	"github.com/zincsearch/zincsearch/pkg/core"
 	"github.com/zincsearch/zincsearch/pkg/meta"
 	"github.com/zincsearch/zincsearch/pkg/metadata"
 	"github.com/zincsearch/zincsearch/pkg/routes"
+	"github.com/zincsearch/zincsearch/pkg/webbuild"
 )
 
 // @title           Zinc Search engine API

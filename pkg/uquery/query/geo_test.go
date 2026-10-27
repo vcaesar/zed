@@ -72,6 +72,14 @@ func TestGeoDistanceQuery(t *testing.T) {
 		})
 	}
 
+	t.Run("mixed case field name", func(t *testing.T) {
+		m := geoMappings()
+		m.SetProperty("homeLocation", meta.NewProperty("geo_point"))
+		got, err := GeoDistanceQuery(geoQuery(t, `{"distance": "1km", "homeLocation": "40,-70"}`), m)
+		assert.NoError(t, err)
+		assert.Equal(t, "homeLocation", got.(*riot.GeoDistanceQuery).Field())
+	})
+
 	t.Run("boost", func(t *testing.T) {
 		got, err := GeoDistanceQuery(geoQuery(t, `{"distance": "1km", "boost": 2, "location": "40,-70"}`), geoMappings())
 		assert.NoError(t, err)

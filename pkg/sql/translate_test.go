@@ -86,6 +86,12 @@ func TestTranslateSelect(t *testing.T) {
 				"sort":[{"level":{"order":"desc"}},{"count":{"order":"asc"}}]}`,
 		},
 		{
+			name: "order by alias sorts on the field",
+			sql:  `SELECT level AS l FROM logs ORDER BY l`,
+			want: `{"query":{"match_all":{}},"track_total_hits":true,"from":0,"size":1000,
+				"_source":["level"],"sort":[{"level":{"order":"asc"}}]}`,
+		},
+		{
 			name: "limit offset comma form",
 			sql:  `SELECT level FROM logs LIMIT 2, 5`,
 			want: `{"query":{"match_all":{}},"track_total_hits":true,"from":2,"size":5,
@@ -184,6 +190,11 @@ func TestTranslateWhere(t *testing.T) {
 			name: "like",
 			sql:  `SELECT * FROM logs WHERE level LIKE 'err%_'`,
 			want: `{"wildcard":{"level":{"value":"err*?"}}}`,
+		},
+		{
+			name: "like with literal star and question mark",
+			sql:  `SELECT * FROM logs WHERE level LIKE 'a*b?%_.'`,
+			want: `{"regexp":{"level":{"value":"a\\*b\\?.*.\\."}}}`,
 		},
 		{
 			name: "not like",
@@ -377,6 +388,19 @@ func TestParseStatement(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []Condition{{Label: "COUNT(*)", Op: ">=", Value: 2}}, stmt.Having)
 		assert.Equal(t, []OrderKey{{Label: "COUNT(*)", Desc: true}}, stmt.Order)
+	})
+
+	t.Run("order by field of aliased group column", func(t *testing.T) {
+		stmt, err := Parse(`SELECT level AS l, COUNT(*) FROM logs GROUP BY level ORDER BY level`)
+		require.NoError(t, err)
+		assert.Equal(t, []OrderKey{{Label: "l"}}, stmt.Order)
+	})
+
+	t.Run("limit must be an integer", func(t *testing.T) {
+		for _, sql := range []string{`SELECT * FROM logs LIMIT 1.5`, `SELECT * FROM logs LIMIT 1e30`, `SELECT * FROM logs LIMIT 1 OFFSET 2.5`} {
+			_, err := Parse(sql)
+			assert.Error(t, err, sql)
+		}
 	})
 
 	t.Run("having on alias", func(t *testing.T) {

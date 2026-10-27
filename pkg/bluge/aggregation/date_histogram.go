@@ -186,6 +186,10 @@ func (a *DateHistogramCalculator) Merge(other search.Calculator) {
 }
 
 func (a *DateHistogramCalculator) Finish() {
+	// sub-aggregations such as top_hits sort and trim in Finish
+	for _, bucket := range a.bucketsList {
+		bucket.Finish()
+	}
 	// re calculate min max
 	if a.extendedBounds != nil {
 		min := int64(a.extendedBounds.Min * 1e6)

@@ -161,3 +161,19 @@ func TestSetSettingsLifecycleAndTier(t *testing.T) {
 		assert.False(t, index.IsReadOnly())
 	})
 }
+
+func TestSetSettingsInvalidTier(t *testing.T) {
+	useObjectStore(t)
+	name := "TestSetSettingsInvalidTier.index_1"
+	index, err := core.NewIndex(name, "disk", 1)
+	require.NoError(t, err)
+	require.NoError(t, core.StoreIndex(index))
+	t.Cleanup(func() { _ = core.DeleteIndex(name) })
+
+	c, w := utils.NewGinContext()
+	utils.SetGinRequestData(c, map[string]interface{}{"tier": "frozen"})
+	utils.SetGinRequestParams(c, map[string]string{"target": name})
+	SetSettings(c)
+	assert.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
+	assert.Equal(t, core.TierHot, index.GetTier())
+}

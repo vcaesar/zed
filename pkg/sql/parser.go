@@ -457,6 +457,13 @@ func parseOrderBy(stmt *Statement, order sqlparser.OrderBy) error {
 			if err != nil {
 				return sqlErrorf("unsupported construct: ORDER BY %s", sqlparser.String(entry.Expr))
 			}
+			// an alias sorts on the field it names
+			for _, column := range stmt.Columns {
+				if column.Label == field && column.Field != "" {
+					field = column.Field
+					break
+				}
+			}
 			stmt.Order = append(stmt.Order, OrderKey{Label: field, Desc: desc})
 			continue
 		}
@@ -475,7 +482,7 @@ func parseOrderBy(stmt *Statement, order sqlparser.OrderBy) error {
 
 func orderLabel(stmt *Statement, label string) (string, error) {
 	for _, column := range stmt.Columns {
-		if column.Label == label || (column.Agg != AggNone && column.Field == label) {
+		if column.Label == label || ((column.Agg != AggNone || column.Group) && column.Field == label) {
 			return column.Label, nil
 		}
 	}
@@ -509,8 +516,8 @@ func literalInt(expr sqlparser.Expr) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	number, err := toFloat(value)
-	if err != nil || number < 0 {
+	number, ok := value.(int64)
+	if !ok || number < 0 {
 		return 0, sqlErrorf("expected a positive integer")
 	}
 	return int(number), nil

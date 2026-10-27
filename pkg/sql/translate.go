@@ -17,6 +17,7 @@ package sql
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -286,6 +287,12 @@ func comparisonQuery(expr *sqlparser.ComparisonExpr, fields FieldTypes) (map[str
 		query := map[string]interface{}{"wildcard": map[string]interface{}{
 			field: map[string]interface{}{"value": likePattern(pattern)},
 		}}
+		if strings.ContainsAny(pattern, "*?") {
+			// the wildcard query cannot escape a literal * or ?
+			query = map[string]interface{}{"regexp": map[string]interface{}{
+				field: map[string]interface{}{"value": likeRegexp(pattern)},
+			}}
+		}
 		if expr.Operator == sqlparser.NotLikeOp {
 			return mustNot(query), nil
 		}
@@ -407,6 +414,28 @@ func tupleValues(expr sqlparser.Expr) ([]interface{}, error) {
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+// likeRegexp converts a SQL LIKE pattern to an anchored-term regexp, every
+// character but the LIKE wildcards matching literally.
+func likeRegexp(pattern string) string {
+	var out strings.Builder
+	for i := 0; i < len(pattern); i++ {
+		switch c := pattern[i]; c {
+		case '\\':
+			if i+1 < len(pattern) {
+				i++
+			}
+			out.WriteString(regexp.QuoteMeta(pattern[i : i+1]))
+		case '%':
+			out.WriteString(".*")
+		case '_':
+			out.WriteByte('.')
+		default:
+			out.WriteString(regexp.QuoteMeta(pattern[i : i+1]))
+		}
+	}
+	return out.String()
 }
 
 // likePattern converts SQL LIKE wildcards to the wildcard query syntax.

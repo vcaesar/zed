@@ -118,9 +118,18 @@ func SetSettings(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "can't update analyzer for existing index"})
 			return
 		}
+		if settings.Tier != "" {
+			if err := core.CheckTier(settings.Tier); err != nil {
+				c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+				return
+			}
+		}
 		// attach the lifecycle policy before storing, the tier move stores again
 		if settings.Lifecycle != nil {
-			_ = index.SetSettings(&meta.IndexSettings{Lifecycle: settings.Lifecycle})
+			if err := index.SetSettings(&meta.IndexSettings{Lifecycle: settings.Lifecycle}); err != nil {
+				c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+				return
+			}
 		}
 		// store index
 		if err := core.StoreIndex(index); err != nil {

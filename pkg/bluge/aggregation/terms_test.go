@@ -16,6 +16,7 @@
 package aggregation
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,6 +56,41 @@ func TestTermsAggregationSetOrder(t *testing.T) {
 
 			calc := agg.Calculator().(*TermsCalculator)
 			for _, d := range cityAgeDocs(t, cities, ages) {
+				calc.Consume(d)
+			}
+			calc.Finish()
+			assert.Equal(t, tt.want, bucketNames(calc.Buckets()))
+		})
+	}
+}
+
+// Keyword keys order lexically, numeric field keys numerically.
+func TestTermsAggregationKeyOrderByFieldType(t *testing.T) {
+	docs := func(t *testing.T) []*search.DocumentMatch {
+		rv := []*search.DocumentMatch{}
+		for _, v := range []float64{9, 10} {
+			rv = append(rv, newTestMatch(t, []string{"code", "age"}, map[string][][]byte{
+				"code": textTerms(strconv.FormatFloat(v, 'f', -1, 64)),
+				"age":  numTerms(v),
+			}))
+		}
+		return rv
+	}
+	tests := []struct {
+		name    string
+		field   string
+		srcType int
+		want    []string
+	}{
+		{name: "keyword", field: "code", srcType: TextValueSource, want: []string{"10", "9"}},
+		{name: "numeric", field: "age", srcType: NumericValueSource, want: []string{"9", "10"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agg := NewTermsAggregation(search.Field(tt.field), tt.srcType, 10)
+			agg.SetOrder(OrderByKey, true)
+			calc := agg.Calculator().(*TermsCalculator)
+			for _, d := range docs(t) {
 				calc.Consume(d)
 			}
 			calc.Finish()
