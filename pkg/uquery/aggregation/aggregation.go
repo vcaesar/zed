@@ -18,7 +18,9 @@ package aggregation
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/vcaesar/riot/search"
@@ -28,6 +30,7 @@ import (
 	"github.com/zincsearch/zincsearch/pkg/config"
 	"github.com/zincsearch/zincsearch/pkg/errors"
 	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/zincsearch/zincsearch/pkg/uquery/source"
 	"github.com/zincsearch/zincsearch/pkg/zutils"
 )
 
@@ -55,6 +58,64 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			req.AddAggregation(name, aggregations.Sum(search.Field(agg.Sum.Field)))
 		case agg.Count != nil:
 			req.AddAggregation(name, aggregations.CountMatches())
+		case agg.ValueCount != nil:
+			prop, _ := mappings.GetProperty(agg.ValueCount.Field)
+			if prop.Type != "numeric" {
+				return errors.New(
+					errors.ErrorTypeParsingException,
+					fmt.Sprintf("[value_count] aggregation doesn't support values of type: [%s:[%s]]", agg.ValueCount.Field, prop.Type),
+				)
+			}
+			req.AddAggregation(name, zincaggregation.NewValueCountAggregation(
+				search.Field(agg.ValueCount.Field),
+				zincaggregation.NumericValuesSource,
+			))
+		case agg.Stats != nil:
+			prop, _ := mappings.GetProperty(agg.Stats.Field)
+			if prop.Type != "numeric" {
+				return errors.New(
+					errors.ErrorTypeParsingException,
+					fmt.Sprintf("[stats] aggregation doesn't support values of type: [%s:[%s]]", agg.Stats.Field, prop.Type),
+				)
+			}
+			req.AddAggregation(name, zincaggregation.NewStatsAggregation(search.Field(agg.Stats.Field)))
+		case agg.ExtendedStats != nil:
+			prop, _ := mappings.GetProperty(agg.ExtendedStats.Field)
+			if prop.Type != "numeric" {
+				return errors.New(
+					errors.ErrorTypeParsingException,
+					fmt.Sprintf("[extended_stats] aggregation doesn't support values of type: [%s:[%s]]", agg.ExtendedStats.Field, prop.Type),
+				)
+			}
+			sigma := agg.ExtendedStats.Sigma
+			if sigma == 0 {
+				sigma = 2
+			}
+			if sigma < 0 {
+				return errors.New(errors.ErrorTypeParsingException, "[extended_stats] aggregation sigma must not be negative")
+			}
+			req.AddAggregation(name, zincaggregation.NewExtendedStatsAggregation(search.Field(agg.ExtendedStats.Field), sigma))
+		case agg.Percentiles != nil:
+			prop, _ := mappings.GetProperty(agg.Percentiles.Field)
+			if prop.Type != "numeric" {
+				return errors.New(
+					errors.ErrorTypeParsingException,
+					fmt.Sprintf("[percentiles] aggregation doesn't support values of type: [%s:[%s]]", agg.Percentiles.Field, prop.Type),
+				)
+			}
+			percents := agg.Percentiles.Percents
+			if len(percents) == 0 {
+				percents = zincaggregation.DefaultPercents
+			}
+			for _, p := range percents {
+				if p < 0 || p > 100 {
+					return errors.New(errors.ErrorTypeParsingException, "[percentiles] aggregation percents must be in [0, 100]")
+				}
+			}
+			req.AddAggregation(name, zincaggregation.NewPercentilesAggregation(search.Field(agg.Percentiles.Field), percents))
+		case agg.Missing != nil:
+			// missing accepts any field type, including unmapped fields
+			req.AddAggregation(name, zincaggregation.NewMissingAggregation(search.Field(agg.Missing.Field)))
 		case agg.Cardinality != nil:
 			req.AddAggregation(name, aggregations.Cardinality(search.Field(agg.Cardinality.Field)))
 		case agg.Terms != nil:
@@ -75,6 +136,13 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 					errors.ErrorTypeParsingException,
 					fmt.Sprintf("[terms] aggregation doesn't support values of type: [%s:[%s]]", agg.Terms.Field, prop.Type),
 				)
+			}
+			if len(agg.Terms.Order) > 0 {
+				key, asc, err := singleOrder("terms", agg.Terms.Order)
+				if err != nil {
+					return err
+				}
+				subreq.SetOrder(key, asc)
 			}
 			if len(agg.Aggregations) > 0 {
 				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
@@ -320,14 +388,242 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 				}
 			}
 			req.AddAggregation(name, subreq)
+		case agg.Filter != nil:
+			pred, err := FilterPredicate("filter", agg.Filter, mappings)
+			if err != nil {
+				return err
+			}
+			subreq := zincaggregation.NewFilterAggregation(pred)
+			if len(agg.Aggregations) > 0 {
+				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
+					return err
+				}
+			}
+			req.AddAggregation(name, subreq)
+		case agg.Filters != nil:
+			if len(agg.Filters.Filters) == 0 {
+				return errors.New(errors.ErrorTypeParsingException, "[filters] aggregation needs filters")
+			}
+			subreq := zincaggregation.NewFiltersAggregation(otherBucketKey(agg.Filters))
+			filterNames := make([]string, 0, len(agg.Filters.Filters))
+			for filterName := range agg.Filters.Filters {
+				filterNames = append(filterNames, filterName)
+			}
+			sort.Strings(filterNames) // the request order of a json object is lost
+			for _, filterName := range filterNames {
+				pred, err := FilterPredicate("filters", agg.Filters.Filters[filterName], mappings)
+				if err != nil {
+					return err
+				}
+				subreq.AddFilter(filterName, pred)
+			}
+			if len(agg.Aggregations) > 0 {
+				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
+					return err
+				}
+			}
+			req.AddAggregation(name, subreq)
+		case agg.Global != nil:
+			return errors.New(
+				errors.ErrorTypeNotImplemented,
+				"[global] aggregation doesn't support, it requires a second match_all search",
+			)
+		case agg.MultiTerms != nil:
+			if len(agg.MultiTerms.Terms) < 2 {
+				return errors.New(errors.ErrorTypeParsingException, "[multi_terms] aggregation needs at least two fields")
+			}
+			if agg.MultiTerms.Size == 0 {
+				agg.MultiTerms.Size = config.Global.AggregationTermsSize
+			}
+			srcs := make([]search.FieldSource, 0, len(agg.MultiTerms.Terms))
+			valueTypes := make([]int, 0, len(agg.MultiTerms.Terms))
+			for _, term := range agg.MultiTerms.Terms {
+				prop, _ := mappings.GetProperty(term.Field)
+				switch prop.Type {
+				case "text", "keyword":
+					valueTypes = append(valueTypes, zincaggregation.TextValueSource)
+				case "numeric":
+					valueTypes = append(valueTypes, zincaggregation.NumericValueSource)
+				case "bool", "boolean":
+					valueTypes = append(valueTypes, zincaggregation.BooleanValueSource)
+				default:
+					return errors.New(
+						errors.ErrorTypeParsingException,
+						fmt.Sprintf("[multi_terms] aggregation doesn't support values of type: [%s:[%s]]", term.Field, prop.Type),
+					)
+				}
+				srcs = append(srcs, search.Field(term.Field))
+			}
+			subreq := zincaggregation.NewMultiTermsAggregation(srcs, valueTypes, agg.MultiTerms.Size)
+			if len(agg.MultiTerms.Order) > 0 {
+				key, asc, err := singleOrder("multi_terms", agg.MultiTerms.Order)
+				if err != nil {
+					return err
+				}
+				subreq.SetOrder(key, asc)
+			}
+			if len(agg.Aggregations) > 0 {
+				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
+					return err
+				}
+			}
+			req.AddAggregation(name, subreq)
+		case agg.TopHits != nil:
+			subreq, err := topHitsAggregation(agg.TopHits)
+			if err != nil {
+				return err
+			}
+			req.AddAggregation(name, subreq)
+		case agg.PercentileRanks != nil:
+			prop, _ := mappings.GetProperty(agg.PercentileRanks.Field)
+			if prop.Type != "numeric" {
+				return errors.New(
+					errors.ErrorTypeParsingException,
+					fmt.Sprintf(
+						"[percentile_ranks] aggregation doesn't support values of type: [%s:[%s]]",
+						agg.PercentileRanks.Field, prop.Type,
+					),
+				)
+			}
+			if len(agg.PercentileRanks.Values) == 0 {
+				return errors.New(errors.ErrorTypeParsingException, "[percentile_ranks] aggregation needs values")
+			}
+			req.AddAggregation(name, zincaggregation.NewPercentileRanksAggregation(
+				search.Field(agg.PercentileRanks.Field),
+				agg.PercentileRanks.Values,
+			))
+		case agg.Nested != nil:
+			if agg.Nested.Path == "" {
+				return errors.New(errors.ErrorTypeParsingException, "[nested] aggregation needs path")
+			}
+			subreq := zincaggregation.NewNestedAggregation(meta.NestedPathField, agg.Nested.Path)
+			if len(agg.Aggregations) > 0 {
+				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
+					return err
+				}
+			}
+			req.AddAggregation(name, subreq)
+		case agg.ReverseNested != nil:
+			subreq := zincaggregation.NewReverseNestedAggregation(meta.NestedPathField)
+			if len(agg.Aggregations) > 0 {
+				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
+					return err
+				}
+			}
+			req.AddAggregation(name, subreq)
 		case agg.IPRange != nil:
 			return errors.New(errors.ErrorTypeNotImplemented, "[ip_range] aggregation doesn't support")
 		default:
-			// nothing
+			// pipeline aggregations read the response tree, see ApplyPipelines
 		}
 	}
 
 	return nil
+}
+
+// otherBucketKey returns the key of the [filters] bucket holding the
+// documents that match no filter, "" when it was not requested. As in
+// elasticsearch other_bucket_key implies other_bucket, and other_bucket alone
+// uses the default key.
+func otherBucketKey(agg *meta.AggregationFilters) string {
+	if agg.OtherBucketKey != "" {
+		return agg.OtherBucketKey
+	}
+	if agg.OtherBucket {
+		return meta.DefaultOtherBucketKey
+	}
+	return ""
+}
+
+// singleOrder reads the single {key: asc|desc} entry of an aggregation order.
+func singleOrder(kind string, order map[string]string) (string, bool, error) {
+	if len(order) > 1 {
+		return "", false, errors.New(errors.ErrorTypeParsingException,
+			fmt.Sprintf("[%s] aggregation order supports a single key", kind))
+	}
+	for key, dir := range order {
+		switch dir {
+		case "asc":
+			return key, true, nil
+		case "desc":
+			return key, false, nil
+		default:
+			return "", false, errors.New(errors.ErrorTypeParsingException,
+				fmt.Sprintf("[%s] aggregation order must be asc or desc, got [%s]", kind, dir))
+		}
+	}
+	return zincaggregation.OrderByCount, false, nil
+}
+
+// topHitsAggregation builds the [top_hits] aggregation.
+//
+// Deviation from elasticsearch: only a single sort key is supported, and the
+// hits carry _id, _index, _score and _source but no sort values.
+func topHitsAggregation(agg *meta.AggregationTopHits) (*zincaggregation.TopHitsAggregation, error) {
+	if agg.Size < 0 || agg.From < 0 {
+		return nil, errors.New(errors.ErrorTypeParsingException, "[top_hits] aggregation size and from must not be negative")
+	}
+	size := agg.Size
+	if size == 0 {
+		size = 3 // elasticsearch default
+	}
+	sortField, sortDesc, err := topHitsSort(agg.Sort)
+	if err != nil {
+		return nil, err
+	}
+	src, err := source.Request(agg.Source)
+	if err != nil {
+		return nil, err
+	}
+
+	rv := zincaggregation.NewTopHitsAggregation(size, agg.From, sortField, sortDesc)
+	rv.SetSource(src.Enable, src.Fields)
+	return rv, nil
+}
+
+// topHitsSort accepts "field", "-field", ["field"], [{"field": "desc"}] and
+// [{"field": {"order": "desc"}}]. An empty field sorts by descending _score.
+func topHitsSort(v interface{}) (field string, desc bool, err error) {
+	switch v := v.(type) {
+	case nil:
+		return "", true, nil
+	case []interface{}:
+		if len(v) == 0 {
+			return "", true, nil
+		}
+		if len(v) > 1 {
+			return "", false, errors.New(errors.ErrorTypeNotImplemented, "[top_hits] aggregation supports a single sort key")
+		}
+		return topHitsSort(v[0])
+	case string:
+		if v == "_score" {
+			return "", true, nil
+		}
+		switch {
+		case strings.HasPrefix(v, "-"):
+			return v[1:], true, nil
+		case strings.HasPrefix(v, "+"):
+			return v[1:], false, nil
+		default:
+			return v, false, nil
+		}
+	case map[string]interface{}:
+		if len(v) != 1 {
+			return "", false, errors.New(errors.ErrorTypeNotImplemented, "[top_hits] aggregation supports a single sort key")
+		}
+		for key, order := range v {
+			asc, err := sortOrder(order)
+			if err != nil {
+				return "", false, errors.New(errors.ErrorTypeParsingException,
+					fmt.Sprintf("[top_hits] aggregation sort order must be asc or desc, got [%v]", order))
+			}
+			if key == "_score" {
+				return "", !asc, nil
+			}
+			return key, !asc, nil
+		}
+	}
+	return "", false, errors.New(errors.ErrorTypeXContentParseException, "[top_hits] aggregation sort format error")
 }
 
 func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error) {
@@ -335,9 +631,60 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 	aggs := bucket.Aggregations()
 	for name, v := range aggs {
 		switch v := v.(type) {
+		case *zincaggregation.StatsCalculator:
+			resp[name] = statsResponse(v)
+		case *zincaggregation.PercentilesCalculator:
+			resp[name] = meta.AggregationResponse{Values: v.Values()}
+		case *zincaggregation.MissingCalculator:
+			docCount := v.DocCount()
+			resp[name] = meta.AggregationResponse{DocCount: &docCount}
+		case *zincaggregation.PercentileRanksCalculator:
+			if err := v.Err(); err != nil {
+				return nil, errors.New(errors.ErrorTypeRuntimeException,
+					fmt.Sprintf("[%s] percentile_ranks aggregation err %s", name, err.Error()))
+			}
+			resp[name] = meta.AggregationResponse{Values: v.Values()}
+		case *zincaggregation.TopHitsCalculator:
+			hits, err := topHitsResponse(name, v)
+			if err != nil {
+				return nil, err
+			}
+			resp[name] = meta.AggregationResponse{Hits: hits}
+		case *zincaggregation.FilterCalculator:
+			aggResp, err := singleBucketResponse(v.Bucket())
+			if err != nil {
+				return nil, err
+			}
+			resp[name] = aggResp
+		case *zincaggregation.FiltersCalculator:
+			buckets := make(map[string]interface{}, 0)
+			for _, b := range v.NamedBuckets() {
+				aggResp, err := singleBucketResponse(b)
+				if err != nil {
+					return nil, err
+				}
+				buckets[b.Name()] = aggResp
+			}
+			resp[name] = meta.AggregationResponse{Buckets: buckets}
+		case *zincaggregation.MultiTermsCalculator:
+			aggRespBuckets := make([]map[string]interface{}, 0, len(v.Buckets()))
+			for _, bucket := range v.Buckets() {
+				aggBucket := map[string]interface{}{
+					"key":           v.Key(bucket.Name()),
+					"key_as_string": bucket.Name(),
+					"doc_count":     bucket.Count(),
+				}
+				if err := addSubAggregations(aggBucket, bucket); err != nil {
+					return nil, err
+				}
+				aggRespBuckets = append(aggRespBuckets, aggBucket)
+			}
+			resp[name] = meta.AggregationResponse{Buckets: aggRespBuckets}
 		case search.MetricCalculator:
+			// An empty bucket yields NaN (avg) or +/-Inf (min, max): json has
+			// no such values, elasticsearch reports null and zinc reports 0.
 			f := v.Value()
-			if math.IsNaN(f) {
+			if math.IsNaN(f) || math.IsInf(f, 0) {
 				f = 0
 			}
 			resp[name] = meta.AggregationResponse{Value: f}
@@ -354,15 +701,8 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 					aggBucket["key"] = key
 					aggBucket["key_as_string"] = bucket.Name()
 				}
-				if subAggs := bucket.Aggregations(); len(subAggs) > 1 {
-					subResp, err := Response(bucket)
-					if err != nil {
-						return nil, err
-					}
-					delete(subResp, "count")
-					for k, v := range subResp {
-						aggBucket[k] = v
-					}
+				if err := addSubAggregations(aggBucket, bucket); err != nil {
+					return nil, err
 				}
 				aggRespBuckets = append(aggRespBuckets, aggBucket)
 			}
@@ -380,4 +720,96 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 	}
 
 	return resp, nil
+}
+
+// addSubAggregations renders the sub-aggregations of a bucket next to its key
+// and doc_count. "count" is the internal doc counter, it is never returned.
+func addSubAggregations(aggBucket map[string]interface{}, bucket *search.Bucket) error {
+	if len(bucket.Aggregations()) <= 1 {
+		return nil
+	}
+	subResp, err := Response(bucket)
+	if err != nil {
+		return err
+	}
+	delete(subResp, "count")
+	for k, v := range subResp {
+		aggBucket[k] = v
+	}
+	return nil
+}
+
+// singleBucketResponse renders the one bucket of [filter] / [filters] /
+// [nested]: doc_count plus the sub-aggregations, which MarshalJSON splices
+// into the same object.
+func singleBucketResponse(bucket *search.Bucket) (meta.AggregationResponse, error) {
+	docCount := bucket.Count()
+	rv := meta.AggregationResponse{DocCount: &docCount}
+	if len(bucket.Aggregations()) <= 1 {
+		return rv, nil
+	}
+	subResp, err := Response(bucket)
+	if err != nil {
+		return rv, err
+	}
+	delete(subResp, "count")
+	rv.Aggregations = subResp
+	return rv, nil
+}
+
+// topHitsResponse renders the documents kept by [top_hits].
+func topHitsResponse(name string, c *zincaggregation.TopHitsCalculator) (*meta.AggregationHits, error) {
+	if err := c.Err(); err != nil {
+		return nil, errors.New(errors.ErrorTypeRuntimeException,
+			fmt.Sprintf("[%s] top_hits aggregation err %s", name, err.Error()))
+	}
+	enable, fields := c.Source()
+	src := &meta.Source{Enable: enable, Fields: fields}
+
+	hits := c.Hits()
+	rv := &meta.AggregationHits{
+		Total:    meta.Total{Value: int(c.Total())},
+		MaxScore: c.MaxScore(),
+		Hits:     make([]meta.AggregationHit, 0, len(hits)),
+	}
+	for i := range hits {
+		hit := meta.AggregationHit{
+			Index: hits[i].Index,
+			Type:  "_doc",
+			ID:    hits[i].ID,
+			Score: hits[i].Score,
+		}
+		if len(hits[i].Source) > 0 {
+			hit.Source = source.Response(src, hits[i].Source)
+		}
+		rv.Hits = append(rv.Hits, hit)
+	}
+	return rv, nil
+}
+
+// statsResponse renders [stats], plus the extra [extended_stats] fields when
+// the calculator was built for it.
+func statsResponse(c *zincaggregation.StatsCalculator) meta.AggregationResponse {
+	count := c.Count()
+	min, max, avg, sum := c.Min(), c.Max(), c.Avg(), c.Sum()
+	rv := meta.AggregationResponse{
+		Count: &count,
+		Min:   &min,
+		Max:   &max,
+		Avg:   &avg,
+		Sum:   &sum,
+	}
+	if !c.Extended() {
+		return rv
+	}
+
+	sumOfSquares, variance, stdDeviation := c.SumOfSquares(), c.Variance(), c.StdDeviation()
+	rv.SumOfSquares = &sumOfSquares
+	rv.Variance = &variance
+	rv.StdDeviation = &stdDeviation
+	rv.StdDeviationBounds = &meta.AggregationStdDeviationBounds{
+		Upper: avg + c.Sigma()*stdDeviation,
+		Lower: avg - c.Sigma()*stdDeviation,
+	}
+	return rv
 }

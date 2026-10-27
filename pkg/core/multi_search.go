@@ -80,6 +80,12 @@ func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchRespon
 		}
 	}()
 
+	// nested and join queries are resolved before query is parsed, and hidden
+	// nested documents are excluded from results.
+	if err := rewriteJoinQuery(query, mappings, analyzers, readers); err != nil {
+		return nil, err
+	}
+
 	_, err := uquery.ParseQueryDSL(query, mappings, analyzers)
 	if err != nil {
 		return nil, err

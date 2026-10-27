@@ -107,6 +107,9 @@ func LoadZincIndexesFromMetadata(version string) error {
 			index.shardHashing.Add(id)
 		}
 
+		// a cold index is read-only on every node that loads it
+		index.applyTier(index.GetTier())
+
 		log.Info().Msgf("Loading  index... [%s:%s] shards[%d:%d]", index.ref.Name, index.ref.StorageType, index.ref.ShardNum, totalShardNum)
 
 		// load index analysis

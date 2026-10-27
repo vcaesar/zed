@@ -14,6 +14,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-ego/gse v1.1.0
 	github.com/goccy/go-json v0.10.6
+	github.com/gofrs/flock v0.13.0
 	github.com/grafana/pyroscope-go v1.4.2
 	github.com/liuzl/gocc v0.0.0-20231231122217-0372e1059ca5
 	github.com/minio/minio-go/v7 v7.3.0
