@@ -1,31 +1,29 @@
-[![CI](https://github.com/zincsearch/zincsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zincsearch/zincsearch/actions/workflows/ci.yml)
-[![Nightly](https://github.com/zincsearch/zincsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/zincsearch/zincsearch/actions/workflows/nightly.yml)
-[![Release](https://github.com/zincsearch/zincsearch/actions/workflows/release.yml/badge.svg)](https://github.com/zincsearch/zincsearch/actions/workflows/release.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/zincsearch/zincsearch.svg)](https://pkg.go.dev/github.com/zincsearch/zincsearch)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/zincsearch/zincsearch)](../go.mod)
+[![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
+[![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
+[![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/vcaesar/zedsearch.svg)](https://pkg.go.dev/github.com/vcaesar/zedsearch)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/vcaesar/zedsearch)](../go.mod)
 [![golangci-lint](https://img.shields.io/badge/linter-golangci--lint-blue)](https://golangci-lint.run/)
-[![Release](https://img.shields.io/github/v/release/zincsearch/zincsearch)](https://github.com/zincsearch/zincsearch/releases/latest)
-[![Docs](https://img.shields.io/badge/Docs-Docs-green)](https://zincsearch-docs.zinc.dev/) [![codecov](https://codecov.io/github/zincsearch/zincsearch/branch/main/graph/badge.svg)](https://codecov.io/github/zincsearch/zincsearch)
+[![Release](https://img.shields.io/github/v/release/vcaesar/zedsearch)](https://github.com/vcaesar/zedsearch/releases/latest)
+[![Docs](https://img.shields.io/badge/Docs-Docs-green)](https://zincsearch-docs.zinc.dev/) [![codecov](https://codecov.io/github/vcaesar/zedsearch/branch/main/graph/badge.svg)](https://codecov.io/github/vcaesar/zedsearch)
 
 [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zht.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | Français | [Deutsch](README.de.md) | [Español](README.es.md) | [Русский](README.ru.md) | [Português](README.pt.md)
 
-❗Remarque : si votre cas d'usage est la recherche de logs (logs applicatifs et de sécurité) plutôt que la recherche applicative (implémenter une fonctionnalité de recherche dans votre application ou votre site web), vous devriez consulter le projet [openobserve/openobserve](https://github.com/openobserve/openobserve), écrit en Rust et conçu spécifiquement pour la recherche de logs.
+# ZedSearch
 
-# ZincSearch
+ZedSearch est un moteur de recherche qui effectue de l'indexation plein texte. C'est une alternative légère à Elasticsearch qui fonctionne avec une fraction des ressources. Il utilise [bluge](https://github.com/blugelabs/bluge) (via le fork [vcaesar/riot](https://github.com/vcaesar/riot)) comme bibliothèque d'indexation sous-jacente.
 
-ZincSearch est un moteur de recherche qui effectue de l'indexation plein texte. C'est une alternative légère à Elasticsearch qui fonctionne avec une fraction des ressources. Il utilise [bluge](https://github.com/blugelabs/bluge) (via le fork [vcaesar/riot](https://github.com/vcaesar/riot)) comme bibliothèque d'indexation sous-jacente.
+Il est très simple et facile à exploiter, contrairement à Elasticsearch qui nécessite de comprendre et d'ajuster une vingtaine de paramètres. Vous pouvez démarrer ZedSearch en 2 minutes.
 
-Il est très simple et facile à exploiter, contrairement à Elasticsearch qui nécessite de comprendre et d'ajuster une vingtaine de paramètres. Vous pouvez démarrer ZincSearch en 2 minutes.
+C'est un remplacement direct d'Elasticsearch si vous vous contentez d'ingérer des données via les API et de rechercher avec Kibana (Kibana n'est pas pris en charge par ZedSearch. ZedSearch fournit sa propre interface).
 
-C'est un remplacement direct d'Elasticsearch si vous vous contentez d'ingérer des données via les API et de rechercher avec Kibana (Kibana n'est pas pris en charge par ZincSearch. ZincSearch fournit sa propre interface).
-
-Regardez la vidéo ci-dessous pour une démonstration rapide de ZincSearch.
+Regardez la vidéo ci-dessous pour une démonstration rapide de ZedSearch.
 
 [![Zinc Youtube](../screenshots/zinc-youtube.jpg)](https://www.youtube.com/watch?v=aZXtuVjt1ow)
 
-# Pourquoi ZincSearch
+# Pourquoi ZedSearch
 
-Bien qu'Elasticsearch soit un très bon produit, il est complexe, nécessite beaucoup de ressources et a plus de dix ans. J'ai créé ZincSearch pour qu'il soit plus facile d'utiliser l'indexation de recherche plein texte sans trop d'efforts.
+Bien qu'Elasticsearch soit un très bon produit, il est complexe, nécessite beaucoup de ressources et a plus de dix ans. J'ai créé ZedSearch pour qu'il soit plus facile d'utiliser l'indexation de recherche plein texte sans trop d'efforts.
 
 # Fonctionnalités :
 
@@ -63,7 +61,7 @@ Consultez le [démarrage rapide](https://zincsearch-docs.zinc.dev/quickstart/)
 
 # Versions
 
-ZincSearch compte des centaines d'installations en production.
+ZedSearch compte des centaines d'installations en production.
 
 ## Compilation
 
@@ -87,9 +85,9 @@ démarre directement sans recompilation, avec ou sans l'argument `web`.
 Pour une compilation manuelle :
 
 ```sh
-go build -o zincsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zincsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zincsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zincsearch
 ```
 
 Les nœuds API uniquement renvoient le JSON de version sur `/` ; `/ui/` et l'interface Swagger sont désactivés.
@@ -105,48 +103,33 @@ répertoire vide `cmd/distr/`. Il ne nécessite jamais les fichiers frontend :
 
 Utilisez un ID, un répertoire de données, une adresse Raft et une adresse gRPC distincts pour chaque nœud ;
 voir [distribution/README.md](../distribution/README.md) pour l'ajout de nœuds et TLS. Il s'agit
-d'un stockage de documents répliqué indépendant, et non d'un serveur REST/UI ZincSearch distribué.
+d'un stockage de documents répliqué indépendant, et non d'un serveur REST/UI ZedSearch distribué.
 
-- CI (lint, `go test` sous Linux/macOS/Windows, couverture) : [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/zincsearch/zincsearch/actions/workflows/ci.yml
-- Image de développement nightly `ghcr.io/zincsearch/zincsearch-dev:nightly` : [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/zincsearch/zincsearch/actions/workflows/nightly.yml
-- Release (tags `v*`, goreleaser, `ghcr.io/zincsearch/zincsearch`) : [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/zincsearch/zincsearch/actions/workflows/release.yml
+- CI (lint, `go test` sous Linux/macOS/Windows, couverture) : [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
+- Image de développement nightly `ghcr.io/vcaesar/zedsearch-dev:nightly` : [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
+- Release (tags `v*`, goreleaser, `ghcr.io/vcaesar/zedsearch`) : [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
 
 > **Remarque — Le push de l'image nightly / de développement échoue sur les forks :**
 >
 > ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/zincsearch/zincsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
+> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
 > ```
 >
 > Le workflow se connecte à GHCR avec le `GITHUB_TOKEN` du dépôt, qui ne peut publier des packages que sous le
-> propriétaire du dépôt qui exécute le workflow. Sur un fork, le jeton n'a pas accès à l'organisation `zincsearch`,
-> le push est donc refusé. Exécutez le workflow depuis `zincsearch/zincsearch`, ou remplacez `env.IMAGE` dans
-> `nightly.yml` par `ghcr.io/<your-owner>/zincsearch-dev` (et assurez-vous que le package est lié au dépôt /
+> propriétaire du dépôt qui exécute le workflow. Sur un fork, le jeton n'a pas accès à l'organisation `vcaesar`,
+> le push est donc refusé. Exécutez le workflow depuis `vcaesar/zedsearch`, ou remplacez `env.IMAGE` dans
+> `nightly.yml` par `ghcr.io/<your-owner>/zedsearch-dev` (et assurez-vous que le package est lié au dépôt /
 > que le dépôt dispose de `packages: write`).
-
-# ZincSearch vs OpenObserve
-
-| Fonctionnalité                | ZincSearch                                                                | OpenObserve                                                                                         |
-| ----------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Cas d'usage idéal             | Recherche applicative                                                     | Logs, métriques, traces (données immuables)                                                         |
-| Stockage                      | Disque                                                                    | Disque, objet (S3), GCS, MinIO, swift et plus.                                                      |
-| Cas d'usage privilégié        | Recherche applicative                                                     | Observabilité (logs, métriques, traces)                                                             |
-| Volume de données max.        | Des centaines de Go                                                       | Échelle du pétaoctet                                                                                |
-| Haute disponibilité           | Non disponible                                                            | Oui                                                                                                 |
-| Open source                   | Oui                                                                       | Oui, [OpenObserve](https://github.com/openobserve/openobserve)                                      |
-| Compatibilité API ES          | Oui                                                                       | Oui                                                                                                 |
-| Interface graphique           | Basique                                                                   | Très avancée, avec tableaux de bord                                                                 |
-| Coût                          | Open source                                                               | Open source                                                                                         |
-| Démarrer                      | [Documentation open source](https://zincsearch-docs.zinc.dev/quickstart/) | [Documentation open source](https://openobserve.ai/docs) ou [Cloud](https://cloud.openobserve.ai)   |
 
 # Communauté
 
-- Comment développer et contribuer à ZincSearch
+- Comment développer et contribuer à ZedSearch
 
   Consultez le [guide de contribution](../CONTRIBUTING.md). Consultez également la [feuille de route](https://zincsearch-docs.zinc.dev/roadmap/)
 
 # Exemples
 
-Vous pouvez utiliser ZincSearch pour indexer et rechercher n'importe quelles données. Voici quelques exemples créés par la communauté pour indexer et rechercher le jeu de données d'e-mails Enron avec zincsearch :
+Vous pouvez utiliser ZedSearch pour indexer et rechercher n'importe quelles données. Voici quelques exemples créés par la communauté pour indexer et rechercher le jeu de données d'e-mails Enron avec zedsearch :
 
 1. https://github.com/jorgeloaiza48/Enron-Email-DataSet
 1. https://github.com/jhojanperlaza/email_search_engine

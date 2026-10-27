@@ -57,9 +57,9 @@ func TestSearchVector(t *testing.T) {
 	})
 
 	docs := map[string]string{
-		"x": `{"name": "x", "embedding": [1, 0, 0]}`,
-		"y": `{"name": "y", "embedding": [0, 1, 0]}`,
-		"z": `{"name": "z", "embedding": [0, 0, 1]}`,
+		"x":  `{"name": "x", "embedding": [1, 0, 0]}`,
+		"y":  `{"name": "y", "embedding": [0, 1, 0]}`,
+		"z":  `{"name": "z", "embedding": [0, 0, 1]}`,
 		"xy": `{"name": "xy", "embedding": [1, 1, 0]}`,
 	}
 	t.Run("index documents", func(t *testing.T) {
