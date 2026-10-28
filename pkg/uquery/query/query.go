@@ -196,7 +196,7 @@ func Query(query interface{}, mappings *meta.Mappings, analyzers map[string]*ana
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[geo_shape] failed to parse field").Cause(err)
 			}
 		case "knn":
-			if subq, err = KnnQuery(v, mappings); err != nil {
+			if subq, err = KnnQuery(v, mappings, analyzers); err != nil {
 				return nil, errors.New(errors.ErrorTypeXContentParseException, "[knn] failed to parse field").Cause(err)
 			}
 		default:

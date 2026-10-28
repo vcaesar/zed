@@ -146,14 +146,15 @@ func TestSnapshotInstall(t *testing.T) {
 	source := newTierIndex(t, "TestSnapshotInstall.index_1")
 	require.NoError(t, source.CreateDocument("2", map[string]interface{}{"name": "second"}, false))
 
-	dir := t.TempDir()
+	// stage under the data path like the replica does: t.TempDir may be on
+	// another drive (Windows CI), where rename fails
 	staged := filepath.Join(config.Global.DataPath, "_replication_test", "TestSnapshotInstall")
+	require.NoError(t, os.RemoveAll(staged))
 	require.NoError(t, os.MkdirAll(filepath.Dir(staged), 0o750))
 	t.Cleanup(func() { assert.NoError(t, os.RemoveAll(filepath.Dir(staged))) })
 
-	indexMeta, err := source.SnapshotTo(dir)
+	indexMeta, err := source.SnapshotTo(staged)
 	require.NoError(t, err)
-	require.NoError(t, os.Rename(dir, staged))
 
 	// install over a renamed copy of the metadata, as a replica would
 	stored := new(meta.Index)

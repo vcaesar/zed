@@ -22,6 +22,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -59,8 +60,20 @@ type primary struct {
 	commitMu sync.Mutex
 }
 
+// lastTermTime keeps terms of one process strictly increasing: clocks with
+// coarse ticks (Windows) would give two incarnations the same term.
+var lastTermTime atomic.Int64
+
 func newTerm(epoch int64) string {
-	return fmt.Sprintf("%020d-%020d", epoch, time.Now().UnixNano())
+	for {
+		last, now := lastTermTime.Load(), time.Now().UnixNano()
+		if now <= last {
+			now = last + 1
+		}
+		if lastTermTime.CompareAndSwap(last, now) {
+			return fmt.Sprintf("%020d-%020d", epoch, now)
+		}
+	}
 }
 
 func (p *primary) dirty() bool {

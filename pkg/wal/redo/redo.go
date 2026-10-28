@@ -136,9 +136,8 @@ func (l *Log) Read(index uint64) ([]byte, error) {
 		return nil, ErrNotFound
 	}
 	valueLen := binary.LittleEndian.Uint64(l.data[offset : offset+8])
-	if l.opt.NoCopy {
-		return l.data[offset+8 : offset+8+int(valueLen)], nil
-	}
+	// always copy: Write overwrites values in place, a shared slice would be
+	// read while another goroutine rewrites it
 	data := make([]byte, valueLen)
 	copy(data, l.data[offset+8:offset+8+int(valueLen)])
 	return data, nil

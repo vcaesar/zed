@@ -3,6 +3,7 @@ module github.com/vcaesar/zedsearch
 go 1.26.9
 
 require (
+	github.com/RoaringBitmap/roaring/v2 v2.27.0
 	github.com/blevesearch/mmap-go v1.2.0
 	github.com/caio/go-tdigest/v5 v5.0.0
 	github.com/dgraph-io/badger/v4 v4.9.6
@@ -29,7 +30,7 @@ require (
 	github.com/vcaesar/bluge_segment_api v1.2.1
 	github.com/vcaesar/ice v1.3.1
 	github.com/vcaesar/query_string v0.6.0
-	github.com/vcaesar/riot v1.33.0
+	github.com/vcaesar/riot v1.33.1
 	github.com/zincsearch/wal v1.2.6
 	go.etcd.io/bbolt v1.5.0
 	go.etcd.io/etcd/api/v3 v3.7.3
@@ -42,7 +43,6 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/RoaringBitmap/roaring/v2 v2.27.0 // indirect
 	github.com/adamzy/cedar-go v0.0.0-20170805034717-80a9c64b256d // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

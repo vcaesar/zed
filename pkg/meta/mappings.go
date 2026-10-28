@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"sync"
 
+	"github.com/vcaesar/riot"
+
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
@@ -58,6 +60,8 @@ type Property struct {
 	Relations map[string][]string `json:"relations,omitempty"`
 	// IndexOptions enables HNSW approximate search on a vector field by default.
 	IndexOptions *VectorIndexOptions `json:"index_options,omitempty"`
+	// Similarity is the default knn metric of a vector field, cosine when empty.
+	Similarity riot.Metric `json:"similarity,omitempty"`
 }
 
 // VectorIndexOptions are the HNSW graph parameters of a vector field. Zero
@@ -122,6 +126,7 @@ func (p *Property) DeepClone() Property {
 	prop.Format = p.Format
 	prop.TimeZone = p.TimeZone
 	prop.Dims = p.Dims
+	prop.Similarity = p.Similarity
 	if p.IndexOptions != nil {
 		opts := *p.IndexOptions
 		prop.IndexOptions = &opts

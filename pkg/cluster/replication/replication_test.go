@@ -434,3 +434,14 @@ func TestCleanupDropsDeletedIndexes(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, m.replicas)
 }
+
+// Terms of one process must differ even when the clock does not advance
+// between calls (coarse timers on Windows), or a takeover keeps the old term.
+func TestNewTermIncreases(t *testing.T) {
+	prev := newTerm(1)
+	for i := 0; i < 1000; i++ {
+		term := newTerm(1)
+		assert.Greater(t, term, prev)
+		prev = term
+	}
+}

@@ -42,7 +42,7 @@ func ParseQueryDSL(q *meta.ZedQuery, mappings *meta.Mappings, analyzers map[stri
 	}
 
 	// parse query
-	query, err := query.Query(q.Query, mappings, analyzers)
+	query, err := parseQuery(q, mappings, analyzers)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +104,37 @@ func ParseQueryDSL(q *meta.ZedQuery, mappings *meta.Mappings, analyzers map[stri
 	// TODO: search after PIT support
 
 	return request, nil
+}
+
+// parseQuery parses the query and the Elasticsearch top-level knn, one search
+// or an array of them. Hits match the query or any knn and their scores add
+// up; without a query only knn hits are returned.
+func parseQuery(q *meta.ZedQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.Query, error) {
+	if q.Knn == nil {
+		return query.Query(q.Query, mappings, analyzers)
+	}
+	knns, ok := q.Knn.([]interface{})
+	if !ok {
+		knns = []interface{}{q.Knn}
+	}
+	bq := riot.NewBooleanQuery()
+	if q.Query != nil {
+		subq, err := query.Query(q.Query, mappings, analyzers)
+		if err != nil {
+			return nil, err
+		}
+		bq.AddShould(subq)
+	}
+	for _, v := range knns {
+		knn, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[knn] must be an object or an array of objects, got %T", v))
+		}
+		subq, err := query.KnnQuery(knn, mappings, analyzers)
+		if err != nil {
+			return nil, errors.New(errors.ErrorTypeXContentParseException, "[knn] failed to parse field").Cause(err)
+		}
+		bq.AddShould(subq)
+	}
+	return bq, nil
 }
