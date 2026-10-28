@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import searchService from '../services/search';
+import indexService from '../services/index';
 import SearchBar from '../components/search/SearchBar';
 import IndexList from '../components/search/IndexList';
 import SearchResult from '../components/search/SearchResult';
@@ -19,6 +20,7 @@ export default function Search() {
   const [interval, setInterval] = useState('30s');
   const requestId = useRef(0);
   const busy = useRef(false);
+  const mappingId = useRef(0);
   useEffect(() => {
     busy.current = false;
     setLoading(false);
@@ -42,7 +44,9 @@ export default function Search() {
       const histogram = histogramInterval(+bounds.end - +bounds.start);
       setInterval(data.time.selectedFullTime ? '1s' : histogram.fixed_interval || histogram.calendar_interval);
     } catch (cause) {
-      if (id === requestId.current) setError(cause instanceof Error && !('response' in cause) ? cause.message : 'Search failed. Please try again.');
+      if (id !== requestId.current) return;
+      if (indexChanged) setResult(null);
+      setError(cause instanceof Error && !('response' in cause) ? cause.message : 'Search failed. Please try again.');
     } finally {
       if (id === requestId.current) { busy.current = false; setLoading(false); }
     }
@@ -52,7 +56,14 @@ export default function Search() {
     setIndex(name);
     setColumns([]);
     setFields(['_id', '_index', '_score']);
-    setResult(null);
+    const id = ++mappingId.current;
+    // The mapping lists every field, including ones absent from the current hits.
+    // On failure the list still fills from hits, and the search shows any API error.
+    if (name) indexService.mapping(name).then(response => {
+      if (id !== mappingId.current) return;
+      const properties = response.data?.[name]?.mappings?.properties || {};
+      setFields(previous => [...new Set([...previous, ...Object.keys(properties)])]);
+    }, () => {});
     const data = { ...draft, query: '' };
     setDraft(data);
     void search(data, name, true);

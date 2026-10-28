@@ -6,16 +6,26 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'onChang
   onValueChange: (value: string) => void;
   children: ReactNode;
   displayValue?: ReactNode;
+  placeholder?: string;
+  // When onSearch is set, the open list starts with a search box for filtering options.
+  search?: string;
+  onSearch?: (value: string) => void;
+  searchLabel?: string;
+  emptyLabel?: string;
 };
 type OptionProps = { value?: string | number; children: string | number; disabled?: boolean };
 
 // Single-value controlled select. Option children are declarations, never native DOM controls.
-export default function Select({ value, onValueChange, children, displayValue, disabled, className = '', id, ...props }: Props) {
+export default function Select({ value, onValueChange, children, displayValue, placeholder, search = '', onSearch, searchLabel = 'Search', emptyLabel, disabled, className = '', id, ...props }: Props) {
   const generatedId = useId();
   const triggerId = id || generatedId;
   const listId = `${triggerId}-list`;
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const popup = useRef<HTMLDivElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  // Enter in the search box moves focus to the trigger; its keypress would then click it open again.
+  const swallowClick = useRef(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [style, setStyle] = useState<CSSProperties>({});
@@ -28,13 +38,15 @@ export default function Select({ value, onValueChange, children, displayValue, d
   const selected = options.findIndex(option => option.value === String(value));
   const expanded = open && !disabled;
   const activeOption = options[active];
+  const searchable = !!onSearch;
 
   useLayoutEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+  useLayoutEffect(() => { if (expanded && searchable) searchInput.current?.focus(); }, [expanded, searchable]);
 
   useLayoutEffect(() => {
     if (!expanded) return;
     const button = trigger.current!;
-    const menu = list.current!;
+    const menu = popup.current!;
     const position = () => {
       const rect = button.getBoundingClientRect();
       const viewport = window.visualViewport;
@@ -102,7 +114,7 @@ export default function Select({ value, onValueChange, children, displayValue, d
     trigger.current?.focus();
     if (option.value !== String(value)) onValueChange(option.value);
   }
-  function keyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  function keyDown(event: KeyboardEvent<HTMLElement>) {
     if (disabled) return;
     const key = event.key;
     if (key === 'Escape' && expanded) {
@@ -141,27 +153,51 @@ export default function Select({ value, onValueChange, children, displayValue, d
       setOpen(true);
     }
   }
+  const listbox = <div id={listId} role="listbox" aria-labelledby={triggerId}
+    ref={node => { list.current = node; if (!searchable) popup.current = node; }}
+    className={searchable ? 'ui-select-options' : 'ui-select-list'} style={searchable ? undefined : style}
+    onMouseDown={event => event.preventDefault()}>
+    {options.map((option, index) => <div key={option.value} id={`${listId}-${index}`} role="option"
+      aria-selected={index === selected} aria-disabled={option.disabled || undefined}
+      data-active={index === active} data-value={option.value} className="ui-select-option"
+      onPointerMove={() => { if (!option.disabled) setActive(index); }} onClick={event => { event.stopPropagation(); choose(index); }}>
+      <span>{option.label}</span><span aria-hidden="true">{index === selected ? '✓' : ''}</span>
+    </div>)}
+  </div>;
   return <>
     <button {...props} id={triggerId} ref={trigger} type="button" role="combobox" value={value}
       disabled={disabled} className={`ui-select ${className}`} aria-haspopup="listbox" aria-expanded={expanded}
       aria-describedby={[`${triggerId}-value`, props['aria-describedby']].filter(Boolean).join(' ')}
       aria-controls={expanded ? listId : undefined}
       aria-activedescendant={expanded && activeOption && !activeOption.disabled ? `${listId}-${active}` : undefined}
-      onClick={() => expanded ? setOpen(false) : show()} onKeyDown={keyDown} onBlur={() => setOpen(false)}>
-      <span id={`${triggerId}-value`} className={displayValue === undefined ? 'ui-select-value' : 'sr-only'} aria-hidden="true">{options[selected]?.label || '\u00a0'}</span>
+      onClick={() => {
+        if (swallowClick.current) swallowClick.current = false;
+        else if (expanded) setOpen(false);
+        else show();
+      }} onKeyDown={keyDown}
+      onBlur={event => { if (!popup.current?.contains(event.relatedTarget)) setOpen(false); }}>
+      <span id={`${triggerId}-value`} className={displayValue !== undefined ? 'sr-only' : selected < 0 && placeholder ? 'ui-select-value ui-select-placeholder' : 'ui-select-value'} aria-hidden="true">{options[selected]?.label || placeholder || '\u00a0'}</span>
       {displayValue !== undefined && <span className="ui-select-value" aria-hidden="true">{displayValue}</span>}
       <svg className="ui-select-arrow" aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="m3 4.5 3 3 3-3" />
       </svg>
     </button>
-    {expanded && createPortal(<div id={listId} ref={list} role="listbox" aria-labelledby={triggerId}
-      className="ui-select-list" style={style} onMouseDown={event => event.preventDefault()}>
-      {options.map((option, index) => <div key={option.value} id={`${listId}-${index}`} role="option"
-        aria-selected={index === selected} aria-disabled={option.disabled || undefined}
-        data-active={index === active} data-value={option.value} className="ui-select-option"
-        onPointerMove={() => { if (!option.disabled) setActive(index); }} onClick={event => { event.stopPropagation(); choose(index); }}>
-        <span>{option.label}</span><span aria-hidden="true">{index === selected ? '✓' : ''}</span>
-      </div>)}
-    </div>, document.body)}
+    {expanded && createPortal(searchable ? <div ref={popup} className="ui-select-list ui-select-search" style={style}>
+      <input ref={searchInput} type="search" aria-label={searchLabel} placeholder={searchLabel} value={search}
+        aria-controls={listId} aria-activedescendant={activeOption && !activeOption.disabled ? `${listId}-${active}` : undefined}
+        onChange={event => { onSearch(event.target.value); setActive(0); }}
+        onKeyDown={event => {
+          if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) return;
+          if (event.key === 'Enter') {
+            swallowClick.current = true;
+            window.addEventListener('keyup', () => { swallowClick.current = false; }, { once: true });
+          }
+          keyDown(event);
+          if (event.key === 'Escape') trigger.current?.focus();
+        }}
+        onBlur={event => { if (event.relatedTarget !== trigger.current && !popup.current?.contains(event.relatedTarget)) setOpen(false); }} />
+      {listbox}
+      {!options.length && emptyLabel && <p className="ui-select-empty">{emptyLabel}</p>}
+    </div> : listbox, document.body)}
   </>;
 }

@@ -7,9 +7,9 @@ import HighLight from './HighLight';
 import { initialTime } from './model';
 import type { SearchResponse } from './model';
 
-const mocks = vi.hoisted(() => ({ search: vi.fn(), nameList: vi.fn() }));
+const mocks = vi.hoisted(() => ({ search: vi.fn(), nameList: vi.fn(), mapping: vi.fn() }));
 vi.mock('../../services/search', () => ({ default: { search: mocks.search } }));
-vi.mock('../../services/index', () => ({ default: { nameList: mocks.nameList } }));
+vi.mock('../../services/index', () => ({ default: { nameList: mocks.nameList, mapping: mocks.mapping } }));
 vi.mock('../../locales', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 const response = (name = 'logs', count = 23): SearchResponse => ({
   took: 4, hits: { total: { value: 1234 }, hits: Array.from({ length: count }, (_, i) => ({ _id: String(i), _index: name, '@timestamp': '2026-02-15T12:00:00Z', _source: { message: `Gold ${i}`, nested: { city: 'Paris' }, tags: ['one', 'two'] } })) },
@@ -22,11 +22,43 @@ async function selectIndex(name = 'logs') {
 }
 beforeEach(() => {
   mocks.nameList.mockReset().mockResolvedValue({ data: ['logs', 'other'] });
+  mocks.mapping.mockReset().mockResolvedValue({ data: {} });
   mocks.search.mockReset().mockResolvedValue({ data: response() });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('Search migration', () => {
+  it('filters indexes from a search box inside the index dropdown', async () => {
+    mocks.nameList.mockImplementation(async (name: string) => ({ data: ['logs', 'other'].filter(index => index.includes(name)) }));
+    render(<Search />);
+    const panel = screen.getByRole('complementary', { name: 'Indexes and fields' });
+    expect(within(panel).getAllByText('search.selectIndex')).toHaveLength(1);
+    expect(screen.queryByLabelText('Filter indexes')).not.toBeInTheDocument();
+    const trigger = within(panel).getByRole('combobox', { name: 'search.selectIndex' });
+    expect(trigger).toHaveTextContent('search.selectIndex');
+    expect(trigger.querySelector('.ui-select-placeholder')).not.toBeNull();
+    fireEvent.click(trigger);
+    const filter = screen.getByRole('searchbox', { name: 'Filter indexes' });
+    expect(filter).toHaveFocus();
+    expect(panel).not.toContainElement(filter);
+    await screen.findByRole('option', { name: 'logs' });
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['logs', 'other']);
+    fireEvent.change(filter, { target: { value: 'oth' } });
+    await waitFor(() => expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['other']));
+    expect(mocks.nameList).toHaveBeenLastCalledWith('oth');
+    fireEvent.change(filter, { target: { value: 'zzz' } });
+    expect(await screen.findByText('search.noResult')).toBeInTheDocument();
+    fireEvent.change(filter, { target: { value: 'lo' } });
+    await screen.findByRole('option', { name: 'logs' });
+    fireEvent.keyDown(filter, { key: 'Enter' });
+    await screen.findByText('Found 1,234 hits in 4 ms');
+    expect(trigger).toHaveTextContent('logs');
+    expect(trigger.querySelector('.ui-select-placeholder')).toBeNull();
+    await waitFor(() => expect(mocks.nameList).toHaveBeenLastCalledWith(''));
+    fireEvent.keyUp(trigger, { key: 'Enter' });
+    fireEvent.click(trigger);
+    expect(screen.getByRole('searchbox', { name: 'Filter indexes' })).toHaveValue('');
+  });
   it('selects and filters indexes, discovers columns, expands JSON and paginates locally', async () => {
     render(<Search />);
     await selectIndex();
@@ -49,8 +81,6 @@ describe('Search migration', () => {
     expect(screen.queryByRole('checkbox', { name: 'message' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
     expect(screen.getByLabelText('Results JSON')).toHaveTextContent('aggregations');
-    fireEvent.change(screen.getByLabelText('Filter indexes'), { target: { value: 'oth' } });
-    await waitFor(() => expect(mocks.nameList).toHaveBeenLastCalledWith('oth'));
   });
   it('submits query syntax, full time, limits, highlights and resets on index change', async () => {
     const { container } = render(<Search />);
@@ -200,12 +230,68 @@ describe('Search migration', () => {
     expect(screen.queryByRole('region', { name: 'Time range' })).not.toBeInTheDocument();
     expect(props.onSearch).not.toHaveBeenCalled();
   });
-  it('does not search when an unchanged query loses focus', async () => {
+  it('lists every mapped field even when no hit contains it', async () => {
+    mocks.mapping.mockImplementation(async (name: string) => ({ data: { [name]: { mappings: { properties: { '@timestamp': {}, _id: {}, [`${name}_only`]: {} } } } } }));
+    mocks.search.mockResolvedValue({ data: { took: 0, hits: { total: { value: 0 }, hits: [] } } });
+    render(<Search />);
+    fireEvent.click(screen.getByRole('combobox', { name: 'search.selectIndex' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'logs' }));
+    expect(await screen.findByRole('checkbox', { name: 'logs_only' })).toBeInTheDocument();
+    expect(mocks.mapping).toHaveBeenCalledWith('logs');
+    expect(screen.getAllByRole('checkbox', { name: '_id' })).toHaveLength(1);
+    let resolveLate!: (value: unknown) => void;
+    mocks.mapping.mockImplementationOnce(() => new Promise(resolve => { resolveLate = resolve; }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'search.selectIndex' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'other' }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'search.selectIndex' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'logs' }));
+    await screen.findByRole('checkbox', { name: 'logs_only' });
+    await act(async () => resolveLate({ data: { other: { mappings: { properties: { other_only: {} } } } } }));
+    expect(screen.queryByRole('checkbox', { name: 'other_only' })).not.toBeInTheDocument();
+  });
+  it('still lists hit fields when the mapping request fails', async () => {
+    mocks.mapping.mockRejectedValue(new Error('forbidden'));
     render(<Search />);
     await selectIndex();
-    fireEvent.focus(screen.getByLabelText('search.typeSearch'));
-    fireEvent.blur(screen.getByLabelText('search.typeSearch'));
-    expect(mocks.search).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('checkbox', { name: 'nested.city' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+  it('does not search when the query loses focus', async () => {
+    render(<Search />);
+    await selectIndex();
+    const input = screen.getByLabelText('search.typeSearch');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'Gold' } });
+    fireEvent.blur(input);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledTimes(2));
+    fireEvent.blur(input);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'message' }));
+    expect(mocks.search).toHaveBeenCalledTimes(2);
+  });
+  it('keeps previous results visible while switching indexes', async () => {
+    render(<Search />);
+    await selectIndex();
+    let resolve!: (value: { data: SearchResponse }) => void;
+    mocks.search.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'search.selectIndex' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'other' }));
+    expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ index: 'other' }));
+    expect(screen.getByRole('region', { name: 'search.searchResult' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText('Found 1,234 hits in 4 ms')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
+    await act(async () => resolve({ data: response('logs', 2) }));
+    expect(screen.getByText('1-2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'search.searchResult' })).toHaveAttribute('aria-busy', 'false');
+  });
+  it('clears previous results when switching indexes fails', async () => {
+    render(<Search />);
+    await selectIndex();
+    mocks.search.mockRejectedValueOnce(new Error('Index unavailable'));
+    fireEvent.click(screen.getByRole('combobox', { name: 'search.selectIndex' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'other' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Index unavailable');
+    expect(screen.queryByText('Found 1,234 hits in 4 ms')).not.toBeInTheDocument();
   });
   it('renders escaped text and highlights phrases, prefixes, operators and Unicode', () => {
     const { container, rerender } = render(<HighLight content={'<img src=x> New York Paris 中文 a.b'} queryString={'"New York" +City:Par* 中文 a.b'} />);

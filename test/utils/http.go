@@ -22,23 +22,20 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
-func NewGinContext() (*gin.Context, *httptest.ResponseRecorder) {
-	gin.SetMode(gin.ReleaseMode)
+func NewContext() (*zhttp.HTTPContext, *httptest.ResponseRecorder) {
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
 	req := &http.Request{
 		URL:    &url.URL{},
 		Header: make(http.Header),
 	}
-	c.Request = req
-	return c, w
+	return zhttp.NewHTTPContext(w, req), w
 }
 
-func SetGinRequestData(c *gin.Context, data interface{}) {
+func SetRequestData(c *zhttp.HTTPContext, data interface{}) {
 	c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 	switch v := data.(type) {
 	case string:
@@ -54,7 +51,7 @@ func SetGinRequestData(c *gin.Context, data interface{}) {
 	}
 }
 
-func SetGinRequestURL(c *gin.Context, path string, params map[string]string) {
+func SetRequestURL(c *zhttp.HTTPContext, path string, params map[string]string) {
 	q := c.Request.URL.Query()
 	for k, v := range params {
 		q.Add(k, v)
@@ -63,10 +60,8 @@ func SetGinRequestURL(c *gin.Context, path string, params map[string]string) {
 	c.Request.URL.RawQuery = q.Encode()
 }
 
-func SetGinRequestParams(c *gin.Context, params map[string]string) {
-	p := gin.Params{}
+func SetRequestParams(c *zhttp.HTTPContext, params map[string]string) {
 	for k, v := range params {
-		p = append(p, gin.Param{Key: k, Value: v})
+		c.SetParam(k, v)
 	}
-	c.Params = p
 }

@@ -24,27 +24,25 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 var (
-	sqlEngine *gin.Engine
+	sqlEngine *zhttp.Engine
 	sqlOnce   sync.Once
 )
 
 // sqlServer is the shared engine plus the SQL endpoints, which live in their
 // own route set.
-func sqlServer() *gin.Engine {
+func sqlServer() *zhttp.Engine {
 	sqlOnce.Do(func() {
-		gin.SetMode(gin.ReleaseMode)
-		sqlEngine = gin.New()
-		sqlEngine.Use(gin.Recovery())
+		sqlEngine = zhttp.New()
 		routes.SetRoutes(sqlEngine)
 		routes.SetSQLRoutes(sqlEngine)
 	})
