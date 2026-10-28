@@ -131,7 +131,7 @@ func TestCoordinatorRebalanceOnce(t *testing.T) {
 
 	assigner := NewAssigner(store, "/test/", 8)
 	election := NewElection(store, "/test/", "node-a", time.Minute, time.Second)
-	coordinator := NewCoordinator(election, membership, assigner, 8, time.Second)
+	coordinator := NewCoordinator(election, membership, assigner, 8, 0, time.Second)
 
 	// a follower must not write anything
 	require.NoError(t, coordinator.RebalanceOnce(ctx))

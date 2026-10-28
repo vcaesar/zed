@@ -44,8 +44,9 @@ type Membership struct {
 	ttl      time.Duration
 	interval time.Duration
 
-	mu    sync.Mutex
-	lease LeaseID
+	mu      sync.Mutex
+	lease   LeaseID
+	members map[string]Node // cache of the member list, kept current by Run
 }
 
 // NewMembership builds membership for local under prefix.
@@ -149,4 +150,88 @@ func (m *Membership) ListNodes(ctx context.Context) ([]Node, error) {
 // Watch streams membership changes until ctx is done.
 func (m *Membership) Watch(ctx context.Context) (<-chan Event, error) {
 	return m.store.Watch(ctx, m.NodesPrefix())
+}
+
+// Refresh replaces the cached member list with a full read.
+func (m *Membership) Refresh(ctx context.Context) error {
+	nodes, err := m.ListNodes(ctx)
+	if err != nil {
+		return err
+	}
+	members := make(map[string]Node, len(nodes))
+	for _, node := range nodes {
+		members[node.ID] = node
+	}
+	m.mu.Lock()
+	m.members = members
+	m.mu.Unlock()
+	return nil
+}
+
+// Addr returns the cached advertise address of a member. Request routing
+// resolves an owner on every forwarded call, the cache keeps that off etcd.
+func (m *Membership) Addr(id string) (string, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	node, ok := m.members[id]
+	return node.Addr, ok
+}
+
+// Run keeps the member cache current until ctx is done: one full read, then
+// the watch stream, with a periodic re-read so a dropped watch heals.
+func (m *Membership) Run(ctx context.Context, resync time.Duration) {
+	if err := m.Refresh(ctx); err != nil && ctx.Err() == nil {
+		log.Error().Err(err).Msg("cluster: load members")
+	}
+	events, err := m.Watch(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("cluster: watch members")
+		events = nil
+	}
+	ticker := time.NewTicker(resync)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := m.Refresh(ctx); err != nil && ctx.Err() == nil {
+				log.Error().Err(err).Msg("cluster: refresh members")
+			}
+		case event, ok := <-events:
+			if !ok {
+				events = nil
+				continue
+			}
+			m.apply(event)
+		}
+	}
+}
+
+func (m *Membership) apply(event Event) {
+	prefix := m.NodesPrefix()
+	if len(event.KV.Key) <= len(prefix) {
+		return
+	}
+	id := event.KV.Key[len(prefix):]
+
+	var node Node
+	if event.Type == EventPut {
+		if err := json.Unmarshal(event.KV.Value, &node); err != nil {
+			log.Error().Err(err).Str("key", event.KV.Key).Msg("cluster: bad node record")
+			return
+		}
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.members == nil {
+		m.members = make(map[string]Node)
+	}
+	if event.Type == EventDelete {
+		delete(m.members, id)
+		return
+	}
+	m.members[id] = node
 }

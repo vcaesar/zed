@@ -135,13 +135,14 @@ func start(ctx context.Context, store Store) error {
 		local:      local,
 		cancel:     cancel,
 	}
-	coordinator := NewCoordinator(election, membership, assigner, partitions, interval)
+	coordinator := NewCoordinator(election, membership, assigner, partitions, replicaCount(), interval)
 
-	n.wg.Add(4)
+	n.wg.Add(5)
 	go func() { defer n.wg.Done(); n.heartbeatLoop(runCtx, interval) }()
 	go func() { defer n.wg.Done(); election.Run(runCtx) }()
 	go func() { defer n.wg.Done(); coordinator.Run(runCtx) }()
 	go func() { defer n.wg.Done(); fence.Run(runCtx, interval) }()
+	go func() { defer n.wg.Done(); membership.Run(runCtx, interval) }()
 
 	mu.Lock()
 	current = n
@@ -243,7 +244,8 @@ func Nodes() []NodeStatus {
 	return out
 }
 
-// NodeAddr returns the advertised address of a node id.
+// NodeAddr returns the advertised address of a node id. It is answered from
+// the member cache; a miss (a node that just joined) falls back to one read.
 func NodeAddr(id string) (string, bool) {
 	n := get()
 	if n == nil {
@@ -252,19 +254,17 @@ func NodeAddr(id string) (string, bool) {
 	if id == n.local.ID {
 		return n.local.Addr, n.local.Addr != ""
 	}
+	if addr, ok := n.membership.Addr(id); ok {
+		return addr, addr != ""
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	nodes, err := n.membership.ListNodes(ctx)
-	if err != nil {
+	if err := n.membership.Refresh(ctx); err != nil {
 		log.Error().Err(err).Msg("cluster: list nodes")
 		return "", false
 	}
-	for _, member := range nodes {
-		if member.ID == id {
-			return member.Addr, member.Addr != ""
-		}
-	}
-	return "", false
+	addr, ok := n.membership.Addr(id)
+	return addr, ok && addr != ""
 }
 
 // Owner returns the node owning indexName and the epoch of that ownership.
@@ -284,6 +284,27 @@ func IsLocalOwner(indexName string) bool {
 		return true
 	}
 	return n.fence.IsLocalOwner(indexName)
+}
+
+// Replicas returns the nodes keeping a warm read replica of indexName,
+// empty when clustering is off or `zed_cluster_replicas` is 0.
+func Replicas(indexName string) []string {
+	n := get()
+	if n == nil {
+		return nil
+	}
+	return n.fence.Replicas(indexName)
+}
+
+// IsLocalReplica reports whether this node is a read replica of indexName.
+// Only indexes every node can open read-only (cold, object storage) may be
+// served from a replica; that check is left to the caller.
+func IsLocalReplica(indexName string) bool {
+	n := get()
+	if n == nil {
+		return false
+	}
+	return n.fence.IsLocalReplica(indexName)
 }
 
 // CheckEpoch fails when the partition of indexName moved since epoch was
@@ -325,11 +346,11 @@ func KeyPrefix() string {
 func keyPrefix() string {
 	prefix := strings.TrimSuffix(config.Global.Etcd.Prefix, "/")
 	if prefix == "" {
-		prefix = "/zinc"
+		prefix = "/zed"
 	}
 	name := config.Global.Cluster.Name
 	if name == "" {
-		name = "zincsearch"
+		name = "zedsearch"
 	}
 	return prefix + "/cluster/" + name + "/"
 }

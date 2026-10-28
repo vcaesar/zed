@@ -17,6 +17,8 @@ package cluster
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"sync"
 	"time"
 
@@ -196,11 +198,13 @@ type Coordinator struct {
 	membership *Membership
 	assigner   *Assigner
 	partitions int
+	replicas   int
 	interval   time.Duration
 }
 
-// NewCoordinator wires the pieces the rebalance loop needs.
-func NewCoordinator(election *Election, membership *Membership, assigner *Assigner, partitions int, interval time.Duration) *Coordinator {
+// NewCoordinator wires the pieces the rebalance loop needs. replicas is the
+// number of warm read replicas kept per partition.
+func NewCoordinator(election *Election, membership *Membership, assigner *Assigner, partitions, replicas int, interval time.Duration) *Coordinator {
 	if partitions <= 0 {
 		partitions = DefaultPartitions
 	}
@@ -209,12 +213,14 @@ func NewCoordinator(election *Election, membership *Membership, assigner *Assign
 		membership: membership,
 		assigner:   assigner,
 		partitions: partitions,
+		replicas:   max(replicas, 0),
 		interval:   interval,
 	}
 }
 
-// RebalanceOnce recomputes ownership from the live member list and writes
-// the partitions that must move. It is a no-op on non-leaders.
+// RebalanceOnce recomputes ownership from the live member list, writes the
+// partitions that must move, then the replica map. Orphaned partitions go to
+// a warm replica first. It is a no-op on non-leaders.
 func (c *Coordinator) RebalanceOnce(ctx context.Context) error {
 	if !c.election.IsLeader() {
 		return nil
@@ -240,11 +246,34 @@ func (c *Coordinator) RebalanceOnce(ctx context.Context) error {
 		owners[partition] = assignment.Owner
 	}
 
-	changes := Rebalance(owners, ids, c.partitions)
-	if len(changes) == 0 {
+	replicas, rev, err := c.assigner.ListReplicas(ctx)
+	if err != nil {
+		return err
+	}
+
+	changes := RebalanceWarm(owners, replicas, ids, c.partitions)
+	if len(changes) > 0 {
+		if err := c.assigner.Apply(ctx, current, changes); err != nil {
+			return err
+		}
+	}
+	// a change skipped by Apply is fixed by the next round, replicas follow
+	for partition, owner := range changes {
+		owners[partition] = owner
+	}
+
+	want := PlanReplicas(owners, ids, c.replicas)
+	if maps.EqualFunc(want, replicas, slices.Equal) {
 		return nil
 	}
-	return c.assigner.Apply(ctx, current, changes)
+	ok, err := c.assigner.SetReplicas(ctx, want, rev)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		log.Warn().Msg("cluster: replica map changed concurrently, skipped")
+	}
+	return nil
 }
 
 // Run rebalances on every membership change and on a slow timer, which
