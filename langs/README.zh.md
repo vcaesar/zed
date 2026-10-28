@@ -51,11 +51,11 @@ go + gin + react
 
 ## 搜索界面
 
-![Search screen](../screenshots/search_screen.jpg)
+![Search screen](../docs/hots/search-26.png)
 
-## 用户管理界面
+## 索引界面
 
-![Users screen](../screenshots/users_screen.jpg)
+![Index screen](../docs/hots/index-26.png)
 
 # 入门
 

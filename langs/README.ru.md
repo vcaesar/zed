@@ -51,11 +51,11 @@ go + gin + react
 
 ## Экран поиска
 
-![Search screen](../screenshots/search_screen.jpg)
+![Search screen](../docs/hots/search-26.png)
 
-## Экран управления пользователями
+## Экран индексов
 
-![Users screen](../screenshots/users_screen.jpg)
+![Index screen](../docs/hots/index-26.png)
 
 # Начало работы
 
