@@ -69,61 +69,34 @@ ZedSearch hat Hunderte von Produktionsinstallationen.
 
 ## Build
 
-Builds aus dem Quellcode sind **standardmäßig nur API**: Node.js, npm oder das Verzeichnis `frontend/` werden nicht benötigt.
-Legen Sie die Zugangsdaten für den ersten Start über `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
-(oder `conf/zed.toml`) fest und starten Sie dann im Wurzelverzeichnis des Repositorys:
+Setzen Sie `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` oder konfigurieren Sie `conf/zed.toml` (siehe unten) und führen Sie im Repository-Stammverzeichnis aus:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` erfordert einen Checkout des Quellcodes, Go, Node.js 24+ und npm. Es führt `npm ci`,
-`npm run build` und `go build -tags web` aus und erzeugt `test/zedsearch-web`
-(`.exe` unter Windows). Die resultierende Binärdatei bettet alle UI-Assets ein und kann
-auf einen anderen Host ohne Frontend-Dateien oder Node.js kopiert werden. Beim Start bleiben das
-Arbeitsverzeichnis, die Konfiguration und die Umgebung des Aufrufers erhalten. Eine bereits mit
-`-tags web` gebaute Binärdatei startet direkt ohne Neubau, mit oder ohne das Argument `web`.
+`web` erzeugt `test/zedsearch-web`, ein eigenständiges Binary mit eingebetteter UI.
 
-Für manuelle Builds:
+### Konfiguration
 
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
+Einstellungen werden in dieser Reihenfolge angewendet: eingebaute Standardwerte ([`pkg/config/default.toml`](../pkg/config/default.toml)), dann die optionale `conf/zed.toml` im Arbeitsverzeichnis, dann nicht leere Umgebungsvariablen. Jeder Schlüssel ist in Großbuchstaben auch eine Umgebungsvariable, z. B. `zed_server_port` → `ZED_SERVER_PORT`.
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
 ```
 
-Reine API-Knoten liefern unter `/` Versions-JSON; `/ui/` und die Swagger-UI sind deaktiviert.
-Web-Builds leiten `/` auf `/ui/` um und stellen Swagger bereit, wenn es in der Konfiguration aktiviert ist.
-`sh/build.sh`, Release-Binärdateien und das Standard-Docker-Image enthalten weiterhin die Oberfläche.
-
-Der experimentelle Multi-Node-Dokumentenspeicher befindet sich in `distribution/cmd`, nicht im
-leeren Verzeichnis `cmd/distr/`. Er benötigt niemals Frontend-Assets:
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-Verwenden Sie für jeden Knoten eine eigene ID, ein eigenes Datenverzeichnis, eine eigene Raft- und gRPC-Adresse;
-siehe [distribution/README.md](../distribution/README.md) für Beitritte und TLS. Dies ist ein
-unabhängiger replizierter Dokumentenspeicher, kein verteilter ZedSearch-REST/UI-Server.
-
-- CI (Lint, `go test` unter Linux/macOS/Windows, Coverage): [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly-Dev-Image `ghcr.io/vcaesar/zedsearch-dev:nightly`: [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- Release (`v*`-Tags, goreleaser, `ghcr.io/vcaesar/zedsearch`): [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **Hinweis — Nightly / Dev-Image (Push) schlägt bei Forks fehl:**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> Der Workflow meldet sich mit dem `GITHUB_TOKEN` des Repositorys bei GHCR an, das Pakete nur unter dem
-> Besitzer des Repositorys pushen kann, in dem der Workflow läuft. In einem Fork hat das Token keinen Zugriff auf die
-> Organisation `vcaesar`, daher wird der Push abgelehnt. Führen Sie den Workflow entweder in `vcaesar/zedsearch` aus,
-> oder ändern Sie `env.IMAGE` in `nightly.yml` auf `ghcr.io/<your-owner>/zedsearch-dev` (und stellen Sie sicher, dass das
-> Paket mit dem Repository verknüpft ist / das Repository `packages: write` hat).
+- Tragen Sie nur die Schlüssel ein, die Sie ändern; gruppierte Schlüssel behalten ihren Tabellen-Header aus `default.toml` (`[Shard]`, `[S3]`, `[Etcd]`, ...).
+- Unbekannte Schlüssel lassen den Start fehlschlagen. Zeitdauern sind in Nanosekunden, Größen in Bytes angegeben.
+- Die Zugangsdaten des ersten Administrators legen nur beim ersten Start den Admin-Benutzer an; ändern Sie das Passwort nach der Anmeldung und committen Sie nie echte Zugangsdaten.
 
 # Community
 

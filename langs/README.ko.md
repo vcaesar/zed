@@ -69,61 +69,34 @@ ZedSearch는 수백 개의 프로덕션 환경에 설치되어 있습니다.
 
 ## 빌드
 
-소스 빌드는 **기본적으로 API 전용**입니다: Node.js, npm, `frontend/` 디렉터리가 필요하지 않습니다.
-`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`(또는 `conf/zed.toml`)로
-최초 시작 자격 증명을 설정한 다음, 저장소 루트에서 실행하세요:
+`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`를 설정하거나 `conf/zed.toml`을 구성한 뒤(아래 참조) 저장소 루트에서 실행합니다:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web`에는 소스 체크아웃, Go, Node.js 24+, npm이 필요합니다. `npm ci`,
-`npm run build`, `go build -tags web`을 실행하여 `test/zedsearch-web`
-(Windows에서는 `.exe`)을 생성합니다. 결과 바이너리는 모든 UI 에셋을 내장하고 있어
-프런트엔드 파일이나 Node.js가 없는 다른 호스트로 복사해 사용할 수 있습니다. 시작 시 호출자의
-작업 디렉터리, 설정, 환경 변수가 유지됩니다. 이미 `-tags web`으로 빌드된 바이너리는
-`web` 인수 유무와 관계없이 다시 빌드하지 않고 바로 시작합니다.
+`web`은 UI가 내장된 독립 실행형 바이너리 `test/zedsearch-web`를 생성합니다.
 
-수동 빌드:
+### 설정
 
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
+설정은 다음 순서로 적용됩니다: 내장 기본값([`pkg/config/default.toml`](../pkg/config/default.toml)), 작업 디렉터리의 선택적 `conf/zed.toml`, 비어 있지 않은 환경 변수. 각 키를 대문자로 바꾼 이름이 환경 변수입니다(예: `zed_server_port` → `ZED_SERVER_PORT`).
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
 ```
 
-API 전용 노드는 `/`에서 버전 JSON을 반환하며, `/ui/`와 Swagger UI는 비활성화됩니다.
-Web 빌드는 `/`를 `/ui/`로 리디렉션하고, 설정에서 활성화된 경우 Swagger를 제공합니다.
-`sh/build.sh`, 릴리스 바이너리, 표준 Docker 이미지에는 여전히 UI가 포함됩니다.
-
-실험적인 멀티 노드 문서 저장소는 빈 `cmd/distr/` 디렉터리가 아니라 `distribution/cmd`에 있습니다.
-프런트엔드 에셋은 전혀 필요하지 않습니다:
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-각 노드마다 서로 다른 ID, 데이터 디렉터리, Raft 주소, gRPC 주소를 사용하세요.
-클러스터 참여와 TLS는 [distribution/README.md](../distribution/README.md)를 참고하세요. 이것은
-독립적인 복제 문서 저장소이며, 분산 ZedSearch REST/UI 서버가 아닙니다.
-
-- CI(lint, Linux/macOS/Windows에서 `go test`, 커버리지): [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly 개발 이미지 `ghcr.io/vcaesar/zedsearch-dev:nightly`: [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- 릴리스(`v*` 태그, goreleaser, `ghcr.io/vcaesar/zedsearch`): [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **참고 — Nightly / 개발 이미지(push)는 포크에서 실패합니다:**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> 이 워크플로는 저장소의 `GITHUB_TOKEN`으로 GHCR에 로그인하는데, 이 토큰은 워크플로를 실행하는 저장소의
-> 소유자 아래에만 패키지를 push할 수 있습니다. 포크에서는 토큰이 `vcaesar` 조직에 접근할 수 없으므로
-> push가 거부됩니다. `vcaesar/zedsearch`에서 워크플로를 실행하거나, `nightly.yml`의 `env.IMAGE`를
-> `ghcr.io/<your-owner>/zedsearch-dev`로 변경하세요(패키지가 저장소에 연결되어 있고 /
-> 저장소에 `packages: write` 권한이 있는지 확인하세요).
+- 변경할 키만 작성하세요. 그룹화된 키는 `default.toml`의 테이블 헤더(`[Shard]`, `[S3]`, `[Etcd]` 등)를 유지해야 합니다.
+- 알 수 없는 키가 있으면 시작에 실패합니다. 기간은 나노초, 크기는 바이트 단위입니다.
+- 초기 관리자 자격 증명은 첫 시작 시 관리자 사용자 생성에만 사용됩니다. 로그인 후 비밀번호를 변경하고 실제 자격 증명은 커밋하지 마세요.
 
 # 커뮤니티
 

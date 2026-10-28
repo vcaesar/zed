@@ -53,7 +53,7 @@ func Test_walMergeDocs_WriteTo(t *testing.T) {
 	docs := make(walMergeDocs)
 	t.Run("prepare", func(t *testing.T) {
 		for _, d := range testData {
-			docs.AddDocument(d)
+			assert.NoError(t, docs.AddDocument(d))
 		}
 
 		index, err = NewIndex("Test_walMergeDocs_WriteTo.index_1", "", 2)
@@ -116,7 +116,7 @@ func Test_walMergeDocs_AddDocument(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			docs := make(walMergeDocs)
 			for _, e := range tt.entries {
-				docs.AddDocument(e)
+				require.NoError(t, docs.AddDocument(e))
 			}
 			// one pending document under one shard, all actions in order
 			for id, pending := range docs {
@@ -129,6 +129,51 @@ func Test_walMergeDocs_AddDocument(t *testing.T) {
 			assert.Equal(t, tt.entries[len(tt.entries)-1], docs[tt.shard]["1"].data)
 		})
 	}
+}
+
+func Test_walMergeDocs_AddDocumentInvalid(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry map[string]interface{}
+	}{
+		{"empty", map[string]interface{}{}},
+		{"no action", map[string]interface{}{meta.IDFieldName: "1", meta.ShardFieldName: float64(0)}},
+		{"no id", map[string]interface{}{meta.ActionFieldName: meta.ActionTypeInsert, meta.ShardFieldName: float64(0)}},
+		{"no shard", map[string]interface{}{meta.IDFieldName: "1", meta.ActionFieldName: meta.ActionTypeInsert}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			docs := make(walMergeDocs)
+			assert.Error(t, docs.AddDocument(tt.entry))
+			assert.Equal(t, 0, docs.MaxShardLen())
+		})
+	}
+}
+
+// A malformed WAL entry is skipped and committed, not a panic or a stall.
+func TestIndexShard_ConsumeWALSkipsInvalidEntry(t *testing.T) {
+	name := "TestIndexShard_ConsumeWALSkipsInvalidEntry.index_1"
+	index, err := NewIndex(name, "disk", 1)
+	require.NoError(t, err)
+	require.NoError(t, StoreIndex(index))
+	t.Cleanup(func() { _ = DeleteIndex(name) })
+
+	shard := anyShard(index)
+	require.NoError(t, shard.OpenWAL())
+	ZED_INDEX_SHARD_WAL_LIST.Remove(shard.GetShardName())
+	t.Cleanup(func() { ZED_INDEX_SHARD_WAL_LIST.Add(shard) })
+	time.Sleep(2 * config.Global.WalSyncInterval)
+
+	require.NoError(t, shard.writeWAL([]byte(`{}`)))
+	require.True(t, shard.ConsumeWAL())
+	assert.False(t, shard.ConsumeWAL(), "skipped entry must be committed")
+
+	require.NoError(t, shard.writeWAL([]byte(`{}`)))
+	require.NoError(t, index.CreateDocument("1", map[string]interface{}{"name": "test"}, false))
+	require.True(t, shard.ConsumeWAL())
+	_, err = index.GetDocument("1")
+	require.NoError(t, err)
+	assert.False(t, shard.ConsumeWAL())
 }
 
 // A delete names the second layer shard of the document while a following

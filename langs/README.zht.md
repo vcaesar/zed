@@ -69,60 +69,34 @@ ZedSearch 已有數百個正式環境部署。
 
 ## 建置
 
-原始碼建置**預設僅包含 API**：不需要 Node.js、npm 或 `frontend/` 目錄。
-透過 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`（或 `conf/zed.toml`）
-設定首次啟動的憑證，然後在儲存庫根目錄執行：
+設定 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` 或設定 `conf/zed.toml`（見下文），然後在儲存庫根目錄執行：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` 需要原始碼檢出、Go、Node.js 24+ 與 npm。它會執行 `npm ci`、
-`npm run build` 與 `go build -tags web`，產生 `test/zedsearch-web`
-（Windows 上為 `.exe`）。產生的執行檔內嵌所有 UI 資源，可以複製到
-沒有前端檔案或 Node.js 的其他主機上執行。啟動時會保留呼叫者的工作目錄、
-設定與環境變數。已使用 `-tags web` 建置的執行檔會直接啟動而不會重新建置，
-無論是否帶有 `web` 參數。
+`web` 會產生 `test/zedsearch-web`，一個內嵌 UI 的獨立二進位檔。
 
-手動建置：
+### 設定
 
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
+設定依以下順序生效：內建預設值（[`pkg/config/default.toml`](../pkg/config/default.toml)），接著是工作目錄下選用的 `conf/zed.toml`，最後是非空的環境變數。每個鍵名轉為大寫即為對應的環境變數，例如 `zed_server_port` → `ZED_SERVER_PORT`。
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
 ```
 
-僅 API 的節點在 `/` 回傳版本 JSON；`/ui/` 與 Swagger UI 會被停用。
-Web 建置會將 `/` 重新導向到 `/ui/`，並在設定中啟用時提供 Swagger。
-`sh/build.sh`、發行的執行檔與標準 Docker 映像檔仍然包含 UI。
-
-實驗性的多節點文件儲存位於 `distribution/cmd`，而不是空的 `cmd/distr/` 目錄。
-它從不需要前端資源：
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-每個節點需使用不同的 ID、資料目錄、Raft 位址與 gRPC 位址；
-關於加入叢集與 TLS，請參閱 [distribution/README.md](../distribution/README.md)。這是一個
-獨立的複寫文件儲存，而不是分散式的 ZedSearch REST/UI 伺服器。
-
-- CI（lint、在 Linux/macOS/Windows 上執行 `go test`、覆蓋率）：[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly 開發映像檔 `ghcr.io/vcaesar/zedsearch-dev:nightly`：[`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- 發行（`v*` 標籤、goreleaser、`ghcr.io/vcaesar/zedsearch`）：[`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **注意 —— Nightly / 開發映像檔（推送）在 fork 儲存庫中會失敗：**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> 該工作流程使用儲存庫的 `GITHUB_TOKEN` 登入 GHCR，而該權杖只能向執行工作流程之儲存庫擁有者名下推送套件。
-> 在 fork 中，該權杖無權存取 `vcaesar` 組織，因此推送被拒絕。請在 `vcaesar/zedsearch` 中執行該工作流程，
-> 或者將 `nightly.yml` 中的 `env.IMAGE` 改為 `ghcr.io/<your-owner>/zedsearch-dev`（並確認該套件已連結到儲存庫 /
-> 儲存庫擁有 `packages: write` 權限）。
+- 只需列出要修改的鍵；分組的鍵需保留 `default.toml` 中的表頭（`[Shard]`、`[S3]`、`[Etcd]` 等）。
+- 未知的鍵會導致啟動失敗。時間長度單位為奈秒，大小單位為位元組。
+- 首位管理員憑證僅在首次啟動時用於建立管理員使用者；登入後請變更密碼，切勿提交真實憑證。
 
 # 社群
 
