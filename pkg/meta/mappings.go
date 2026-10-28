@@ -56,6 +56,15 @@ type Property struct {
 	// {"question": ["answer", "comment"]}. Documents set the field to
 	// {"name": "answer", "parent": "<parent _id>"} or just "question".
 	Relations map[string][]string `json:"relations,omitempty"`
+	// IndexOptions enables HNSW approximate search on a vector field by default.
+	IndexOptions *VectorIndexOptions `json:"index_options,omitempty"`
+}
+
+// VectorIndexOptions are the HNSW graph parameters of a vector field. Zero
+// values take riot's defaults. Persisted graphs are keyed by them.
+type VectorIndexOptions struct {
+	M              int `json:"m,omitempty"`
+	EfConstruction int `json:"ef_construction,omitempty"`
 }
 
 // Hidden fields used for nested and join documents.
@@ -113,6 +122,10 @@ func (p *Property) DeepClone() Property {
 	prop.Format = p.Format
 	prop.TimeZone = p.TimeZone
 	prop.Dims = p.Dims
+	if p.IndexOptions != nil {
+		opts := *p.IndexOptions
+		prop.IndexOptions = &opts
+	}
 	prop.Index = p.Index
 	prop.Store = p.Store
 	prop.Sortable = p.Sortable

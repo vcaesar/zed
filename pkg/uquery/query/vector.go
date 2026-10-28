@@ -26,7 +26,10 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
-const knnDefaultK = 10
+const (
+	knnDefaultK         = 10
+	knnMaxNumCandidates = 10000
+)
 
 // knnMetrics maps Elasticsearch/OpenSearch similarity names to riot metrics.
 var knnMetrics = map[string]riot.Metric{
@@ -35,20 +38,25 @@ var knnMetrics = map[string]riot.Metric{
 	"l2_norm": riot.L2, "l2": riot.L2, "euclidean": riot.L2,
 }
 
-// KnnQuery parses an exact k-nearest-neighbours query over a vector field.
+// KnnQuery parses a k-nearest-neighbours query over a vector field.
 // As in Elasticsearch, k is the number of neighbours per shard; use size to
-// cap the merged hits.
+// cap the merged hits. The search is HNSW approximate when the vector mapping
+// declares index_options (or OpenSearch method), or when num_candidates (or
+// OpenSearch method_parameters.ef_search) is set as the search beam; otherwise
+// it is exact. Graphs are built per segment on first use and persisted next
+// to it, so later searches and restarts reuse them.
 // Elasticsearch form:
 //
-//	{"field": "embedding", "query_vector": [0.1, 0.2], "k": 5, "similarity": "cosine", "boost": 2}
+//	{"field": "embedding", "query_vector": [0.1, 0.2], "k": 5, "num_candidates": 50, "similarity": "cosine", "boost": 2}
 //
 // OpenSearch form:
 //
-//	{"embedding": {"vector": [0.1, 0.2], "k": 5}}
+//	{"embedding": {"vector": [0.1, 0.2], "k": 5, "method_parameters": {"ef_search": 50}}}
 func KnnQuery(query map[string]interface{}, mappings *meta.Mappings) (riot.Query, error) {
 	var field string
 	var vector interface{}
 	k, boost := knnDefaultK, -1.0
+	numCandidates := 0
 	metric := riot.Cosine
 	var err error
 	for key, v := range query {
@@ -77,8 +85,25 @@ func KnnQuery(query map[string]interface{}, mappings *meta.Mappings) (riot.Query
 			if boost, err = zutils.ToFloat64(v); err != nil {
 				return nil, errors.New(errors.ErrorTypeParsingException, "[knn] boost must be numeric")
 			}
-		case "num_candidates", "filter", "_name":
-			// exact search: candidates are all documents; filter composes via bool
+		case "num_candidates":
+			if numCandidates, err = zutils.ToInt(v); err != nil || numCandidates <= 0 {
+				return nil, errors.New(errors.ErrorTypeParsingException, "[knn] num_candidates must be a positive integer")
+			}
+		case "method_parameters":
+			params, ok := v.(map[string]interface{})
+			if !ok {
+				return nil, errors.New(errors.ErrorTypeParsingException, "[knn] method_parameters must be an object")
+			}
+			for name, pv := range params {
+				if strings.ToLower(name) != "ef_search" {
+					return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[knn] unknown method parameter [%s]", name))
+				}
+				if numCandidates, err = zutils.ToInt(pv); err != nil || numCandidates <= 0 {
+					return nil, errors.New(errors.ErrorTypeParsingException, "[knn] ef_search must be a positive integer")
+				}
+			}
+		case "filter", "_name":
+			// filter composes via bool
 		default:
 			opts, ok := v.(map[string]interface{})
 			if !ok || field != "" || len(query) != 1 {
@@ -111,6 +136,26 @@ func KnnQuery(query map[string]interface{}, mappings *meta.Mappings) (riot.Query
 		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[knn] query_vector %s", err))
 	}
 	subq := riot.NewKNNQuery(field, vec, k).SetMetric(metric)
+	var ann *riot.ANNParams
+	if opts := prop.IndexOptions; opts != nil {
+		// graphs are persisted per segment, keyed by these build parameters
+		ann = &riot.ANNParams{M: opts.M, EfConstruction: opts.EfConstruction}
+	}
+	if numCandidates > 0 {
+		if numCandidates < k {
+			return nil, errors.New(errors.ErrorTypeParsingException, "[knn] num_candidates cannot be less than k")
+		}
+		if numCandidates > knnMaxNumCandidates {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[knn] num_candidates cannot exceed %d", knnMaxNumCandidates))
+		}
+		if ann == nil {
+			ann = new(riot.ANNParams)
+		}
+		ann.EfSearch = numCandidates
+	}
+	if ann != nil {
+		subq.SetANN(*ann)
+	}
 	if err := subq.Validate(); err != nil {
 		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[knn] %s", err))
 	}

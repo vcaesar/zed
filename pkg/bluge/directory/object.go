@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -109,7 +110,7 @@ func (m *MemoryObjectStore) Get(_ context.Context, key string) (io.ReadCloser, e
 	m.gets++
 	v, ok := m.objs[key]
 	if !ok {
-		return nil, fmt.Errorf("object not found: %s", key)
+		return nil, fmt.Errorf("object %s: %w", key, fs.ErrNotExist)
 	}
 	return io.NopCloser(bytes.NewReader(v)), nil
 }
@@ -186,11 +187,12 @@ func SetTestObjectStore(storageType string, store *MemoryObjectStore) (func(), e
 	return b.setStore(store), nil
 }
 
-// isIndexItem reports whether name is a bluge index item (segment or snapshot).
-// Everything else found next to them (pid files, WAL) must not be copied.
+// isIndexItem reports whether name is a riot index item (segment, snapshot or
+// persisted HNSW graph). Everything else found next to them (pid files, WAL)
+// must not be copied.
 func isIndexItem(name string) bool {
 	ext := path.Ext(name)
-	return ext == index.ItemKindSegment || ext == index.ItemKindSnapshot
+	return ext == index.ItemKindSegment || ext == index.ItemKindSnapshot || ext == index.ItemKindGraph
 }
 
 // directoryMarker marks an object prefix as an existing directory, so a shard
@@ -439,7 +441,10 @@ func (d *ObjectDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer
 		if data, closer, ok := d.cache.Get(key); ok {
 			return data, closer, nil
 		}
-		if err := d.fetchToCache(key); err != nil {
+		if err := d.fetchToCache(key); errors.Is(err, fs.ErrNotExist) {
+			// riot builds and persists missing optional items such as HNSW graphs
+			return nil, nil, err
+		} else if err != nil {
 			log.Warn().Err(err).Str("key", key).Msg("object cache: falling back to in-memory load")
 		} else if data, closer, ok := d.cache.Get(key); ok {
 			return data, closer, nil

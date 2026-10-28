@@ -45,7 +45,7 @@ func TestAddOrRemoveESAlias(t *testing.T) {
 			name: "should_fail_for_empty_request_body",
 			args: args{
 				data:   "",
-				result: `{"error":"invalid character '\u0000' looking for beginning of value"}`,
+				result: `{"error":"unexpected end of JSON input"}`,
 			},
 			wantCode:    http.StatusBadRequest,
 			wantErr:     false,
