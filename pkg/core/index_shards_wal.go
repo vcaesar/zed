@@ -131,7 +131,9 @@ func (s *IndexShard) Rollback() error {
 			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("rollback wal.entry.Unmarshal()")
 			return err
 		}
-		docs.AddDocument(doc)
+		if err = docs.AddDocument(doc); err != nil {
+			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Uint64("id", minID).Msg("rollback skip wal entry")
+		}
 	}
 
 	err = docs.WriteTo(s, batch, true)
@@ -195,7 +197,9 @@ func (s *IndexShard) ConsumeWAL() bool {
 			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.entry.Unmarshal()")
 			return false
 		}
-		docs.AddDocument(doc)
+		if err = docs.AddDocument(doc); err != nil {
+			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Uint64("id", minID).Msg("consume skip wal entry")
+		}
 		if docs.MaxShardLen() >= config.Global.BatchSize {
 			if !s.writeWALDocs(docs, batch, startID, minID) {
 				return false
@@ -207,8 +211,8 @@ func (s *IndexShard) ConsumeWAL() bool {
 
 	minID-- // need reduce one, because the next loop add one
 
-	// check if there is any docs to write
-	if docs.MaxShardLen() > 0 && !s.writeWALDocs(docs, batch, startID, minID) {
+	// write the rest, also commits skipped entries so they are not read again
+	if startID <= minID && !s.writeWALDocs(docs, batch, startID, minID) {
 		return false
 	}
 	log.Debug().Str("index", s.GetIndexName()).Str("shard", s.GetID()).Uint64("minID", minID).Uint64("maxID", maxID).Msg("consume wal end")
@@ -319,10 +323,15 @@ func (w *walMergeDocs) Reset() {
 // document whose entries name different second layer shards is moved under
 // ShardIDNeedUpdate, which writes the latest shard and deletes from the
 // others: its actions stay in order and are applied in one batch.
-func (w *walMergeDocs) AddDocument(data map[string]interface{}) {
-	action := data[meta.ActionFieldName].(string)
-	docID := data[meta.IDFieldName].(string)
-	shardID := int64(data[meta.ShardFieldName].(float64))
+func (w *walMergeDocs) AddDocument(data map[string]interface{}) error {
+	action, ok1 := data[meta.ActionFieldName].(string)
+	docID, ok2 := data[meta.IDFieldName].(string)
+	shardNum, ok3 := data[meta.ShardFieldName].(float64)
+	if !ok1 || !ok2 || !ok3 {
+		return fmt.Errorf("walMergeDocs: invalid wal entry, action [%v] id [%v] shard [%v]",
+			data[meta.ActionFieldName], data[meta.IDFieldName], data[meta.ShardFieldName])
+	}
+	shardID := int64(shardNum)
 	var doc *walDocument
 	for id, docs := range *w {
 		if pending, ok := docs[docID]; ok {
@@ -345,6 +354,7 @@ func (w *walMergeDocs) AddDocument(data map[string]interface{}) {
 	shard[docID] = doc
 	doc.actions = append(doc.actions, action)
 	doc.data = data
+	return nil
 }
 
 // WriteTo write documents to index and sync to disk
