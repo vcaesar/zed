@@ -195,14 +195,6 @@ func (s *IndexShard) ConsumeWAL() bool {
 			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.entry.Unmarshal()")
 			return false
 		}
-		if docs.InOtherShard(doc) {
-			// the document went to another second layer shard: apply what came
-			// before first, the merge must not reorder its actions
-			if !s.writeWALDocs(docs, batch, startID, minID-1) {
-				return false
-			}
-			startID = minID
-		}
 		docs.AddDocument(doc)
 		if docs.MaxShardLen() >= config.Global.BatchSize {
 			if !s.writeWALDocs(docs, batch, startID, minID) {
@@ -323,33 +315,34 @@ func (w *walMergeDocs) Reset() {
 	}
 }
 
-// InOtherShard reports whether the document of data is pending under
-// another second layer shard than data targets.
-func (w *walMergeDocs) InOtherShard(data map[string]interface{}) bool {
-	docID := data[meta.IDFieldName].(string)
-	shardID := int64(data[meta.ShardFieldName].(float64))
-	for id, docs := range *w {
-		if _, ok := docs[docID]; ok && id != shardID {
-			return true
-		}
-	}
-	return false
-}
-
+// AddDocument merges an entry into the pending actions of its document. A
+// document whose entries name different second layer shards is moved under
+// ShardIDNeedUpdate, which writes the latest shard and deletes from the
+// others: its actions stay in order and are applied in one batch.
 func (w *walMergeDocs) AddDocument(data map[string]interface{}) {
 	action := data[meta.ActionFieldName].(string)
 	docID := data[meta.IDFieldName].(string)
 	shardID := int64(data[meta.ShardFieldName].(float64))
+	var doc *walDocument
+	for id, docs := range *w {
+		if pending, ok := docs[docID]; ok {
+			doc = pending
+			if id != shardID {
+				delete(docs, docID)
+				shardID = ShardIDNeedUpdate
+			}
+			break
+		}
+	}
 	shard, ok := (*w)[shardID]
 	if !ok {
 		shard = make(map[string]*walDocument)
 		(*w)[shardID] = shard
 	}
-	doc, ok := shard[docID]
-	if !ok {
+	if doc == nil {
 		doc = &walDocument{docID: docID}
-		shard[docID] = doc
 	}
+	shard[docID] = doc
 	doc.actions = append(doc.actions, action)
 	doc.data = data
 }

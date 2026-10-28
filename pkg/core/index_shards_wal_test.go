@@ -91,34 +91,44 @@ func Test_walMergeDocs_WriteTo(t *testing.T) {
 	})
 }
 
-func Test_walMergeDocs_InOtherShard(t *testing.T) {
-	entry := func(id string, shardID int64) map[string]interface{} {
+func Test_walMergeDocs_AddDocument(t *testing.T) {
+	entry := func(id, action string, shardID int64) map[string]interface{} {
 		return map[string]interface{}{
 			meta.IDFieldName:     id,
-			meta.ActionFieldName: meta.ActionTypeUpdate,
+			meta.ActionFieldName: action,
 			meta.ShardFieldName:  float64(shardID),
 		}
 	}
-	docs := make(walMergeDocs)
-	docs.AddDocument(entry("1", 0))
+	const del, upd = meta.ActionTypeDelete, meta.ActionTypeUpdate
 
 	tests := []struct {
-		name string
-		data map[string]interface{}
-		want bool
+		name    string
+		entries []map[string]interface{}
+		shard   int64
+		actions []string
 	}{
-		{"same shard", entry("1", 0), false},
-		{"other shard", entry("1", ShardIDNeedUpdate), true},
-		{"other document", entry("2", ShardIDNeedUpdate), false},
+		{"same shard", []map[string]interface{}{entry("1", upd, 0), entry("1", upd, 0)}, 0, []string{upd, upd}},
+		{"delete then update", []map[string]interface{}{entry("1", del, 0), entry("1", upd, ShardIDNeedUpdate)}, ShardIDNeedUpdate, []string{del, upd}},
+		{"update then delete", []map[string]interface{}{entry("1", upd, ShardIDNeedUpdate), entry("1", del, 0)}, ShardIDNeedUpdate, []string{upd, del}},
+		{"back to its shard", []map[string]interface{}{entry("1", del, 0), entry("1", upd, ShardIDNeedUpdate), entry("1", upd, 0)}, ShardIDNeedUpdate, []string{del, upd, upd}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, docs.InOtherShard(tt.data))
+			docs := make(walMergeDocs)
+			for _, e := range tt.entries {
+				docs.AddDocument(e)
+			}
+			// one pending document under one shard, all actions in order
+			for id, pending := range docs {
+				if id != tt.shard {
+					assert.Empty(t, pending, "shard %d", id)
+				}
+			}
+			require.Contains(t, docs[tt.shard], "1")
+			assert.Equal(t, tt.actions, docs[tt.shard]["1"].actions)
+			assert.Equal(t, tt.entries[len(tt.entries)-1], docs[tt.shard]["1"].data)
 		})
 	}
-
-	docs.Reset()
-	assert.False(t, docs.InOtherShard(entry("1", ShardIDNeedUpdate)))
 }
 
 // A delete names the second layer shard of the document while a following
@@ -144,11 +154,30 @@ func TestIndexShard_ConsumeWALKeepsOrderAcrossShards(t *testing.T) {
 	_, err = index.GetDocument("1")
 	require.NoError(t, err)
 
-	// map order of the merged shards is random, repeat to catch a reorder
+	// map order of the merged shards is random, repeat to catch a reorder; a
+	// reader must not see the document missing while the batch is applied
 	for i := 0; i < 20; i++ {
 		require.NoError(t, index.DeleteDocument("1"))
 		require.NoError(t, index.CreateDocument("1", doc, true))
-		require.True(t, shard.ConsumeWAL())
+		stop, missing := make(chan struct{}), make(chan error, 1)
+		go func() {
+			defer close(missing)
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				if _, err := index.GetDocument("1"); err != nil {
+					missing <- err
+					return
+				}
+			}
+		}()
+		consumed := shard.ConsumeWAL()
+		close(stop)
+		require.True(t, consumed)
+		require.NoError(t, <-missing, "round %d", i)
 		_, err = index.GetDocument("1")
 		require.NoError(t, err, "round %d", i)
 	}
