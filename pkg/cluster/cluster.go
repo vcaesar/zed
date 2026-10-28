@@ -78,14 +78,19 @@ func get() *node {
 // Start joins the cluster. It is a no-op when clustering is disabled, so
 // callers can call it unconditionally.
 func Start(ctx context.Context) error {
-	if !config.Global.Cluster.Enable || Enabled() {
+	if !config.Global.Cluster.Enable {
 		return nil
+	}
+	lifecycle.Lock()
+	defer lifecycle.Unlock()
+	if Enabled() {
+		return nil // a second store would never be closed
 	}
 	store, err := NewEtcdStore()
 	if err != nil {
 		return err
 	}
-	if err := start(ctx, store); err != nil {
+	if err := startLocked(ctx, store); err != nil {
 		if closeErr := store.Close(); closeErr != nil {
 			log.Error().Err(closeErr).Msg("cluster: close store")
 		}
@@ -97,13 +102,13 @@ func Start(ctx context.Context) error {
 // StartWith joins the cluster using a caller provided store. Tests use it
 // with a MemoryStore, production goes through Start.
 func StartWith(ctx context.Context, store Store) error {
-	return start(ctx, store)
-}
-
-// start joins the cluster using store, tests call it with a MemoryStore.
-func start(ctx context.Context, store Store) error {
 	lifecycle.Lock()
 	defer lifecycle.Unlock()
+	return startLocked(ctx, store)
+}
+
+// startLocked joins the cluster using store, callers hold lifecycle.
+func startLocked(ctx context.Context, store Store) error {
 	if Enabled() {
 		return nil
 	}

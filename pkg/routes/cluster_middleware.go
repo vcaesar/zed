@@ -115,6 +115,11 @@ func ClusterRoute() zhttp.HandlerFunc {
 // happened while the write was in flight can still be reported to the
 // client instead of a misleading success.
 func serveFenced(c zhttp.Context, target string, epoch int64) {
+	// a node that may have lost its lease must not reach the WAL at all
+	if errors.Is(cluster.CheckEpoch(target, epoch), cluster.ErrNotLive) {
+		rejectWrite(c, target, cluster.ErrNotLive)
+		return
+	}
 	flush := c.NextBuffered()
 
 	err := cluster.CheckEpoch(target, epoch)
@@ -124,7 +129,11 @@ func serveFenced(c zhttp.Context, target string, epoch int64) {
 		}
 		return
 	}
+	rejectWrite(c, target, err)
+}
 
+// rejectWrite answers 409 so the client retries against the current owner.
+func rejectWrite(c zhttp.Context, target string, err error) {
 	owner := ""
 	var epochErr *cluster.EpochError
 	if errors.As(err, &epochErr) {
