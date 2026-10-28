@@ -69,7 +69,7 @@ ZedSearch has hundreds of production installations.
 
 ## Build
 
-Set `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`, then run from the repository root:
+Set `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` or configure `conf/zed.toml` (see below), then run from the repository root:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` produces `test/zedsearch-web`, a standalone binary with the UI embedded.
+
+### Configuration
+
+Settings are applied in order: built-in defaults ([`pkg/config/default.toml`](./pkg/config/default.toml)), then the optional `conf/zed.toml` in the working directory, then non-empty environment variables. Every key is also an environment variable in uppercase, e.g. `zed_server_port` → `ZED_SERVER_PORT`.
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- Only list the keys you change; grouped keys keep their table header from `default.toml` (`[Shard]`, `[S3]`, `[Etcd]`, ...).
+- Unknown keys fail startup. Durations are in nanoseconds, sizes in bytes.
+- The first admin credentials only create the admin user on first start; change the password after logging in and never commit real credentials.
 
 # Community
 

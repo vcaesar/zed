@@ -69,7 +69,7 @@ ZedSearch는 수백 개의 프로덕션 환경에 설치되어 있습니다.
 
 ## 빌드
 
-`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`를 설정한 뒤 저장소 루트에서 실행합니다:
+`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`를 설정하거나 `conf/zed.toml`을 구성한 뒤(아래 참조) 저장소 루트에서 실행합니다:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web`은 UI가 내장된 독립 실행형 바이너리 `test/zedsearch-web`를 생성합니다.
+
+### 설정
+
+설정은 다음 순서로 적용됩니다: 내장 기본값([`pkg/config/default.toml`](../pkg/config/default.toml)), 작업 디렉터리의 선택적 `conf/zed.toml`, 비어 있지 않은 환경 변수. 각 키를 대문자로 바꾼 이름이 환경 변수입니다(예: `zed_server_port` → `ZED_SERVER_PORT`).
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- 변경할 키만 작성하세요. 그룹화된 키는 `default.toml`의 테이블 헤더(`[Shard]`, `[S3]`, `[Etcd]` 등)를 유지해야 합니다.
+- 알 수 없는 키가 있으면 시작에 실패합니다. 기간은 나노초, 크기는 바이트 단위입니다.
+- 초기 관리자 자격 증명은 첫 시작 시 관리자 사용자 생성에만 사용됩니다. 로그인 후 비밀번호를 변경하고 실제 자격 증명은 커밋하지 마세요.
 
 # 커뮤니티
 

@@ -69,7 +69,7 @@ O ZedSearch tem centenas de instalações em produção.
 
 ## Build
 
-Defina `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` e execute a partir da raiz do repositório:
+Defina `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` ou configure `conf/zed.toml` (veja abaixo) e execute a partir da raiz do repositório:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` gera `test/zedsearch-web`, um binário independente com a interface embutida.
+
+### Configuração
+
+As configurações são aplicadas nesta ordem: padrões embutidos ([`pkg/config/default.toml`](../pkg/config/default.toml)), depois o `conf/zed.toml` opcional no diretório de trabalho e, por fim, variáveis de ambiente não vazias. Cada chave em maiúsculas também é uma variável de ambiente, por exemplo `zed_server_port` → `ZED_SERVER_PORT`.
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- Inclua apenas as chaves que você alterar; chaves agrupadas mantêm o cabeçalho de tabela do `default.toml` (`[Shard]`, `[S3]`, `[Etcd]`, ...).
+- Chaves desconhecidas fazem a inicialização falhar. Durações são em nanossegundos e tamanhos em bytes.
+- As credenciais do primeiro administrador só criam o usuário admin na primeira inicialização; altere a senha após o login e nunca faça commit de credenciais reais.
 
 # Comunidade
 

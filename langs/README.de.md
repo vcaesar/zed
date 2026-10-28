@@ -69,7 +69,7 @@ ZedSearch hat Hunderte von Produktionsinstallationen.
 
 ## Build
 
-Setzen Sie `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` und führen Sie im Repository-Stammverzeichnis aus:
+Setzen Sie `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` oder konfigurieren Sie `conf/zed.toml` (siehe unten) und führen Sie im Repository-Stammverzeichnis aus:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` erzeugt `test/zedsearch-web`, ein eigenständiges Binary mit eingebetteter UI.
+
+### Konfiguration
+
+Einstellungen werden in dieser Reihenfolge angewendet: eingebaute Standardwerte ([`pkg/config/default.toml`](../pkg/config/default.toml)), dann die optionale `conf/zed.toml` im Arbeitsverzeichnis, dann nicht leere Umgebungsvariablen. Jeder Schlüssel ist in Großbuchstaben auch eine Umgebungsvariable, z. B. `zed_server_port` → `ZED_SERVER_PORT`.
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- Tragen Sie nur die Schlüssel ein, die Sie ändern; gruppierte Schlüssel behalten ihren Tabellen-Header aus `default.toml` (`[Shard]`, `[S3]`, `[Etcd]`, ...).
+- Unbekannte Schlüssel lassen den Start fehlschlagen. Zeitdauern sind in Nanosekunden, Größen in Bytes angegeben.
+- Die Zugangsdaten des ersten Administrators legen nur beim ersten Start den Admin-Benutzer an; ändern Sie das Passwort nach der Anmeldung und committen Sie nie echte Zugangsdaten.
 
 # Community
 

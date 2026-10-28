@@ -69,7 +69,7 @@ ZedSearch は数百の本番環境で導入されています。
 
 ## ビルド
 
-`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` を設定し、リポジトリのルートで実行します：
+`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` を設定するか `conf/zed.toml` を用意し（後述）、リポジトリのルートで実行します：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` は UI を組み込んだ単体バイナリ `test/zedsearch-web` を生成します。
+
+### 設定
+
+設定は次の順に適用されます：組み込みのデフォルト（[`pkg/config/default.toml`](../pkg/config/default.toml)）、作業ディレクトリにある任意の `conf/zed.toml`、空でない環境変数。各キーを大文字にしたものが環境変数名になります（例：`zed_server_port` → `ZED_SERVER_PORT`）。
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- 変更するキーだけを記述します。グループ化されたキーは `default.toml` のテーブルヘッダー（`[Shard]`、`[S3]`、`[Etcd]` など）を付けて記述します。
+- 不明なキーがあると起動に失敗します。期間はナノ秒、サイズはバイト単位です。
+- 初回管理者の認証情報は初回起動時の管理者ユーザー作成にのみ使われます。ログイン後にパスワードを変更し、実際の認証情報はコミットしないでください。
 
 # コミュニティ
 

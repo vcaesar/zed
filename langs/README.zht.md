@@ -69,7 +69,7 @@ ZedSearch 已有數百個正式環境部署。
 
 ## 建置
 
-設定 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`，然後在儲存庫根目錄執行：
+設定 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` 或設定 `conf/zed.toml`（見下文），然後在儲存庫根目錄執行：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` 會產生 `test/zedsearch-web`，一個內嵌 UI 的獨立二進位檔。
+
+### 設定
+
+設定依以下順序生效：內建預設值（[`pkg/config/default.toml`](../pkg/config/default.toml)），接著是工作目錄下選用的 `conf/zed.toml`，最後是非空的環境變數。每個鍵名轉為大寫即為對應的環境變數，例如 `zed_server_port` → `ZED_SERVER_PORT`。
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- 只需列出要修改的鍵；分組的鍵需保留 `default.toml` 中的表頭（`[Shard]`、`[S3]`、`[Etcd]` 等）。
+- 未知的鍵會導致啟動失敗。時間長度單位為奈秒，大小單位為位元組。
+- 首位管理員憑證僅在首次啟動時用於建立管理員使用者；登入後請變更密碼，切勿提交真實憑證。
 
 # 社群
 

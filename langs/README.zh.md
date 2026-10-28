@@ -69,7 +69,7 @@ ZedSearch 已有数百个生产环境部署。
 
 ## 构建
 
-设置 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`，然后在仓库根目录运行：
+设置 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` 或配置 `conf/zed.toml`（见下文），然后在仓库根目录运行：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` 会生成 `test/zedsearch-web`，一个内嵌 UI 的独立二进制文件。
+
+### 配置
+
+配置按以下顺序生效：内置默认值（[`pkg/config/default.toml`](../pkg/config/default.toml)），然后是工作目录下可选的 `conf/zed.toml`，最后是非空的环境变量。每个键名转为大写即为对应的环境变量，例如 `zed_server_port` → `ZED_SERVER_PORT`。
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- 只需列出要修改的键；分组的键需保留 `default.toml` 中的表头（`[Shard]`、`[S3]`、`[Etcd]` 等）。
+- 未知的键会导致启动失败。时长单位为纳秒，大小单位为字节。
+- 首个管理员凭据仅在首次启动时用于创建管理员用户；登录后请修改密码，切勿提交真实凭据。
 
 # 社区
 

@@ -69,7 +69,7 @@ ZedSearch используется в сотнях производственн�
 
 ## Сборка
 
-Задайте `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` и выполните из корня репозитория:
+Задайте `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` или настройте `conf/zed.toml` (см. ниже) и выполните из корня репозитория:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
@@ -77,6 +77,26 @@ go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
 `web` создаёт `test/zedsearch-web` — самостоятельный бинарный файл со встроенным UI.
+
+### Конфигурация
+
+Настройки применяются в таком порядке: встроенные значения по умолчанию ([`pkg/config/default.toml`](../pkg/config/default.toml)), затем необязательный `conf/zed.toml` в рабочем каталоге, затем непустые переменные окружения. Каждый ключ в верхнем регистре — это и переменная окружения, например `zed_server_port` → `ZED_SERVER_PORT`.
+
+```toml
+# conf/zed.toml
+zed_first_admin_user = "admin"
+zed_first_admin_password = "change-me"
+zed_server_port = "4080"
+zed_data_path = "./data"
+zed_log_level = "info"
+
+[Shard]
+zed_shard_num = 3
+```
+
+- Указывайте только изменяемые ключи; сгруппированные ключи сохраняют заголовок таблицы из `default.toml` (`[Shard]`, `[S3]`, `[Etcd]`, ...).
+- Неизвестные ключи приводят к ошибке запуска. Длительности задаются в наносекундах, размеры — в байтах.
+- Учётные данные первого администратора используются только для создания пользователя admin при первом запуске; смените пароль после входа и никогда не коммитьте реальные учётные данные.
 
 # Сообщество
 
