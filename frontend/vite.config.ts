@@ -13,7 +13,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 8080,
     proxy: Object.fromEntries(['/api', '/es', '/version', '/swagger'].map(path => [path, {
-      target: process.env.ZINC_API_TARGET || 'http://localhost:4080',
+      target: process.env.ZED_API_TARGET || 'http://localhost:4080',
       changeOrigin: true,
     }])),
   },

@@ -39,7 +39,7 @@ const PartialAggName = "_partial"
 // taken from the original query. Aggregations that cannot be merged
 // exactly (cardinality, percentiles, stats) keep the first node's value and
 // are logged, they are approximations across nodes.
-func MergeSearch(responses []*meta.SearchResponse, query *meta.ZincQuery) *meta.SearchResponse {
+func MergeSearch(responses []*meta.SearchResponse, query *meta.ZedQuery) *meta.SearchResponse {
 	out := &meta.SearchResponse{Hits: meta.Hits{Hits: []meta.Hit{}}}
 	aggs := make(map[string]map[string]interface{})
 	var names []string
@@ -192,7 +192,7 @@ func aggFromGeneric(m map[string]interface{}) meta.AggregationResponse {
 	return agg
 }
 
-func aggDef(query *meta.ZincQuery, name string) meta.Aggregations {
+func aggDef(query *meta.ZedQuery, name string) meta.Aggregations {
 	if query == nil {
 		return meta.Aggregations{}
 	}
@@ -494,7 +494,7 @@ func sortBuckets(buckets []interface{}) {
 
 // sortHits orders the merged hits: by the single sort field when the query
 // asked for one, by score descending otherwise.
-func sortHits(hits []meta.Hit, query *meta.ZincQuery) {
+func sortHits(hits []meta.Hit, query *meta.ZedQuery) {
 	field, desc, ok := sortField(query)
 	if !ok {
 		sort.SliceStable(hits, func(i, j int) bool {
@@ -530,7 +530,7 @@ func sortHits(hits []meta.Hit, query *meta.ZincQuery) {
 
 // sortField reads the first sort clause of the query, the merge supports a
 // single field. "_score" is reported as not set, score order is the default.
-func sortField(query *meta.ZincQuery) (string, bool, bool) {
+func sortField(query *meta.ZedQuery) (string, bool, bool) {
 	if query == nil || query.Sort == nil {
 		return "", false, false
 	}
@@ -625,7 +625,7 @@ func compareValues(left, right interface{}) int {
 	return strings.Compare(stringify(left), stringify(right))
 }
 
-func windowHits(hits []meta.Hit, query *meta.ZincQuery) []meta.Hit {
+func windowHits(hits []meta.Hit, query *meta.ZedQuery) []meta.Hit {
 	if query == nil {
 		return hits
 	}

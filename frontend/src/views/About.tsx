@@ -13,7 +13,7 @@ export default function About() {
     });
     return () => { active = false; };
   }, []);
-  return <section className="card space-y-6"><h1>Zinc Search</h1><p>{t('about.introduction')}</p>
+  return <section className="card space-y-6"><h1>ZedSearch</h1><p>{t('about.introduction')}</p>
     {error && <p className="error" role="alert">{error}</p>}
     <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-4">
       {Object.entries({ version: 'Version', build: 'Build', commit_hash: 'CommitHash', branch: 'Branch', build_date: 'BuildDate' }).map(([key, label]) => <div className="contents" key={key}><dt className="font-medium">{label}</dt><dd>{version[key] || '—'}</dd></div>)}

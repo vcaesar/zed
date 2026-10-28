@@ -81,7 +81,7 @@ func loadDict(enable, enableStop bool, embed string) {
 		}
 	} else {
 		// load empty dict
-		_ = seg.LoadDictStr(`zinc`)
+		_ = seg.LoadDictStr(`zed`)
 		if enableStop {
 			_ = seg.LoadStopStr(_dictStop)
 		}

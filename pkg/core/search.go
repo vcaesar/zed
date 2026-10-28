@@ -35,7 +35,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/uquery/timerange"
 )
 
-func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) {
+func (index *Index) Search(query *meta.ZedQuery) (*meta.SearchResponse, error) {
 	mappings := index.GetMappings()
 	analyzers := index.GetAnalyzers()
 
@@ -85,7 +85,7 @@ func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) 
 	return searchV2(index.GetAllShardNum(), int64(len(readers)), dmi, query, mappings)
 }
 
-func searchV2(shardNum, readerNum int64, dmi search.DocumentMatchIterator, query *meta.ZincQuery, mappings *meta.Mappings) (*meta.SearchResponse, error) {
+func searchV2(shardNum, readerNum int64, dmi search.DocumentMatchIterator, query *meta.ZedQuery, mappings *meta.Mappings) (*meta.SearchResponse, error) {
 	resp := &meta.SearchResponse{
 		Hits: meta.Hits{Hits: []meta.Hit{}},
 	}
@@ -192,7 +192,7 @@ func searchV2(shardNum, readerNum int64, dmi search.DocumentMatchIterator, query
 // indexed as own documents, so `nested`, `has_child` and `has_parent` clauses
 // are resolved by extra search over same readers, and result is pushed back
 // into query as list of document ids (see uquery.Rewrite).
-func rewriteJoinQuery(query *meta.ZincQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer, readers []*riot.Reader) error {
+func rewriteJoinQuery(query *meta.ZedQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer, readers []*riot.Reader) error {
 	paths := nestedPaths(mappings)
 	if len(paths) == 0 {
 		if _, ok := mappings.GetProperty(meta.JoinNameField); !ok {

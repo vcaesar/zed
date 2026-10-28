@@ -63,7 +63,7 @@ func TestResponse(t *testing.T) {
 	mappings.SetProperty("created", dateProp)
 	mappings.SetProperty("meta.updated", dateProp)
 
-	data := []byte(`{"name":"zinc","created":"2022-03-04T05:06:07Z","meta.updated":"2022-03-04T05:06:07Z","meta.tag":"x"}`)
+	data := []byte(`{"name":"zed","created":"2022-03-04T05:06:07Z","meta.updated":"2022-03-04T05:06:07Z","meta.tag":"x"}`)
 
 	tests := []struct {
 		name   string
@@ -73,7 +73,7 @@ func TestResponse(t *testing.T) {
 	}{
 		{"no fields returns nil", nil, data, nil},
 		{"invalid json returns nil", []*meta.Field{{Field: "name"}}, []byte(`{`), nil},
-		{"plain field", []*meta.Field{{Field: "name"}}, data, map[string]interface{}{"name": []interface{}{"zinc"}}},
+		{"plain field", []*meta.Field{{Field: "name"}}, data, map[string]interface{}{"name": []interface{}{"zed"}}},
 		{"missing field skipped", []*meta.Field{{Field: "nope"}}, data, map[string]interface{}{}},
 		{"date without format is raw", []*meta.Field{{Field: "created"}}, data,
 			map[string]interface{}{"created": []interface{}{"2022-03-04T05:06:07Z"}}},

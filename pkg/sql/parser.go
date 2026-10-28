@@ -14,7 +14,7 @@
  */
 
 // Package sql implements the Elasticsearch SQL API: it parses a subset of
-// SQL SELECT, translates it to the zinc query DSL and formats the result.
+// SQL SELECT, translates it to the zed query DSL and formats the result.
 package sql
 
 import (
@@ -46,12 +46,12 @@ const (
 
 // matchFuncName is what MATCH( is rewritten to: MATCH is a reserved word in
 // the MySQL grammar and only parses as MATCH(...) AGAINST (...).
-const matchFuncName = "zinc_match"
+const matchFuncName = "zed_match"
 
 // queryFuncName is the lucene escape hatch, QUERY('...').
 const queryFuncName = "query"
 
-// Error marks a SQL request zinc cannot answer: a parse failure or an
+// Error marks a SQL request zed cannot answer: a parse failure or an
 // unsupported construct. Handlers render it as HTTP 400.
 type Error struct {
 	msg string

@@ -46,7 +46,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
+	zedanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
 )
 
 func RequestAnalyzer(data *meta.IndexAnalysis) (map[string]*analysis.Analyzer, error) {
@@ -91,17 +91,17 @@ func RequestAnalyzer(data *meta.IndexAnalysis) (map[string]*analysis.Analyzer, e
 			case "custom":
 				// omit
 			case "regexp", "pattern":
-				ana, err = zincanalyzer.NewRegexpAnalyzer(map[string]interface{}{
+				ana, err = zedanalyzer.NewRegexpAnalyzer(map[string]interface{}{
 					"pattern":   v.Pattern,
 					"lowercase": v.Lowercase,
 					"stopwords": v.Stopwords,
 				})
 			case "standard":
-				ana, err = zincanalyzer.NewStandardAnalyzer(map[string]interface{}{
+				ana, err = zedanalyzer.NewStandardAnalyzer(map[string]interface{}{
 					"stopwords": v.Stopwords,
 				})
 			case "stop":
-				ana, err = zincanalyzer.NewStopAnalyzer(map[string]interface{}{
+				ana, err = zedanalyzer.NewStopAnalyzer(map[string]interface{}{
 					"stopwords": v.Stopwords,
 				})
 			default:
@@ -188,7 +188,7 @@ func QueryAnalyzer(data map[string]*analysis.Analyzer, name string) (*analysis.A
 
 	switch name {
 	case "standard":
-		return zincanalyzer.NewStandardAnalyzer(nil)
+		return zedanalyzer.NewStandardAnalyzer(nil)
 	case "simple":
 		return analyzer.NewSimpleAnalyzer(), nil
 	case "keyword":
@@ -196,11 +196,11 @@ func QueryAnalyzer(data map[string]*analysis.Analyzer, name string) (*analysis.A
 	case "web":
 		return analyzer.NewWebAnalyzer(), nil
 	case "regexp", "pattern":
-		return zincanalyzer.NewRegexpAnalyzer(nil)
+		return zedanalyzer.NewRegexpAnalyzer(nil)
 	case "stop":
-		return zincanalyzer.NewStopAnalyzer(nil)
+		return zedanalyzer.NewStopAnalyzer(nil)
 	case "whitespace":
-		return zincanalyzer.NewWhitespaceAnalyzer()
+		return zedanalyzer.NewWhitespaceAnalyzer()
 	case "gse_standard": // for Chinese support
 		return chs.NewGseStandardAnalyzer(), nil
 	case "gse_search": // for Chinese support

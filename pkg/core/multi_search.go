@@ -32,7 +32,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/uquery/timerange"
 )
 
-func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchResponse, error) {
+func MultiSearch(indexNames []string, query *meta.ZedQuery) (*meta.SearchResponse, error) {
 	var mappings *meta.Mappings
 	var analyzers map[string]*analysis.Analyzer
 	var readers []*riot.Reader
@@ -41,7 +41,7 @@ func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchRespon
 	timeMin, timeMax := timerange.Query(query.Query)
 	isMatched := false
 	hasIndex := false
-	for _, index := range ZINC_INDEX_LIST.List() {
+	for _, index := range ZED_INDEX_LIST.List() {
 		if len(indexNames) > 0 {
 			for _, indexName := range indexNames {
 				isMatched = isMatchIndex(index.GetName(), indexName)
@@ -121,20 +121,20 @@ func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchRespon
 // isMatchIndex("abc", "*bc") true
 // isMatchIndex("abc", "bc") false
 // isMatchIndex("abc", "abc") true
-func isMatchIndex(zincIndexName, indexName string) bool {
+func isMatchIndex(zedIndexName, indexName string) bool {
 	if indexName == "" {
 		return true
 	}
 
 	// eg.: *-test
 	if strings.HasPrefix(indexName, "*") {
-		return strings.HasSuffix(zincIndexName, indexName[1:])
+		return strings.HasSuffix(zedIndexName, indexName[1:])
 	}
 
 	// eg.: test-*
 	if strings.HasSuffix(indexName, "*") {
-		return strings.HasPrefix(zincIndexName, indexName[:len(indexName)-1])
+		return strings.HasPrefix(zedIndexName, indexName[:len(indexName)-1])
 	}
 
-	return zincIndexName == indexName
+	return zedIndexName == indexName
 }

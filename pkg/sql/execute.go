@@ -57,7 +57,7 @@ func Query(sql string, fetchSize int) (*Response, error) {
 	return buildResponse(stmt, fields, resp, fetchSize)
 }
 
-func search(indexes []string, query *meta.ZincQuery) (*meta.SearchResponse, error) {
+func search(indexes []string, query *meta.ZedQuery) (*meta.SearchResponse, error) {
 	if len(indexes) == 1 && !strings.Contains(indexes[0], "*") {
 		index, exists := core.GetIndex(indexes[0])
 		if !exists {
@@ -71,7 +71,7 @@ func search(indexes []string, query *meta.ZincQuery) (*meta.SearchResponse, erro
 // indexFields collects the mapping types of every index the statement reads.
 func indexFields(indexes []string) FieldTypes {
 	fields := make(FieldTypes)
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		if !matchesAny(index.GetName(), indexes) {
 			continue
 		}
@@ -378,7 +378,7 @@ func toInt64(value interface{}) interface{} {
 	return int64(number)
 }
 
-// columnType maps a zinc mapping type to the SQL type reported in the
+// columnType maps a zed mapping type to the SQL type reported in the
 // response columns.
 func columnType(mappingType string) string {
 	switch mappingType {

@@ -106,7 +106,7 @@ func TestUpdateAccountCacheSnapshot(t *testing.T) {
 			accountUserStore = accountUserStoreMock{set: func(key string, user meta.User) error {
 				calls++
 				assert.Equal(t, id, key)
-				cached, exists := ZINC_CACHED_USERS.Get(id)
+				cached, exists := ZED_CACHED_USERS.Get(id)
 				assert.True(t, exists)
 				assert.Same(t, snapshot, cached)
 				assert.Equal(t, before, *snapshot)
@@ -119,7 +119,7 @@ func TestUpdateAccountCacheSnapshot(t *testing.T) {
 			got, err := UpdateAccount(id, "oldpass1", "New Name", "newpass1")
 			assert.Equal(t, 1, calls)
 			assert.Equal(t, before, *snapshot)
-			cached, exists := ZINC_CACHED_USERS.Get(id)
+			cached, exists := ZED_CACHED_USERS.Get(id)
 			require.True(t, exists)
 			stored, exists, readErr := GetUser(id)
 			require.NoError(t, readErr)

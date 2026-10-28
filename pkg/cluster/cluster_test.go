@@ -142,14 +142,14 @@ func TestKeyPrefix(t *testing.T) {
 	previous := config.Global
 	t.Cleanup(func() { config.Global = previous })
 
-	config.Global.Etcd.Prefix = "/zinc"
+	config.Global.Etcd.Prefix = "/zed"
 	config.Global.Cluster.Name = "prod"
-	assert.Equal(t, "/zinc/cluster/prod/", KeyPrefix())
+	assert.Equal(t, "/zed/cluster/prod/", KeyPrefix())
 
-	config.Global.Etcd.Prefix = "/zinc/"
-	assert.Equal(t, "/zinc/cluster/prod/", KeyPrefix())
+	config.Global.Etcd.Prefix = "/zed/"
+	assert.Equal(t, "/zed/cluster/prod/", KeyPrefix())
 
 	config.Global.Etcd.Prefix = ""
 	config.Global.Cluster.Name = ""
-	assert.Equal(t, "/zinc/cluster/zincsearch/", KeyPrefix())
+	assert.Equal(t, "/zed/cluster/zedsearch/", KeyPrefix())
 }

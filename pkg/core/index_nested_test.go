@@ -56,7 +56,7 @@ func nestedIndexMappings(t *testing.T) *meta.Mappings {
 func searchIDs(t *testing.T, index *Index, query interface{}) ([]string, int) {
 	t.Helper()
 
-	resp, err := index.Search(&meta.ZincQuery{Query: query, Size: 20})
+	resp, err := index.Search(&meta.ZedQuery{Query: query, Size: 20})
 	require.NoError(t, err)
 
 	ids := make([]string, 0, len(resp.Hits.Hits))

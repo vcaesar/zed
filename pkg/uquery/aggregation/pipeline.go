@@ -402,7 +402,7 @@ func movingFn(values []float64, window, shift int, fn func([]float64) float64) [
 }
 
 // movingFnScript matches the painless calls elasticsearch documents for
-// moving_fn, the only scripts zinc supports.
+// moving_fn, the only scripts zed supports.
 var movingFnScript = regexp.MustCompile(`^MovingFunctions\.(\w+)\(\s*values\s*(?:,(.*))?\)$`)
 
 func movingFunction(script string) (func([]float64) float64, error) {

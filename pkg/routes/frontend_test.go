@@ -31,9 +31,9 @@ import (
 func TestFrontendRoutes(t *testing.T) {
 	front, err := zedsearch.GetFrontendAssets()
 	require.NoError(t, err)
-	oldSwagger := config.Global.ZincSwaggerEnable
-	t.Cleanup(func() { config.Global.ZincSwaggerEnable = oldSwagger })
-	config.Global.ZincSwaggerEnable = true
+	oldSwagger := config.Global.ZedSwaggerEnable
+	t.Cleanup(func() { config.Global.ZedSwaggerEnable = oldSwagger })
+	config.Global.ZedSwaggerEnable = true
 	r := gin.New()
 	SetRoutes(r)
 

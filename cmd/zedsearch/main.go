@@ -43,16 +43,16 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/webbuild"
 )
 
-// @title           Zinc Search engine API
+// @title           ZedSearch engine API
 // @version         1.0.0
-// @description     Zinc Search engine API documents https://zincsearch-docs.zinc.dev
+// @description     ZedSearch engine API documents https://github.com/vcaesar/zedsearch
 // @termsOfService  http://swagger.io/terms/
 
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @contact.name    Zinc Search
-// @contact.url     https://www.zincsearch.com
+// @contact.name    ZedSearch
+// @contact.url     https://github.com/vcaesar/zedsearch
 
 // @securityDefinitions.basic BasicAuth
 // @BasePath        /
@@ -70,7 +70,7 @@ func main() {
 				log.Fatal().Err(err).Msg("build web binary")
 			}
 			// Package initializers opened storage; release it before restarting.
-			if err := errors.Join(core.ZINC_INDEX_LIST.Close(), metadata.Close()); err != nil {
+			if err := errors.Join(core.ZED_INDEX_LIST.Close(), metadata.Close()); err != nil {
 				log.Fatal().Err(err).Msg("close storage before web startup")
 			}
 			if err := webbuild.Run(binary, os.Args[1:]); err != nil {
@@ -82,10 +82,10 @@ func main() {
 
 	// Version
 	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Printf("zinc version %s\n", meta.Version)
+		fmt.Printf("zedsearch version %s\n", meta.Version)
 		os.Exit(0)
 	}
-	log.Info().Msgf("Starting Zinc %s", meta.Version)
+	log.Info().Msgf("Starting ZedSearch %s", meta.Version)
 
 	// Initialize telemetry
 	telemetry()
@@ -132,7 +132,7 @@ func main() {
 		// leave the cluster, peers stop routing here
 		cluster.Stop()
 		// close indexes
-		err := core.ZINC_INDEX_LIST.Close()
+		err := core.ZED_INDEX_LIST.Close()
 		log.Info().Err(err).Msgf("Index closed")
 		// close metadata
 		err = metadata.Close()
@@ -197,7 +197,7 @@ func sentries() {
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:     config.Global.SentryDSN,
-		Release: "zinc@" + meta.Version,
+		Release: "zedsearch@" + meta.Version,
 	})
 	if err != nil {
 		log.Print("sentry.Init: ", err.Error())

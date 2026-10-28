@@ -32,7 +32,7 @@ func GetESMapping(c *gin.Context) {
 	// format mappings
 	mappings := index.GetMappings()
 
-	// NOTE: Zinc currently "converts" object array fields to "field.index.sub_field"
+	// NOTE: Zed currently "converts" object array fields to "field.index.sub_field"
 	// Example Input Document:
 	//  {
 	//    "field": [
@@ -55,7 +55,7 @@ func GetESMapping(c *gin.Context) {
 	zutils.GinRenderJSON(c, http.StatusOK, gin.H{index.GetName(): gin.H{"mappings": es}})
 }
 
-// convertToESMapping converts the given Zinc mappings to the ElasticSearch representation.
+// convertToESMapping converts the given Zed mappings to the ElasticSearch representation.
 // TODO: In the future, the result can be stored, if a performance gain can be achieved (with a TTL).
 func convertToESMapping(mappings *meta.Mappings) *elastic.Mappings {
 	orig := mappings.DeepClone()

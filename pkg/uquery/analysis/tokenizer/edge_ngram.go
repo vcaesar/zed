@@ -19,7 +19,7 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	zedtokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
@@ -37,5 +37,5 @@ func NewEdgeNgramTokenizer(options interface{}) (analysis.Tokenizer, error) {
 	if min > max {
 		return nil, errors.New(errors.ErrorTypeParsingException, "[tokenizer] edge_ngram option [min_gram] should be not greater than [max_gram]")
 	}
-	return zinctokenizer.NewEdgeNgramTokenizer(int(min), int(max), tokenChars), nil
+	return zedtokenizer.NewEdgeNgramTokenizer(int(min), int(max), tokenChars), nil
 }

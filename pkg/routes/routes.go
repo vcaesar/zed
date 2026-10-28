@@ -63,7 +63,7 @@ func SetRoutes(r *gin.Engine) {
 		r.GET("/", meta.GetVersion)
 	}
 
-	if front != nil && config.Global.ZincSwaggerEnable {
+	if front != nil && config.Global.ZedSwaggerEnable {
 		swagger, err := swaggerHandler(front)
 		if err != nil {
 			log.Error().Err(err).Msg("swagger ui assets")

@@ -23,7 +23,7 @@ import (
 
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	zedaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
@@ -40,7 +40,7 @@ import (
 // Deviations from elasticsearch: [match] is not analyzed, it compares the
 // query string with the indexed doc values of the field, and [range] only
 // supports numeric and date fields.
-func FilterPredicate(name string, query interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func FilterPredicate(name string, query interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	q, err := queryMap(name, query)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func FilterPredicate(name string, query interface{}, mappings *meta.Mappings) (*
 		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] aggregation query is empty", name))
 	}
 
-	preds := make([]*zincaggregation.FilterPredicate, 0, len(q))
+	preds := make([]*zedaggregation.FilterPredicate, 0, len(q))
 	for _, clause := range sortedKeys(q) {
 		pred, err := clausePredicate(name, clause, q[clause], mappings)
 		if err != nil {
@@ -60,7 +60,7 @@ func FilterPredicate(name string, query interface{}, mappings *meta.Mappings) (*
 	return andPredicates(preds), nil
 }
 
-// queryMap normalizes a query fragment into a generic map. The zinc query DSL
+// queryMap normalizes a query fragment into a generic map. The zed query DSL
 // keeps raw json here, but callers may also pass typed structs.
 func queryMap(name string, query interface{}) (map[string]interface{}, error) {
 	if query == nil {
@@ -82,12 +82,12 @@ func queryMap(name string, query interface{}) (map[string]interface{}, error) {
 	return q, nil
 }
 
-func clausePredicate(name, clause string, v interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func clausePredicate(name, clause string, v interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	switch clause {
 	case "match_all":
-		return &zincaggregation.FilterPredicate{Match: func(*search.DocumentMatch) bool { return true }}, nil
+		return &zedaggregation.FilterPredicate{Match: func(*search.DocumentMatch) bool { return true }}, nil
 	case "match_none":
-		return &zincaggregation.FilterPredicate{Match: func(*search.DocumentMatch) bool { return false }}, nil
+		return &zedaggregation.FilterPredicate{Match: func(*search.DocumentMatch) bool { return false }}, nil
 	case "exists":
 		return existsPredicate(name, v)
 	case "term", "match":
@@ -107,11 +107,11 @@ func clausePredicate(name, clause string, v interface{}, mappings *meta.Mappings
 }
 
 // andPredicates combines predicates, all of them must match.
-func andPredicates(preds []*zincaggregation.FilterPredicate) *zincaggregation.FilterPredicate {
+func andPredicates(preds []*zedaggregation.FilterPredicate) *zedaggregation.FilterPredicate {
 	if len(preds) == 1 {
 		return preds[0]
 	}
-	rv := &zincaggregation.FilterPredicate{}
+	rv := &zedaggregation.FilterPredicate{}
 	for _, p := range preds {
 		rv.Fields = append(rv.Fields, p.Fields...)
 	}
@@ -126,7 +126,7 @@ func andPredicates(preds []*zincaggregation.FilterPredicate) *zincaggregation.Fi
 	return rv
 }
 
-func existsPredicate(name string, v interface{}) (*zincaggregation.FilterPredicate, error) {
+func existsPredicate(name string, v interface{}) (*zedaggregation.FilterPredicate, error) {
 	q, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, errors.New(errors.ErrorTypeXContentParseException, fmt.Sprintf("[%s] aggregation exists query format error", name))
@@ -135,7 +135,7 @@ func existsPredicate(name string, v interface{}) (*zincaggregation.FilterPredica
 	if !ok || field == "" {
 		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] aggregation exists query needs a field", name))
 	}
-	return &zincaggregation.FilterPredicate{
+	return &zedaggregation.FilterPredicate{
 		Fields: []string{field},
 		Match:  func(d *search.DocumentMatch) bool { return len(search.Field(field).Values(d)) > 0 },
 	}, nil
@@ -143,7 +143,7 @@ func existsPredicate(name string, v interface{}) (*zincaggregation.FilterPredica
 
 // termPredicate handles {"term": {"field": "v"}} and its long form
 // {"term": {"field": {"value": "v"}}}; [match] uses "query" instead of "value".
-func termPredicate(name, clause string, v interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func termPredicate(name, clause string, v interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	field, raw, err := singleField(name, clause, v)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func termPredicate(name, clause string, v interface{}, mappings *meta.Mappings) 
 }
 
 // termsPredicate handles {"terms": {"field": ["a", "b"]}}.
-func termsPredicate(name string, v interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func termsPredicate(name string, v interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	field, raw, err := singleField(name, "terms", v)
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func termsPredicate(name string, v interface{}, mappings *meta.Mappings) (*zinca
 }
 
 // valuesPredicate matches a document whose field holds any of values.
-func valuesPredicate(name, field string, values []interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func valuesPredicate(name, field string, values []interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	prop, _ := mappings.GetProperty(field)
 	switch prop.Type {
 	case "numeric", "bool", "boolean", "date", "time":
@@ -192,7 +192,7 @@ func valuesPredicate(name, field string, values []interface{}, mappings *meta.Ma
 			}
 			nums = append(nums, n)
 		}
-		return &zincaggregation.FilterPredicate{
+		return &zedaggregation.FilterPredicate{
 			Fields: []string{field},
 			Match: func(d *search.DocumentMatch) bool {
 				for _, v := range search.Field(field).Numbers(d) {
@@ -210,7 +210,7 @@ func valuesPredicate(name, field string, values []interface{}, mappings *meta.Ma
 		for _, v := range values {
 			terms = append(terms, fmt.Sprint(v))
 		}
-		return &zincaggregation.FilterPredicate{
+		return &zedaggregation.FilterPredicate{
 			Fields: []string{field},
 			Match: func(d *search.DocumentMatch) bool {
 				for _, v := range search.Field(field).Values(d) {
@@ -228,7 +228,7 @@ func valuesPredicate(name, field string, values []interface{}, mappings *meta.Ma
 
 // rangePredicate handles {"range": {"field": {"gte": 1, "lt": 10}}} on numeric
 // and date fields.
-func rangePredicate(name string, v interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func rangePredicate(name string, v interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	field, raw, err := singleField(name, "range", v)
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func rangePredicate(name string, v interface{}, mappings *meta.Mappings) (*zinca
 		return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[%s] aggregation range query needs a bound", name))
 	}
 
-	return &zincaggregation.FilterPredicate{
+	return &zedaggregation.FilterPredicate{
 		Fields: []string{field},
 		Match: func(d *search.DocumentMatch) bool {
 			for _, v := range search.Field(field).Numbers(d) {
@@ -292,7 +292,7 @@ func rangePredicate(name string, v interface{}, mappings *meta.Mappings) (*zinca
 	}, nil
 }
 
-func boolPredicate(name string, v interface{}, mappings *meta.Mappings) (*zincaggregation.FilterPredicate, error) {
+func boolPredicate(name string, v interface{}, mappings *meta.Mappings) (*zedaggregation.FilterPredicate, error) {
 	q, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, errors.New(errors.ErrorTypeXContentParseException, fmt.Sprintf("[%s] aggregation bool query format error", name))
@@ -329,8 +329,8 @@ func boolPredicate(name string, v interface{}, mappings *meta.Mappings) (*zincag
 		minimumShouldMatch = int(n)
 	}
 
-	rv := &zincaggregation.FilterPredicate{}
-	for _, preds := range [][]*zincaggregation.FilterPredicate{must, mustNot, should} {
+	rv := &zedaggregation.FilterPredicate{}
+	for _, preds := range [][]*zedaggregation.FilterPredicate{must, mustNot, should} {
 		for _, p := range preds {
 			rv.Fields = append(rv.Fields, p.Fields...)
 		}
@@ -359,7 +359,7 @@ func boolPredicate(name string, v interface{}, mappings *meta.Mappings) (*zincag
 
 // subPredicates compiles a bool clause, which is either a single query or an
 // array of queries.
-func subPredicates(name string, v interface{}, mappings *meta.Mappings) ([]*zincaggregation.FilterPredicate, error) {
+func subPredicates(name string, v interface{}, mappings *meta.Mappings) ([]*zedaggregation.FilterPredicate, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -367,7 +367,7 @@ func subPredicates(name string, v interface{}, mappings *meta.Mappings) ([]*zinc
 	if !ok {
 		queries = []interface{}{v}
 	}
-	rv := make([]*zincaggregation.FilterPredicate, 0, len(queries))
+	rv := make([]*zedaggregation.FilterPredicate, 0, len(queries))
 	for _, query := range queries {
 		pred, err := FilterPredicate(name, query, mappings)
 		if err != nil {

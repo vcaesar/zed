@@ -81,7 +81,7 @@ type AggregationResponse struct {
 
 	// percentiles aggregation, keyed form only: {"1.0": v, ...}.
 	// Elasticsearch returns an array of {key, value} objects when keyed is
-	// false, zinc always returns the keyed map.
+	// false, zed always returns the keyed map.
 	Values map[string]float64 `json:"values,omitempty"`
 
 	// missing / filter / filters / nested aggregations

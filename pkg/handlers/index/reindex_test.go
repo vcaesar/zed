@@ -38,11 +38,11 @@ func TestReindex(t *testing.T) {
 		index, err := core.NewIndex(sourceName, "disk", 2)
 		assert.NoError(t, err)
 		assert.NoError(t, core.StoreIndex(index))
-		assert.NoError(t, index.CreateDocument("1", map[string]interface{}{"name": "zinc", "num": 1}, false))
-		assert.NoError(t, index.CreateDocument("2", map[string]interface{}{"name": "zinc", "num": 2}, false))
+		assert.NoError(t, index.CreateDocument("1", map[string]interface{}{"name": "zed", "num": 1}, false))
+		assert.NoError(t, index.CreateDocument("2", map[string]interface{}{"name": "zed", "num": 2}, false))
 		assert.NoError(t, index.CreateDocument("3", map[string]interface{}{"name": "other", "num": 3}, false))
 		assert.Eventually(t, func() bool {
-			res, err := index.Search(&meta.ZincQuery{Size: 10})
+			res, err := index.Search(&meta.ZedQuery{Size: 10})
 			return err == nil && res.Hits.Total.Value == 3
 		}, 10*time.Second, 100*time.Millisecond, "documents not indexed")
 	})
@@ -64,12 +64,12 @@ func TestReindex(t *testing.T) {
 		dest, exists := core.GetIndex(destName)
 		assert.True(t, exists)
 		assert.Eventually(t, func() bool {
-			res, err := dest.Search(&meta.ZincQuery{Size: 10, Sort: []interface{}{"_id"}})
+			res, err := dest.Search(&meta.ZedQuery{Size: 10, Sort: []interface{}{"_id"}})
 			return err == nil && res.Hits.Total.Value == 3
 		}, 10*time.Second, 100*time.Millisecond)
 
 		// _id and _source are preserved
-		res, err := dest.Search(&meta.ZincQuery{Size: 10, Sort: []interface{}{"_id"}})
+		res, err := dest.Search(&meta.ZedQuery{Size: 10, Sort: []interface{}{"_id"}})
 		assert.NoError(t, err)
 		ids := make([]string, 0, len(res.Hits.Hits))
 		for _, hit := range res.Hits.Hits {
@@ -77,12 +77,12 @@ func TestReindex(t *testing.T) {
 		}
 		assert.ElementsMatch(t, []string{"1", "2", "3"}, ids)
 		source := res.Hits.Hits[0].Source.(map[string]interface{})
-		assert.Equal(t, "zinc", source["name"])
+		assert.Equal(t, "zed", source["name"])
 	})
 
 	t.Run("reindex with query and max_docs", func(t *testing.T) {
 		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"source":{"index":"`+sourceName+`","query":{"match":{"name":"zinc"}}},"dest":{"index":"`+limitedName+`"},"max_docs":1}`)
+		utils.SetGinRequestData(c, `{"source":{"index":"`+sourceName+`","query":{"match":{"name":"zed"}}},"dest":{"index":"`+limitedName+`"},"max_docs":1}`)
 		Reindex(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 

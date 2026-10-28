@@ -23,7 +23,7 @@ import (
 	segment "github.com/vcaesar/bluge_segment_api"
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	zedaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
@@ -108,7 +108,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 				Filter: map[string]interface{}{"term": map[string]interface{}{"city": map[string]interface{}{"value": "sf"}}},
 			}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.FilterAggregation)
+				a, ok := agg.(*zedaggregation.FilterAggregation)
 				require.True(t, ok)
 				assert.Contains(t, a.Fields(), "city")
 			},
@@ -123,9 +123,9 @@ func TestRequestBucketAggregations(t *testing.T) {
 				OtherBucketKey: "other",
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.FiltersAggregation)
+				a, ok := agg.(*zedaggregation.FiltersAggregation)
 				require.True(t, ok)
-				calc := a.Calculator().(*zincaggregation.FiltersCalculator)
+				calc := a.Calculator().(*zedaggregation.FiltersCalculator)
 				names := []string{}
 				for _, b := range calc.NamedBuckets() {
 					names = append(names, b.Name())
@@ -144,9 +144,9 @@ func TestRequestBucketAggregations(t *testing.T) {
 				OtherBucket: true,
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.FiltersAggregation)
+				a, ok := agg.(*zedaggregation.FiltersAggregation)
 				require.True(t, ok)
-				calc := a.Calculator().(*zincaggregation.FiltersCalculator)
+				calc := a.Calculator().(*zedaggregation.FiltersCalculator)
 				names := []string{}
 				for _, b := range calc.NamedBuckets() {
 					names = append(names, b.Name())
@@ -162,9 +162,9 @@ func TestRequestBucketAggregations(t *testing.T) {
 				},
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.FiltersAggregation)
+				a, ok := agg.(*zedaggregation.FiltersAggregation)
 				require.True(t, ok)
-				calc := a.Calculator().(*zincaggregation.FiltersCalculator)
+				calc := a.Calculator().(*zedaggregation.FiltersCalculator)
 				require.Len(t, calc.NamedBuckets(), 1)
 				assert.Equal(t, "bay", calc.NamedBuckets()[0].Name())
 			},
@@ -176,7 +176,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 				Size:  5,
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.MultiTermsAggregation)
+				a, ok := agg.(*zedaggregation.MultiTermsAggregation)
 				require.True(t, ok)
 				assert.Contains(t, a.Fields(), "city")
 				assert.Contains(t, a.Fields(), "age")
@@ -186,7 +186,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 			name: "top_hits defaults size to 3",
 			aggs: map[string]meta.Aggregations{"my_agg": {TopHits: &meta.AggregationTopHits{}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.TopHitsAggregation)
+				a, ok := agg.(*zedaggregation.TopHitsAggregation)
 				require.True(t, ok)
 				assert.Nil(t, a.Fields()) // sorting by _score needs no doc value
 			},
@@ -198,7 +198,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 				Sort: []interface{}{map[string]interface{}{"age": "desc"}},
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				assert.Equal(t, []string{"age"}, agg.(*zincaggregation.TopHitsAggregation).Fields())
+				assert.Equal(t, []string{"age"}, agg.(*zedaggregation.TopHitsAggregation).Fields())
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 				Values: []float64{20, 40},
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.PercentileRanksAggregation)
+				a, ok := agg.(*zedaggregation.PercentileRanksAggregation)
 				require.True(t, ok)
 				assert.Equal(t, []string{"age"}, a.Fields())
 			},
@@ -217,7 +217,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 			name: "nested",
 			aggs: map[string]meta.Aggregations{"my_agg": {Nested: &meta.AggregationNested{Path: "comments"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.FilterAggregation)
+				a, ok := agg.(*zedaggregation.FilterAggregation)
 				require.True(t, ok)
 				assert.Contains(t, a.Fields(), meta.NestedPathField)
 			},
@@ -226,7 +226,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 			name: "reverse_nested",
 			aggs: map[string]meta.Aggregations{"my_agg": {ReverseNested: &meta.AggregationNested{}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				_, ok := agg.(*zincaggregation.FilterAggregation)
+				_, ok := agg.(*zedaggregation.FilterAggregation)
 				require.True(t, ok)
 			},
 		},
@@ -238,7 +238,7 @@ func TestRequestBucketAggregations(t *testing.T) {
 				Order: map[string]string{"_key": "asc"},
 			}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				_, ok := agg.(*zincaggregation.TermsAggregation)
+				_, ok := agg.(*zedaggregation.TermsAggregation)
 				require.True(t, ok)
 			},
 		},

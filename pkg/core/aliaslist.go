@@ -23,7 +23,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
-var ZINC_INDEX_ALIAS_LIST AliasList
+var ZED_INDEX_ALIAS_LIST AliasList
 
 type AliasList struct {
 	lock    sync.RWMutex

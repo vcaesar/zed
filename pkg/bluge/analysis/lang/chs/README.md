@@ -1,6 +1,6 @@
-# zinc-analysis-gse
+# zed-analysis-gse
 
-it's a plugin of zinc to support Chinese analyzer.
+it's a plugin of zedsearch to support Chinese analyzer.
 
 Analyzer: `gse_standard` , `gse_search`
 
@@ -14,7 +14,7 @@ you can find it: https://github.com/go-ego/gse/tree/master/data/dict
 
 > also you can custom dictionary follow [custom user dictionary](#custom-user-dictionary)
 
-after custom, you need restart zinc.
+after custom, you need restart zedsearch.
 
 ## gse
 

@@ -19,7 +19,7 @@ it('defaults to system and persists each explicit setting', async () => {
     await user.click(select);
     await user.click(screen.getByRole('option', { name: label }));
     expect(select).toHaveTextContent(label);
-    expect(localStorage.getItem('zincsearch-theme')).toBe(value);
+    expect(localStorage.getItem('zedsearch-theme')).toBe(value);
     expect(document.documentElement.dataset.theme).toBe(value);
   }
 });
@@ -28,8 +28,8 @@ it('synchronizes saved settings, invalid values and clearing storage across tabs
   render(<ThemeSelect />);
   for (const [value, label] of [['dark', 'Dark'], ['light', 'Light'], ['invalid', 'System']]) {
     act(() => {
-      localStorage.setItem('zincsearch-theme', value);
-      window.dispatchEvent(new StorageEvent('storage', { key: 'zincsearch-theme' }));
+      localStorage.setItem('zedsearch-theme', value);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'zedsearch-theme' }));
     });
     expect(screen.getByRole('combobox')).toHaveTextContent(label);
   }

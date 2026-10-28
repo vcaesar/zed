@@ -21,7 +21,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
-var ZINC_CACHED_USERS = cachedUsers{users: map[string]*meta.User{}}
+var ZED_CACHED_USERS = cachedUsers{users: map[string]*meta.User{}}
 
 type cachedUsers struct {
 	users map[string]*meta.User

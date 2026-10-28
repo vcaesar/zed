@@ -24,7 +24,7 @@ import (
 	"github.com/vcaesar/riot/numeric"
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	zedaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -132,10 +132,10 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "stats",
 			aggs: map[string]meta.Aggregations{"my_agg": {Stats: &meta.AggregationMetric{Field: "age"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.StatsAggregation)
+				a, ok := agg.(*zedaggregation.StatsAggregation)
 				require.True(t, ok)
 				assert.Equal(t, []string{"age"}, a.Fields())
-				calc := a.Calculator().(*zincaggregation.StatsCalculator)
+				calc := a.Calculator().(*zedaggregation.StatsCalculator)
 				assert.False(t, calc.Extended())
 			},
 		},
@@ -143,9 +143,9 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "extended_stats defaults sigma to 2",
 			aggs: map[string]meta.Aggregations{"my_agg": {ExtendedStats: &meta.AggregationExtendedStats{Field: "age"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.StatsAggregation)
+				a, ok := agg.(*zedaggregation.StatsAggregation)
 				require.True(t, ok)
-				calc := a.Calculator().(*zincaggregation.StatsCalculator)
+				calc := a.Calculator().(*zedaggregation.StatsCalculator)
 				assert.True(t, calc.Extended())
 				assert.Equal(t, float64(2), calc.Sigma())
 			},
@@ -154,7 +154,7 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "extended_stats keeps explicit sigma",
 			aggs: map[string]meta.Aggregations{"my_agg": {ExtendedStats: &meta.AggregationExtendedStats{Field: "age", Sigma: 3}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				calc := agg.(*zincaggregation.StatsAggregation).Calculator().(*zincaggregation.StatsCalculator)
+				calc := agg.(*zedaggregation.StatsAggregation).Calculator().(*zedaggregation.StatsCalculator)
 				assert.Equal(t, float64(3), calc.Sigma())
 			},
 		},
@@ -162,18 +162,18 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "percentiles defaults percents",
 			aggs: map[string]meta.Aggregations{"my_agg": {Percentiles: &meta.AggregationPercentiles{Field: "age"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.PercentilesAggregation)
+				a, ok := agg.(*zedaggregation.PercentilesAggregation)
 				require.True(t, ok)
 				assert.Equal(t, []string{"age"}, a.Fields())
-				calc := a.Calculator().(*zincaggregation.PercentilesCalculator)
-				assert.Equal(t, zincaggregation.DefaultPercents, calc.Percents())
+				calc := a.Calculator().(*zedaggregation.PercentilesCalculator)
+				assert.Equal(t, zedaggregation.DefaultPercents, calc.Percents())
 			},
 		},
 		{
 			name: "percentiles keeps explicit percents",
 			aggs: map[string]meta.Aggregations{"my_agg": {Percentiles: &meta.AggregationPercentiles{Field: "age", Percents: []float64{50, 90}}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				calc := agg.(*zincaggregation.PercentilesAggregation).Calculator().(*zincaggregation.PercentilesCalculator)
+				calc := agg.(*zedaggregation.PercentilesAggregation).Calculator().(*zedaggregation.PercentilesCalculator)
 				assert.Equal(t, []float64{50, 90}, calc.Percents())
 			},
 		},
@@ -181,7 +181,7 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "value_count",
 			aggs: map[string]meta.Aggregations{"my_agg": {ValueCount: &meta.AggregationMetric{Field: "age"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.ValueCountAggregation)
+				a, ok := agg.(*zedaggregation.ValueCountAggregation)
 				require.True(t, ok)
 				assert.Equal(t, []string{"age"}, a.Fields())
 			},
@@ -190,7 +190,7 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "missing on a numeric field",
 			aggs: map[string]meta.Aggregations{"my_agg": {Missing: &meta.AggregationMetric{Field: "age"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				_, ok := agg.(*zincaggregation.MissingAggregation)
+				_, ok := agg.(*zedaggregation.MissingAggregation)
 				require.True(t, ok)
 			},
 		},
@@ -198,7 +198,7 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "missing on a text field",
 			aggs: map[string]meta.Aggregations{"my_agg": {Missing: &meta.AggregationMetric{Field: "name"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				a, ok := agg.(*zincaggregation.MissingAggregation)
+				a, ok := agg.(*zedaggregation.MissingAggregation)
 				require.True(t, ok)
 				assert.Equal(t, []string{"name"}, a.Fields())
 			},
@@ -207,7 +207,7 @@ func TestRequestMetricAggregations(t *testing.T) {
 			name: "missing on an unmapped field",
 			aggs: map[string]meta.Aggregations{"my_agg": {Missing: &meta.AggregationMetric{Field: "nope"}}},
 			assert: func(t *testing.T, agg search.Aggregation) {
-				_, ok := agg.(*zincaggregation.MissingAggregation)
+				_, ok := agg.(*zedaggregation.MissingAggregation)
 				require.True(t, ok)
 			},
 		},
@@ -285,7 +285,7 @@ func TestResponseStats(t *testing.T) {
 	assert.JSONEq(t, `{"count":4,"min":1,"max":4,"avg":2.5,"sum":10}`, marshalAgg(t, resp["my_agg"]))
 }
 
-// Elasticsearch reports null for min/max/avg of an empty stats bucket, zinc
+// Elasticsearch reports null for min/max/avg of an empty stats bucket, zed
 // reports 0. count must still be present.
 func TestResponseStatsEmpty(t *testing.T) {
 	resp := responseFor(t,
@@ -400,7 +400,7 @@ func TestResponsePercentilesDefaults(t *testing.T) {
 		ageDocs(t, 1, 2, 3, 4, 5),
 	)
 	values := resp["my_agg"].Values
-	require.Len(t, values, len(zincaggregation.DefaultPercents))
+	require.Len(t, values, len(zedaggregation.DefaultPercents))
 	for _, key := range []string{"1.0", "5.0", "25.0", "50.0", "75.0", "95.0", "99.0"} {
 		assert.Contains(t, values, key)
 	}

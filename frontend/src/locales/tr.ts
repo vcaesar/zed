@@ -36,12 +36,12 @@ export default {
     signOut: "Oturumu Kapat",
     account: "Hesap",
     feedback: "Geri bildirim",
-    zincSearch: "ZincSearch",
+    zedSearch: "ZedSearch",
     documentation: "Doküman",
     openapi: "API",
   },
   about: {
-    name: "ZincSearch",
+    name: "ZedSearch",
     introduction: "Modern, açık kaynak kodlu arama motoru.",
   },
   account: {

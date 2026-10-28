@@ -34,7 +34,7 @@ import (
 
 func MultiSearch(
 	ctx context.Context,
-	query *meta.ZincQuery,
+	query *meta.ZedQuery,
 	mappings *meta.Mappings,
 	analyzers map[string]*analysis.Analyzer,
 	readers ...*riot.Reader,

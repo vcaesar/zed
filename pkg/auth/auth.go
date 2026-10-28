@@ -23,7 +23,7 @@ import (
 
 func VerifyCredentials(userID, password string) (*meta.User, bool) {
 	userID = strings.ToLower(userID)
-	user, ok := ZINC_CACHED_USERS.Get(userID)
+	user, ok := ZED_CACHED_USERS.Get(userID)
 	if !ok {
 		return user, false
 	}
@@ -41,7 +41,7 @@ func VerifyRoleHasPermission(roleId, permission string) bool {
 	if roleId == "admin" {
 		return true
 	}
-	pm, ok := ZINC_CACHED_PERMISSIONS.Get(roleId)
+	pm, ok := ZED_CACHED_PERMISSIONS.Get(roleId)
 	if !ok {
 		return false
 	}

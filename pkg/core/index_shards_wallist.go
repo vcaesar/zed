@@ -27,7 +27,7 @@ import (
 )
 
 // Record opened WAL used to do consume
-var ZINC_INDEX_SHARD_WAL_LIST IndexShardWALList
+var ZED_INDEX_SHARD_WAL_LIST IndexShardWALList
 
 type IndexShardWALList struct {
 	Shards map[string]*IndexShard
@@ -35,8 +35,8 @@ type IndexShardWALList struct {
 }
 
 func init() {
-	ZINC_INDEX_SHARD_WAL_LIST.Shards = make(map[string]*IndexShard)
-	go ZINC_INDEX_SHARD_WAL_LIST.ConsumeWAL()
+	ZED_INDEX_SHARD_WAL_LIST.Shards = make(map[string]*IndexShard)
+	go ZED_INDEX_SHARD_WAL_LIST.ConsumeWAL()
 }
 
 func (t *IndexShardWALList) Add(shard *IndexShard) {

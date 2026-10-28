@@ -21,8 +21,8 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
-// ZincQuery is the query object for the zinc index. All search requests should send this struct
-type ZincQuery struct {
+// ZedQuery is the query object for the zed index. All search requests should send this struct
+type ZedQuery struct {
 	// SearchType is the type of search to perform. Can be match, match_phrase, query_string, etc
 	SearchType   string                       `json:"search_type"`
 	MaxResults   int                          `json:"max_results"`
@@ -35,7 +35,7 @@ type ZincQuery struct {
 	Source       interface{}                  `json:"_source"`
 }
 
-type ZincQueryForSDK struct {
+type ZedQueryForSDK struct {
 	// SearchType is the type of search to perform. Can be match, match_phrase, query_string, etc
 	SearchType   string                       `json:"search_type"`
 	MaxResults   int                          `json:"max_results"`

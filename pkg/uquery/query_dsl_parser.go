@@ -35,7 +35,7 @@ import (
 )
 
 // ParseQueryDSL parse query DSL and return searchRequest
-func ParseQueryDSL(q *meta.ZincQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.SearchRequest, error) {
+func ParseQueryDSL(q *meta.ZedQuery, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.SearchRequest, error) {
 	// parse size
 	if q.Size > config.Global.MaxResults {
 		q.Size = config.Global.MaxResults

@@ -128,7 +128,7 @@ Multi-arch build
 In order to build multi-arch builds you will need [buildx](https://docs.docker.com/buildx/working-with-buildx/) installed. You will need to pass the platform flag for the platform that you want to build.
 
 ```shell
-docker buildx build --platform linux/amd64 --tag zinc:latest-linux-amd64 . -f docker/Dockerfile.hub
+docker buildx build --platform linux/amd64 --tag zedsearch:latest-linux-amd64 . -f docker/Dockerfile.hub
 ```
 
 # Checks in CI pipeline

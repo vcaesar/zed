@@ -35,7 +35,7 @@ func TestSearchV2(t *testing.T) {
 		body := bytes.NewBuffer(nil)
 		body.WriteString(indexData)
 		resp := request("PUT", "/api/"+indexName+"/_doc", body)
-		assert.NoError(t, core.ZINC_INDEX_ALIAS_LIST.AddIndexesToAlias(indexAlias, []string{indexName}))
+		assert.NoError(t, core.ZED_INDEX_ALIAS_LIST.AddIndexesToAlias(indexAlias, []string{indexName}))
 		assert.Equal(t, http.StatusOK, resp.Code)
 
 		created := new(meta.HTTPResponseID)

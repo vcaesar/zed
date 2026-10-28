@@ -45,7 +45,7 @@ func List(c *gin.Context) {
 	desc, _ := strconv.ParseBool(c.DefaultQuery("desc", "false"))
 	name := c.DefaultQuery("name", "")
 
-	items := core.ZINC_INDEX_LIST.ListStat()
+	items := core.ZED_INDEX_LIST.ListStat()
 
 	if len(name) > 0 {
 		var res []*core.Index
@@ -135,7 +135,7 @@ func List(c *gin.Context) {
 func IndexNameList(c *gin.Context) {
 	queryName := strings.ToLower(c.DefaultQuery("name", ""))
 	var items []string
-	names := core.ZINC_INDEX_LIST.ListName()
+	names := core.ZED_INDEX_LIST.ListName()
 	if queryName == "" {
 		items = names
 	} else {

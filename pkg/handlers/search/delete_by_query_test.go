@@ -51,9 +51,9 @@ func TestDeleteByQuery(t *testing.T) {
 			name: "should delete matched documents",
 			arg: arg{
 				doc: map[string]interface{}{
-					"name": "zinc",
+					"name": "zed",
 				},
-				query: `{"query":{"match":{"name":"zinc"}},"size":10}`,
+				query: `{"query":{"match":{"name":"zed"}},"size":10}`,
 				params: map[string]string{
 					"target": "TestDeleteByQuery.index",
 				},
@@ -72,7 +72,7 @@ func TestDeleteByQuery(t *testing.T) {
 			name: "should return bad request with invalid json body",
 			arg: arg{
 				doc: map[string]interface{}{
-					"name": "zinc",
+					"name": "zed",
 				},
 				query: `invalid { json }`,
 				params: map[string]string{
@@ -92,9 +92,9 @@ func TestDeleteByQuery(t *testing.T) {
 			name: "should return bad request when no matching indices are found",
 			arg: arg{
 				doc: map[string]interface{}{
-					"name": "zinc",
+					"name": "zed",
 				},
-				query: `{"query":{"match":{"name":"zinc"}},"size":10}`,
+				query: `{"query":{"match":{"name":"zed"}},"size":10}`,
 				params: map[string]string{
 					"target": "noneMatchingIndex",
 				},
@@ -148,7 +148,7 @@ func assertHTTPResponse(t *testing.T, w *httptest.ResponseRecorder, statusCode i
 func assertZeruResultQuery(t *testing.T, index *core.Index, query interface{}) {
 	jsonQuery, err := json.Marshal(&query)
 	assert.NoError(t, err)
-	search, serr := index.Search(&meta.ZincQuery{
+	search, serr := index.Search(&meta.ZedQuery{
 		Query: &meta.Query{
 			Match: map[string]*meta.MatchQuery{
 				"_all": {

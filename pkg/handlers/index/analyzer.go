@@ -26,7 +26,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -70,7 +70,7 @@ func Analyze(c *gin.Context) {
 				}
 			}
 		}
-		ana, _ = zincanalysis.QueryAnalyzer(index.GetAnalyzers(), query.Analyzer)
+		ana, _ = zedanalysis.QueryAnalyzer(index.GetAnalyzers(), query.Analyzer)
 		if ana == nil {
 			if query.Analyzer == "" {
 				ana = new(analysis.Analyzer)
@@ -81,7 +81,7 @@ func Analyze(c *gin.Context) {
 		}
 	} else {
 		// none index specified
-		ana, _ = zincanalysis.QueryAnalyzer(nil, query.Analyzer)
+		ana, _ = zedanalysis.QueryAnalyzer(nil, query.Analyzer)
 		if ana == nil {
 			if query.Analyzer == "" {
 				ana = new(analysis.Analyzer)
@@ -161,13 +161,13 @@ func parseTokenizer(data interface{}) ([]analysis.Tokenizer, error) {
 	tokenizers := make([]analysis.Tokenizer, 0)
 	switch v := data.(type) {
 	case string:
-		zer, err := zincanalysis.RequestTokenizerSingle(v, nil)
+		zer, err := zedanalysis.RequestTokenizerSingle(v, nil)
 		if err != nil {
 			return nil, err
 		}
 		tokenizers = append(tokenizers, zer)
 	case []interface{}:
-		zers, err := zincanalysis.RequestTokenizerSlice(v)
+		zers, err := zedanalysis.RequestTokenizerSlice(v)
 		if err != nil {
 			return nil, err
 		}
@@ -175,13 +175,13 @@ func parseTokenizer(data interface{}) ([]analysis.Tokenizer, error) {
 	case map[string]interface{}:
 		typ, err := zutils.GetStringFromMap(v, "type")
 		if typ != "" && err == nil {
-			zer, err := zincanalysis.RequestTokenizerSingle(typ, v)
+			zer, err := zedanalysis.RequestTokenizerSingle(typ, v)
 			if err != nil {
 				return nil, err
 			}
 			tokenizers = append(tokenizers, zer)
 		} else {
-			zers, err := zincanalysis.RequestTokenizer(v)
+			zers, err := zedanalysis.RequestTokenizer(v)
 			if err != nil {
 				return nil, err
 			}
@@ -204,13 +204,13 @@ func parseTokenFilter(data interface{}) ([]analysis.TokenFilter, error) {
 	tokens := make([]analysis.TokenFilter, 0)
 	switch v := data.(type) {
 	case string:
-		filter, err := zincanalysis.RequestTokenFilterSingle(v, nil)
+		filter, err := zedanalysis.RequestTokenFilterSingle(v, nil)
 		if err != nil {
 			return nil, err
 		}
 		tokens = append(tokens, filter)
 	case []interface{}:
-		filters, err := zincanalysis.RequestTokenFilterSlice(v)
+		filters, err := zedanalysis.RequestTokenFilterSlice(v)
 		if err != nil {
 			return nil, err
 		}
@@ -218,13 +218,13 @@ func parseTokenFilter(data interface{}) ([]analysis.TokenFilter, error) {
 	case map[string]interface{}:
 		typ, err := zutils.GetStringFromMap(v, "type")
 		if typ != "" && err == nil {
-			filter, err := zincanalysis.RequestTokenFilterSingle(typ, v)
+			filter, err := zedanalysis.RequestTokenFilterSingle(typ, v)
 			if err != nil {
 				return nil, err
 			}
 			tokens = append(tokens, filter)
 		} else {
-			filters, err := zincanalysis.RequestTokenFilter(v)
+			filters, err := zedanalysis.RequestTokenFilter(v)
 			if err != nil {
 				return nil, err
 			}
@@ -247,13 +247,13 @@ func parseCharFilter(data interface{}) ([]analysis.CharFilter, error) {
 	chars := make([]analysis.CharFilter, 0)
 	switch v := data.(type) {
 	case string:
-		filter, err := zincanalysis.RequestCharFilterSingle(v, nil)
+		filter, err := zedanalysis.RequestCharFilterSingle(v, nil)
 		if err != nil {
 			return nil, err
 		}
 		chars = append(chars, filter)
 	case []interface{}:
-		filters, err := zincanalysis.RequestCharFilterSlice(v)
+		filters, err := zedanalysis.RequestCharFilterSlice(v)
 		if err != nil {
 			return nil, err
 		}
@@ -261,13 +261,13 @@ func parseCharFilter(data interface{}) ([]analysis.CharFilter, error) {
 	case map[string]interface{}:
 		typ, err := zutils.GetStringFromMap(v, "type")
 		if typ != "" && err == nil {
-			filter, err := zincanalysis.RequestCharFilterSingle(typ, v)
+			filter, err := zedanalysis.RequestCharFilterSingle(typ, v)
 			if err != nil {
 				return nil, err
 			}
 			chars = append(chars, filter)
 		} else {
-			filters, err := zincanalysis.RequestCharFilter(v)
+			filters, err := zedanalysis.RequestCharFilter(v)
 			if err != nil {
 				return nil, err
 			}

@@ -59,7 +59,7 @@ every `:target` route:
 | --- | --- |
 | clustering disabled | nothing happens, single node build |
 | partition unassigned | served locally |
-| another node owns it | `httputil.ReverseProxy` to its advertise address, `Authorization` copied, `X-Zinc-Forwarded-By: <node>` set |
+| another node owns it | `httputil.ReverseProxy` to its advertise address, `Authorization` copied, `X-Zed-Forwarded-By: <node>` set |
 | already forwarded, still not ours | `508 Loop Detected` |
 | we own it, read | served locally |
 | we own it, write | served locally, then the epoch is re-checked (see above) |

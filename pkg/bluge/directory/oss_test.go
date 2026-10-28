@@ -26,14 +26,14 @@ import (
 func TestNewOSSStore(t *testing.T) {
 	_, err := newOSSStore(config.OSSConfig{})
 	assert.Error(t, err, "bucket required")
-	_, err = newOSSStore(config.OSSConfig{Bucket: "zinc"})
+	_, err = newOSSStore(config.OSSConfig{Bucket: "zed"})
 	assert.Error(t, err, "endpoint required")
-	_, err = newOSSStore(config.OSSConfig{Endpoint: "oss-cn-hangzhou.aliyuncs.com", Bucket: "zinc"})
+	_, err = newOSSStore(config.OSSConfig{Endpoint: "oss-cn-hangzhou.aliyuncs.com", Bucket: "zed"})
 	assert.Error(t, err, "keys required")
 
-	s, err := newOSSStore(config.OSSConfig{Endpoint: "oss-cn-hangzhou.aliyuncs.com", Bucket: "zinc", Region: "cn-hangzhou", AccessKeyID: "a", SecretAccessKey: "b"})
+	s, err := newOSSStore(config.OSSConfig{Endpoint: "oss-cn-hangzhou.aliyuncs.com", Bucket: "zed", Region: "cn-hangzhou", AccessKeyID: "a", SecretAccessKey: "b"})
 	assert.NoError(t, err)
-	assert.Equal(t, "zinc", s.bucket)
+	assert.Equal(t, "zed", s.bucket)
 	assert.Equal(t, "https://oss-cn-hangzhou.aliyuncs.com", s.client.EndpointURL().String())
 }
 

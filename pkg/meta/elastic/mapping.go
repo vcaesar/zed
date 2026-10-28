@@ -109,7 +109,7 @@ type Property struct {
 	// or the same string value analyzed by different analyzers.
 	Fields map[string]Property `json:"fields,omitempty"`
 	// IgnoreAbove prevents indexing of strings longer than the configured value.
-	// TODO: Should this be supported by Zinc?
+	// TODO: Should this be supported by Zed?
 	IgnoreAbove    uint   `json:"ignore_above,omitempty"`
 	Analyzer       string `json:"analyzer,omitempty"`
 	SearchAnalyzer string `json:"search_analyzer,omitempty"`

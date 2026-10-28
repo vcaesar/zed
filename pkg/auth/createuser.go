@@ -64,7 +64,7 @@ func CreateUser(id, name, plaintextPassword, role string) (*meta.User, error) {
 	}
 
 	// cache user
-	ZINC_CACHED_USERS.Set(newUser.ID, newUser)
+	ZED_CACHED_USERS.Set(newUser.ID, newUser)
 
 	return newUser, nil
 }

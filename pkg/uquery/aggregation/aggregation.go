@@ -27,7 +27,7 @@ import (
 	"github.com/vcaesar/riot/search"
 	"github.com/vcaesar/riot/search/aggregations"
 
-	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	zedaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
@@ -35,7 +35,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
-func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggregations, mappings *meta.Mappings) error {
+func Request(req zedaggregation.SearchAggregation, aggs map[string]meta.Aggregations, mappings *meta.Mappings) error {
 	if len(aggs) == 0 {
 		return nil // not need aggregation
 	}
@@ -67,9 +67,9 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 					fmt.Sprintf("[value_count] aggregation doesn't support values of type: [%s:[%s]]", agg.ValueCount.Field, prop.Type),
 				)
 			}
-			req.AddAggregation(name, zincaggregation.NewValueCountAggregation(
+			req.AddAggregation(name, zedaggregation.NewValueCountAggregation(
 				search.Field(agg.ValueCount.Field),
-				zincaggregation.NumericValuesSource,
+				zedaggregation.NumericValuesSource,
 			))
 		case agg.Stats != nil:
 			prop, _ := mappings.GetProperty(agg.Stats.Field)
@@ -79,7 +79,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 					fmt.Sprintf("[stats] aggregation doesn't support values of type: [%s:[%s]]", agg.Stats.Field, prop.Type),
 				)
 			}
-			req.AddAggregation(name, zincaggregation.NewStatsAggregation(search.Field(agg.Stats.Field)))
+			req.AddAggregation(name, zedaggregation.NewStatsAggregation(search.Field(agg.Stats.Field)))
 		case agg.ExtendedStats != nil:
 			prop, _ := mappings.GetProperty(agg.ExtendedStats.Field)
 			if prop.Type != "numeric" {
@@ -95,7 +95,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if sigma < 0 {
 				return errors.New(errors.ErrorTypeParsingException, "[extended_stats] aggregation sigma must not be negative")
 			}
-			req.AddAggregation(name, zincaggregation.NewExtendedStatsAggregation(search.Field(agg.ExtendedStats.Field), sigma))
+			req.AddAggregation(name, zedaggregation.NewExtendedStatsAggregation(search.Field(agg.ExtendedStats.Field), sigma))
 		case agg.Percentiles != nil:
 			prop, _ := mappings.GetProperty(agg.Percentiles.Field)
 			if prop.Type != "numeric" {
@@ -106,32 +106,32 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			}
 			percents := agg.Percentiles.Percents
 			if len(percents) == 0 {
-				percents = zincaggregation.DefaultPercents
+				percents = zedaggregation.DefaultPercents
 			}
 			for _, p := range percents {
 				if p < 0 || p > 100 {
 					return errors.New(errors.ErrorTypeParsingException, "[percentiles] aggregation percents must be in [0, 100]")
 				}
 			}
-			req.AddAggregation(name, zincaggregation.NewPercentilesAggregation(search.Field(agg.Percentiles.Field), percents))
+			req.AddAggregation(name, zedaggregation.NewPercentilesAggregation(search.Field(agg.Percentiles.Field), percents))
 		case agg.Missing != nil:
 			// missing accepts any field type, including unmapped fields
-			req.AddAggregation(name, zincaggregation.NewMissingAggregation(search.Field(agg.Missing.Field)))
+			req.AddAggregation(name, zedaggregation.NewMissingAggregation(search.Field(agg.Missing.Field)))
 		case agg.Cardinality != nil:
 			req.AddAggregation(name, aggregations.Cardinality(search.Field(agg.Cardinality.Field)))
 		case agg.Terms != nil:
 			if agg.Terms.Size == 0 {
 				agg.Terms.Size = config.Global.AggregationTermsSize
 			}
-			var subreq *zincaggregation.TermsAggregation
+			var subreq *zedaggregation.TermsAggregation
 			prop, _ := mappings.GetProperty(agg.Terms.Field)
 			switch prop.Type {
 			case "text", "keyword":
-				subreq = zincaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zincaggregation.TextValueSource, agg.Terms.Size)
+				subreq = zedaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zedaggregation.TextValueSource, agg.Terms.Size)
 			case "numeric":
-				subreq = zincaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zincaggregation.NumericValueSource, agg.Terms.Size)
+				subreq = zedaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zedaggregation.NumericValueSource, agg.Terms.Size)
 			case "bool", "boolean":
-				subreq = zincaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zincaggregation.BooleanValueSource, agg.Terms.Size)
+				subreq = zedaggregation.NewTermsAggregation(search.Field(agg.Terms.Field), zedaggregation.BooleanValueSource, agg.Terms.Size)
 			default:
 				return errors.New(
 					errors.ErrorTypeParsingException,
@@ -223,11 +223,11 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if agg.Histogram.Offset >= agg.Histogram.Interval {
 				return errors.New(errors.ErrorTypeParsingException, "[histogram] aggregation offset must be in [0, interval)")
 			}
-			var subreq *zincaggregation.HistogramAggregation
+			var subreq *zedaggregation.HistogramAggregation
 			prop, _ := mappings.GetProperty(agg.Histogram.Field)
 			switch prop.Type {
 			case "numeric":
-				subreq = zincaggregation.NewHistogramAggregation(
+				subreq = zedaggregation.NewHistogramAggregation(
 					search.Field(agg.Histogram.Field),
 					agg.Histogram.Interval,
 					agg.Histogram.Offset,
@@ -302,11 +302,11 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if agg.DateHistogram.Format == "" {
 				agg.DateHistogram.Format = time.RFC3339
 			}
-			var subreq *zincaggregation.DateHistogramAggregation
+			var subreq *zedaggregation.DateHistogramAggregation
 			prop, _ := mappings.GetProperty(agg.DateHistogram.Field)
 			switch prop.Type {
 			case "date", "time":
-				subreq = zincaggregation.NewDateHistogramAggregation(
+				subreq = zedaggregation.NewDateHistogramAggregation(
 					search.Field(agg.DateHistogram.Field),
 					calendarInterval,
 					interval,
@@ -362,11 +362,11 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if agg.AutoDateHistogram.Format == "" {
 				agg.AutoDateHistogram.Format = time.RFC3339
 			}
-			var subreq *zincaggregation.AutoDateHistogramAggregation
+			var subreq *zedaggregation.AutoDateHistogramAggregation
 			prop, _ := mappings.GetProperty(agg.AutoDateHistogram.Field)
 			switch prop.Type {
 			case "date", "time":
-				subreq = zincaggregation.NewAutoDateHistogramAggregation(
+				subreq = zedaggregation.NewAutoDateHistogramAggregation(
 					search.Field(agg.AutoDateHistogram.Field),
 					agg.AutoDateHistogram.Buckets,
 					agg.AutoDateHistogram.MinimumInterval,
@@ -394,7 +394,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if err != nil {
 				return err
 			}
-			subreq := zincaggregation.NewFilterAggregation(pred)
+			subreq := zedaggregation.NewFilterAggregation(pred)
 			if len(agg.Aggregations) > 0 {
 				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
 					return err
@@ -405,7 +405,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if len(agg.Filters.Filters) == 0 {
 				return errors.New(errors.ErrorTypeParsingException, "[filters] aggregation needs filters")
 			}
-			subreq := zincaggregation.NewFiltersAggregation(otherBucketKey(agg.Filters))
+			subreq := zedaggregation.NewFiltersAggregation(otherBucketKey(agg.Filters))
 			filterNames := make([]string, 0, len(agg.Filters.Filters))
 			for filterName := range agg.Filters.Filters {
 				filterNames = append(filterNames, filterName)
@@ -442,11 +442,11 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 				prop, _ := mappings.GetProperty(term.Field)
 				switch prop.Type {
 				case "text", "keyword":
-					valueTypes = append(valueTypes, zincaggregation.TextValueSource)
+					valueTypes = append(valueTypes, zedaggregation.TextValueSource)
 				case "numeric":
-					valueTypes = append(valueTypes, zincaggregation.NumericValueSource)
+					valueTypes = append(valueTypes, zedaggregation.NumericValueSource)
 				case "bool", "boolean":
-					valueTypes = append(valueTypes, zincaggregation.BooleanValueSource)
+					valueTypes = append(valueTypes, zedaggregation.BooleanValueSource)
 				default:
 					return errors.New(
 						errors.ErrorTypeParsingException,
@@ -455,7 +455,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 				}
 				srcs = append(srcs, search.Field(term.Field))
 			}
-			subreq := zincaggregation.NewMultiTermsAggregation(srcs, valueTypes, agg.MultiTerms.Size)
+			subreq := zedaggregation.NewMultiTermsAggregation(srcs, valueTypes, agg.MultiTerms.Size)
 			if len(agg.MultiTerms.Order) > 0 {
 				key, asc, err := singleOrder("multi_terms", agg.MultiTerms.Order)
 				if err != nil {
@@ -489,7 +489,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if len(agg.PercentileRanks.Values) == 0 {
 				return errors.New(errors.ErrorTypeParsingException, "[percentile_ranks] aggregation needs values")
 			}
-			req.AddAggregation(name, zincaggregation.NewPercentileRanksAggregation(
+			req.AddAggregation(name, zedaggregation.NewPercentileRanksAggregation(
 				search.Field(agg.PercentileRanks.Field),
 				agg.PercentileRanks.Values,
 			))
@@ -497,7 +497,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			if agg.Nested.Path == "" {
 				return errors.New(errors.ErrorTypeParsingException, "[nested] aggregation needs path")
 			}
-			subreq := zincaggregation.NewNestedAggregation(meta.NestedPathField, agg.Nested.Path)
+			subreq := zedaggregation.NewNestedAggregation(meta.NestedPathField, agg.Nested.Path)
 			if len(agg.Aggregations) > 0 {
 				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
 					return err
@@ -505,7 +505,7 @@ func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggrega
 			}
 			req.AddAggregation(name, subreq)
 		case agg.ReverseNested != nil:
-			subreq := zincaggregation.NewReverseNestedAggregation(meta.NestedPathField)
+			subreq := zedaggregation.NewReverseNestedAggregation(meta.NestedPathField)
 			if len(agg.Aggregations) > 0 {
 				if err := Request(subreq, agg.Aggregations, mappings); err != nil {
 					return err
@@ -553,14 +553,14 @@ func singleOrder(kind string, order map[string]string) (string, bool, error) {
 				fmt.Sprintf("[%s] aggregation order must be asc or desc, got [%s]", kind, dir))
 		}
 	}
-	return zincaggregation.OrderByCount, false, nil
+	return zedaggregation.OrderByCount, false, nil
 }
 
 // topHitsAggregation builds the [top_hits] aggregation.
 //
 // Deviation from elasticsearch: only a single sort key is supported, and the
 // hits carry _id, _index, _score and _source but no sort values.
-func topHitsAggregation(agg *meta.AggregationTopHits) (*zincaggregation.TopHitsAggregation, error) {
+func topHitsAggregation(agg *meta.AggregationTopHits) (*zedaggregation.TopHitsAggregation, error) {
 	if agg.Size < 0 || agg.From < 0 {
 		return nil, errors.New(errors.ErrorTypeParsingException, "[top_hits] aggregation size and from must not be negative")
 	}
@@ -577,7 +577,7 @@ func topHitsAggregation(agg *meta.AggregationTopHits) (*zincaggregation.TopHitsA
 		return nil, err
 	}
 
-	rv := zincaggregation.NewTopHitsAggregation(size, agg.From, sortField, sortDesc)
+	rv := zedaggregation.NewTopHitsAggregation(size, agg.From, sortField, sortDesc)
 	rv.SetSource(src.Enable, src.Fields)
 	return rv, nil
 }
@@ -632,32 +632,32 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 	aggs := bucket.Aggregations()
 	for name, v := range aggs {
 		switch v := v.(type) {
-		case *zincaggregation.StatsCalculator:
+		case *zedaggregation.StatsCalculator:
 			resp[name] = statsResponse(v)
-		case *zincaggregation.PercentilesCalculator:
+		case *zedaggregation.PercentilesCalculator:
 			resp[name] = meta.AggregationResponse{Values: v.Values()}
-		case *zincaggregation.MissingCalculator:
+		case *zedaggregation.MissingCalculator:
 			docCount := v.DocCount()
 			resp[name] = meta.AggregationResponse{DocCount: &docCount}
-		case *zincaggregation.PercentileRanksCalculator:
+		case *zedaggregation.PercentileRanksCalculator:
 			if err := v.Err(); err != nil {
 				return nil, errors.New(errors.ErrorTypeRuntimeException,
 					fmt.Sprintf("[%s] percentile_ranks aggregation err %s", name, err.Error()))
 			}
 			resp[name] = meta.AggregationResponse{Values: v.Values()}
-		case *zincaggregation.TopHitsCalculator:
+		case *zedaggregation.TopHitsCalculator:
 			hits, err := topHitsResponse(name, v)
 			if err != nil {
 				return nil, err
 			}
 			resp[name] = meta.AggregationResponse{Hits: hits}
-		case *zincaggregation.FilterCalculator:
+		case *zedaggregation.FilterCalculator:
 			aggResp, err := singleBucketResponse(v.Bucket())
 			if err != nil {
 				return nil, err
 			}
 			resp[name] = aggResp
-		case *zincaggregation.FiltersCalculator:
+		case *zedaggregation.FiltersCalculator:
 			buckets := make(map[string]interface{}, 0)
 			for _, b := range v.NamedBuckets() {
 				aggResp, err := singleBucketResponse(b)
@@ -667,7 +667,7 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 				buckets[b.Name()] = aggResp
 			}
 			resp[name] = meta.AggregationResponse{Buckets: buckets}
-		case *zincaggregation.MultiTermsCalculator:
+		case *zedaggregation.MultiTermsCalculator:
 			aggRespBuckets := make([]map[string]interface{}, 0, len(v.Buckets()))
 			for _, bucket := range v.Buckets() {
 				aggBucket := map[string]interface{}{
@@ -683,7 +683,7 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 			resp[name] = meta.AggregationResponse{Buckets: aggRespBuckets}
 		case search.MetricCalculator:
 			// An empty bucket yields NaN (avg) or +/-Inf (min, max): json has
-			// no such values, elasticsearch reports null and zinc reports 0.
+			// no such values, elasticsearch reports null and zed reports 0.
 			f := v.Value()
 			if math.IsNaN(f) || math.IsInf(f, 0) {
 				f = 0
@@ -710,7 +710,7 @@ func Response(bucket *search.Bucket) (map[string]meta.AggregationResponse, error
 			aggResp.Buckets = aggRespBuckets
 
 			// hack: auto_date_histogram aggregation
-			if v, ok := aggs[name].(*zincaggregation.AutoDateHistogramCalculator); ok {
+			if v, ok := aggs[name].(*zedaggregation.AutoDateHistogramCalculator); ok {
 				aggResp.Interval = v.Interval()
 			}
 
@@ -759,7 +759,7 @@ func singleBucketResponse(bucket *search.Bucket) (meta.AggregationResponse, erro
 }
 
 // topHitsResponse renders the documents kept by [top_hits].
-func topHitsResponse(name string, c *zincaggregation.TopHitsCalculator) (*meta.AggregationHits, error) {
+func topHitsResponse(name string, c *zedaggregation.TopHitsCalculator) (*meta.AggregationHits, error) {
 	if err := c.Err(); err != nil {
 		return nil, errors.New(errors.ErrorTypeRuntimeException,
 			fmt.Sprintf("[%s] top_hits aggregation err %s", name, err.Error()))
@@ -790,7 +790,7 @@ func topHitsResponse(name string, c *zincaggregation.TopHitsCalculator) (*meta.A
 
 // statsResponse renders [stats], plus the extra [extended_stats] fields when
 // the calculator was built for it.
-func statsResponse(c *zincaggregation.StatsCalculator) meta.AggregationResponse {
+func statsResponse(c *zedaggregation.StatsCalculator) meta.AggregationResponse {
 	count := c.Count()
 	min, max, avg, sum := finite(c.Min()), finite(c.Max()), finite(c.Avg()), finite(c.Sum())
 	rv := meta.AggregationResponse{

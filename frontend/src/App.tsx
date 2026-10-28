@@ -44,7 +44,7 @@ function Console() {
     <div className="console-body">
       <header className="console-header">
         <button className="menu-toggle" type="button" aria-label="Menu" aria-expanded={drawer} aria-controls="console-navigation" onClick={() => setDrawer(!drawer)}><Icon name="menu" /></button>
-        <h1>{pages.some(name => path === `/${name}`) ? t(`menu.${path.slice(1)}`) : t('menu.zincSearch')}</h1>
+        <h1>{pages.some(name => path === `/${name}`) ? t(`menu.${path.slice(1)}`) : t('menu.zedSearch')}</h1>
         <div className="header-account">
           <ThemeSelect />
           <Select displayValue={locale.toUpperCase()} title={languages[locale]} className="language-select" aria-label={t('menu.language')} value={locale} onValueChange={value => changeLanguage(value as Locale)}>{Object.entries(languages).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>

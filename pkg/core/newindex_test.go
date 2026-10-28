@@ -204,14 +204,14 @@ func TestCheckStorageType(t *testing.T) {
 		wantErr     bool
 	}{
 		{name: "disk", storageType: StorageTypeDisk},
-		{name: "s3 configured", storageType: StorageTypeS3, bucket: "zinc"},
-		{name: "minio configured", storageType: StorageTypeMinIO, bucket: "zinc"},
-		{name: "gcs configured", storageType: StorageTypeGCS, bucket: "zinc"},
-		{name: "oss configured", storageType: StorageTypeOSS, bucket: "zinc"},
+		{name: "s3 configured", storageType: StorageTypeS3, bucket: "zed"},
+		{name: "minio configured", storageType: StorageTypeMinIO, bucket: "zed"},
+		{name: "gcs configured", storageType: StorageTypeGCS, bucket: "zed"},
+		{name: "oss configured", storageType: StorageTypeOSS, bucket: "zed"},
 		{name: "s3 unconfigured", storageType: StorageTypeS3, wantErr: true},
 		{name: "gcs unconfigured", storageType: StorageTypeGCS, wantErr: true},
 		{name: "oss unconfigured", storageType: StorageTypeOSS, wantErr: true},
-		{name: "unknown", storageType: "floppy", bucket: "zinc", wantErr: true},
+		{name: "unknown", storageType: "floppy", bucket: "zed", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

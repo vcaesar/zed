@@ -63,7 +63,7 @@ func AddOrRemoveESAlias(c *gin.Context) {
 	addMap := map[string][]string{}
 	removeMap := map[string][]string{}
 
-	indexList := core.ZINC_INDEX_LIST.List()
+	indexList := core.ZED_INDEX_LIST.List()
 
 	for _, action := range alias.Actions {
 		if action.Add != nil {
@@ -94,11 +94,11 @@ func AddOrRemoveESAlias(c *gin.Context) {
 	}
 
 	for alias, indexes := range addMap {
-		_ = core.ZINC_INDEX_ALIAS_LIST.AddIndexesToAlias(alias, indexes)
+		_ = core.ZED_INDEX_ALIAS_LIST.AddIndexesToAlias(alias, indexes)
 	}
 
 	for alias, indexes := range removeMap {
-		_ = core.ZINC_INDEX_ALIAS_LIST.RemoveIndexesFromAlias(alias, indexes)
+		_ = core.ZED_INDEX_ALIAS_LIST.RemoveIndexesFromAlias(alias, indexes)
 	}
 
 	zutils.GinRenderJSON(c, http.StatusOK, gin.H{"acknowledged": true})
@@ -129,7 +129,7 @@ func GetESAliases(c *gin.Context) {
 		targetAliases = strings.Split(targetAlias, ",")
 	}
 
-	m := core.ZINC_INDEX_ALIAS_LIST.GetAliasMap(targetIndexes, targetAliases)
+	m := core.ZED_INDEX_ALIAS_LIST.GetAliasMap(targetIndexes, targetAliases)
 
 	zutils.GinRenderJSON(c, http.StatusOK, m)
 }
@@ -174,7 +174,7 @@ func matchAndAddToMap(indexList []*core.Index, indexName string, m map[string][]
 	var n string // reuse same string variable
 
 	if !strings.Contains(indexName, "*") {
-		x, ok := core.ZINC_INDEX_LIST.Get(indexName)
+		x, ok := core.ZED_INDEX_LIST.Get(indexName)
 		if !ok {
 			return
 		}

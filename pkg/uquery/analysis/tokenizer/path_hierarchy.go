@@ -19,7 +19,7 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	zedtokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -33,5 +33,5 @@ func NewPathHierarchyTokenizer(options interface{}) (analysis.Tokenizer, error) 
 		replacement = delimiter
 	}
 	skip, _ := zutils.GetFloatFromMap(options, "skip")
-	return zinctokenizer.NewPathHierarchyTokenizer(delimiter[0], replacement[0], int(skip)), nil
+	return zedtokenizer.NewPathHierarchyTokenizer(delimiter[0], replacement[0], int(skip)), nil
 }

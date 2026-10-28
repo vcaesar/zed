@@ -133,14 +133,14 @@ func TestSentryDSNOverride(t *testing.T) {
 func TestS3Override(t *testing.T) {
 	isolate(t)
 	t.Setenv("ZED_S3_ENDPOINT", "localhost:9000")
-	t.Setenv("ZED_S3_BUCKET", "zinc")
+	t.Setenv("ZED_S3_BUCKET", "zed")
 	t.Setenv("ZED_S3_REGION", "us-east-1")
 	t.Setenv("ZED_S3_ACCESS_KEY_ID", "minioadmin")
 	t.Setenv("ZED_S3_SECRET_ACCESS_KEY", "minioadmin")
 	t.Setenv("ZED_S3_USE_SSL", "false")
 	c := mustLoad(t)
 	assert.Equal(t, "localhost:9000", c.S3.Endpoint)
-	assert.Equal(t, "zinc", c.S3.Bucket)
+	assert.Equal(t, "zed", c.S3.Bucket)
 	assert.Equal(t, "us-east-1", c.S3.Region)
 	assert.Equal(t, "minioadmin", c.S3.AccessKeyID)
 	assert.Equal(t, "minioadmin", c.S3.SecretAccessKey)
@@ -172,10 +172,10 @@ func TestTOMLDefaults(t *testing.T) {
 	assert.Equal(t, 1000000, c.MaxDocumentSize)
 	assert.Equal(t, time.Second, c.WalSyncInterval)
 	assert.False(t, c.WalRedoLogNoSync)
-	assert.True(t, c.ZincSwaggerEnable)
+	assert.True(t, c.ZedSwaggerEnable)
 	assert.Equal(t, "debug", c.LogLevel)
 	assert.Equal(t, cluster{
-		Name:              "ZincCluster",
+		Name:              "ZedCluster",
 		Partitions:        256,
 		HeartbeatInterval: 5 * time.Second,
 		HeartbeatTTL:      15 * time.Second,
@@ -183,7 +183,7 @@ func TestTOMLDefaults(t *testing.T) {
 	}, c.Cluster)
 	assert.Equal(t, tier{CheckInterval: 10 * time.Minute, ColdStorageType: "s3"}, c.Tier)
 	assert.Equal(t, shard{GoroutineNum: 3, Num: 3, MaxSize: 1073741824}, c.Shard)
-	assert.Equal(t, etcd{Prefix: "/zinc"}, c.Etcd)
+	assert.Equal(t, etcd{Prefix: "/zed"}, c.Etcd)
 	assert.Equal(t, gse{
 		EnableStop: true,
 		EnableHMM:  true,

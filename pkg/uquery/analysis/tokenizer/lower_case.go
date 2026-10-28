@@ -19,9 +19,9 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	zedtokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
 )
 
 func NewLowerCaseTokenizer() (analysis.Tokenizer, error) {
-	return zinctokenizer.NewLowerCaseTokenizer(), nil
+	return zedtokenizer.NewLowerCaseTokenizer(), nil
 }

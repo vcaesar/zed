@@ -26,7 +26,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
-// Delete deletes a zinc index and its associated data.
+// Delete deletes a zed index and its associated data.
 // Be careful using thus as you ca't undo this action.
 //
 // @Id DeleteIndex
@@ -46,7 +46,7 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	indexList := core.ZINC_INDEX_LIST.List()
+	indexList := core.ZED_INDEX_LIST.List()
 
 	for _, indexName := range strings.Split(indexNames, ",") {
 		if strings.Contains(indexName, "*") { // check for wildcard

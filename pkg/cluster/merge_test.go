@@ -52,7 +52,7 @@ func TestMergeSearchHits(t *testing.T) {
 	tests := []struct {
 		name      string
 		responses []*meta.SearchResponse
-		query     *meta.ZincQuery
+		query     *meta.ZedQuery
 		wantIDs   []string
 		wantTotal int
 		wantTook  int
@@ -64,7 +64,7 @@ func TestMergeSearchHits(t *testing.T) {
 				response(2, 0.9, 12, hit("a", "a1", 0.9, nil), hit("a", "a2", 0.2, nil)),
 				response(1, 0.5, 30, hit("b", "b1", 0.5, nil)),
 			},
-			query:     &meta.ZincQuery{Size: 10},
+			query:     &meta.ZedQuery{Size: 10},
 			wantIDs:   []string{"a1", "b1", "a2"},
 			wantTotal: 3, wantTook: 30, wantScore: 0.9,
 		},
@@ -74,7 +74,7 @@ func TestMergeSearchHits(t *testing.T) {
 				nil,
 				response(1, 0.4, 5, hit("b", "b1", 0.4, nil)),
 			},
-			query:     &meta.ZincQuery{Size: 10},
+			query:     &meta.ZedQuery{Size: 10},
 			wantIDs:   []string{"b1"},
 			wantTotal: 1, wantTook: 5, wantScore: 0.4,
 		},
@@ -84,7 +84,7 @@ func TestMergeSearchHits(t *testing.T) {
 				response(2, 0.9, 1, hit("a", "a1", 0.9, nil), hit("a", "a2", 0.7, nil)),
 				response(1, 0.8, 1, hit("b", "b1", 0.8, nil)),
 			},
-			query:     &meta.ZincQuery{Size: 2},
+			query:     &meta.ZedQuery{Size: 2},
 			wantIDs:   []string{"a1", "b1"},
 			wantTotal: 3, wantTook: 1, wantScore: 0.9,
 		},
@@ -94,7 +94,7 @@ func TestMergeSearchHits(t *testing.T) {
 				response(2, 0.9, 1, hit("a", "a1", 0.9, nil), hit("a", "a2", 0.7, nil)),
 				response(1, 0.8, 1, hit("b", "b1", 0.8, nil)),
 			},
-			query:     &meta.ZincQuery{From: 1, Size: 2},
+			query:     &meta.ZedQuery{From: 1, Size: 2},
 			wantIDs:   []string{"b1", "a2"},
 			wantTotal: 3, wantTook: 1, wantScore: 0.9,
 		},
@@ -103,7 +103,7 @@ func TestMergeSearchHits(t *testing.T) {
 			responses: []*meta.SearchResponse{
 				response(1, 0.9, 1, hit("a", "a1", 0.9, nil)),
 			},
-			query:     &meta.ZincQuery{From: 5, Size: 2},
+			query:     &meta.ZedQuery{From: 5, Size: 2},
 			wantIDs:   []string{},
 			wantTotal: 1, wantTook: 1, wantScore: 0.9,
 		},
@@ -115,7 +115,7 @@ func TestMergeSearchHits(t *testing.T) {
 					hit("a", "a2", 0, map[string]interface{}{"year": float64(1990)})),
 				response(1, 0, 1, hit("b", "b1", 0, map[string]interface{}{"year": float64(2000)})),
 			},
-			query:     &meta.ZincQuery{Size: 10, Sort: []interface{}{"year"}},
+			query:     &meta.ZedQuery{Size: 10, Sort: []interface{}{"year"}},
 			wantIDs:   []string{"a2", "b1", "a1"},
 			wantTotal: 3, wantTook: 1,
 		},
@@ -127,7 +127,7 @@ func TestMergeSearchHits(t *testing.T) {
 					hit("a", "a2", 0, map[string]interface{}{"year": float64(1990)})),
 				response(1, 0, 1, hit("b", "b1", 0, map[string]interface{}{"year": float64(2000)})),
 			},
-			query:     &meta.ZincQuery{Size: 10, Sort: []interface{}{map[string]interface{}{"year": "desc"}}},
+			query:     &meta.ZedQuery{Size: 10, Sort: []interface{}{map[string]interface{}{"year": "desc"}}},
 			wantIDs:   []string{"a1", "b1", "a2"},
 			wantTotal: 3, wantTook: 1,
 		},
@@ -137,7 +137,7 @@ func TestMergeSearchHits(t *testing.T) {
 				response(1, 0, 1, hit("a", "a1", 0, map[string]interface{}{})),
 				response(1, 0, 1, hit("b", "b1", 0, map[string]interface{}{"year": float64(2000)})),
 			},
-			query:     &meta.ZincQuery{Size: 10, Sort: "year"},
+			query:     &meta.ZedQuery{Size: 10, Sort: "year"},
 			wantIDs:   []string{"b1", "a1"},
 			wantTotal: 2, wantTook: 1,
 		},
@@ -161,7 +161,7 @@ func TestMergeSearchShardsAndErrors(t *testing.T) {
 	second.Error = "shard failed"
 	second.TimedOut = true
 
-	got := MergeSearch([]*meta.SearchResponse{first, second}, &meta.ZincQuery{Size: 10})
+	got := MergeSearch([]*meta.SearchResponse{first, second}, &meta.ZedQuery{Size: 10})
 	assert.Equal(t, meta.Shards{Total: 5, Successful: 4, Failed: 1}, got.Shards)
 	assert.Equal(t, "shard failed", got.Error)
 	assert.True(t, got.TimedOut)
@@ -364,7 +364,7 @@ func TestMergeSearchAggregations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := &meta.ZincQuery{
+			query := &meta.ZedQuery{
 				Size:         10,
 				Aggregations: map[string]meta.Aggregations{"agg": tt.def},
 			}
@@ -384,7 +384,7 @@ func TestMergeSearchKeepsSingleResponseAggregation(t *testing.T) {
 	only := response(1, 1, 1, hit("a", "a1", 1, nil))
 	only.Aggregations = map[string]meta.AggregationResponse{"avg_n": avgAgg(7, 2, 14)}
 
-	got := MergeSearch([]*meta.SearchResponse{only}, &meta.ZincQuery{
+	got := MergeSearch([]*meta.SearchResponse{only}, &meta.ZedQuery{
 		Size:         10,
 		Aggregations: map[string]meta.Aggregations{"avg_n": {Avg: &meta.AggregationMetric{Field: "n"}}},
 	})

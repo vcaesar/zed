@@ -78,7 +78,7 @@ func PutILMPolicy(c *gin.Context) {
 	c.JSON(http.StatusOK, meta.HTTPResponse{Message: "ok"})
 }
 
-// checkILMPolicy rejects phases zinc cannot act on.
+// checkILMPolicy rejects phases zed cannot act on.
 func checkILMPolicy(policy metadata.ILMPolicy) error {
 	if len(policy.Phases) == 0 {
 		return fmt.Errorf("policy.phases should be not empty")

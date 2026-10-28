@@ -36,7 +36,7 @@ func DeleteIndex(name string) error {
 	}
 
 	// 2. Close and Delete from cache
-	ZINC_INDEX_LIST.Delete(name)
+	ZED_INDEX_LIST.Delete(name)
 
 	// 3. Physically delete the index.
 	// The WAL always lives on local disk, so the data path is removed for every storage type.

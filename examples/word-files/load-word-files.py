@@ -5,9 +5,9 @@ from os import walk
 folder = "sample-files"
 
 def main():
-    zinc_server = "https://playground.dev.zincsearch.com/api/books/document"
-    zinc_uid = "admin"
-    zinc_pwd = "Complexpass#123"
+    zed_server = "https://playground.dev.zincsearch.com/api/books/document"
+    zed_uid = "admin"
+    zed_pwd = "Complexpass#123"
 
     f = []
     for (dirpath, dirnames, filenames) in walk(folder):
@@ -23,7 +23,7 @@ def main():
             "text": text
         }
 
-        httpx.put(zinc_server, json=data, auth=(zinc_uid, zinc_pwd))
+        httpx.put(zed_server, json=data, auth=(zed_uid, zed_pwd))
 
 if __name__ == "__main__":
     main()

@@ -34,7 +34,7 @@ zed_swagger_enable = true
 zed_log_level = "debug"
 
 [Cluster]
-zed_cluster_name = "ZincCluster"
+zed_cluster_name = "ZedCluster"
 zed_cluster_enable = false
 zed_cluster_node_id = ""
 zed_cluster_advertise_addr = ""
@@ -54,7 +54,7 @@ zed_shard_num = 3
 zed_shard_max_size = 1073741824
 
 [Etcd]
-zed_etcd_prefix = "/zinc"
+zed_etcd_prefix = "/zed"
 
 [S3]
 # Object store for indexes created with storage_type = "s3" (MinIO or any S3-compatible endpoint works).

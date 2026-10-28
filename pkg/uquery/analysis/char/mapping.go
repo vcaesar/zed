@@ -22,7 +22,7 @@ import (
 
 	"github.com/vcaesar/riot/analysis"
 
-	zincchar "github.com/vcaesar/zedsearch/pkg/bluge/analysis/char"
+	zedchar "github.com/vcaesar/zedsearch/pkg/bluge/analysis/char"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
@@ -38,5 +38,5 @@ func NewMappingCharFilter(options interface{}) (analysis.CharFilter, error) {
 		}
 	}
 
-	return zincchar.NewMappingCharFilter(mappings), nil
+	return zedchar.NewMappingCharFilter(mappings), nil
 }

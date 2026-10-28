@@ -187,7 +187,7 @@ func TestAPITierCold(t *testing.T) {
 	defer restore()
 
 	oldBucket, oldCold := config.Global.S3.Bucket, config.Global.Tier.ColdStorageType
-	config.Global.S3.Bucket, config.Global.Tier.ColdStorageType = "zinc-test", "s3"
+	config.Global.S3.Bucket, config.Global.Tier.ColdStorageType = "zed-test", "s3"
 	defer func() {
 		config.Global.S3.Bucket, config.Global.Tier.ColdStorageType = oldBucket, oldCold
 	}()

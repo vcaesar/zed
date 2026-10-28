@@ -46,7 +46,7 @@ func etcdTestStore(t *testing.T) (*EtcdStore, string) {
 	store, err := NewEtcdStore()
 	require.NoError(t, err)
 
-	prefix := "/zinc-test/" + strconv.FormatInt(time.Now().UnixNano(), 10) + "/"
+	prefix := "/zed-test/" + strconv.FormatInt(time.Now().UnixNano(), 10) + "/"
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

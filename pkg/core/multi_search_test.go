@@ -26,7 +26,7 @@ import (
 func TestMultiSearch(t *testing.T) {
 	type args struct {
 		indexName string
-		query     *meta.ZincQuery
+		query     *meta.ZedQuery
 	}
 	tests := []struct {
 		name    string
@@ -38,7 +38,7 @@ func TestMultiSearch(t *testing.T) {
 			name: "multiple search",
 			args: args{
 				indexName: "",
-				query: &meta.ZincQuery{
+				query: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},
@@ -50,7 +50,7 @@ func TestMultiSearch(t *testing.T) {
 			name: "wildcard search",
 			args: args{
 				indexName: "TestMultiSearch.*",
-				query: &meta.ZincQuery{
+				query: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},
@@ -62,7 +62,7 @@ func TestMultiSearch(t *testing.T) {
 			name: "empty",
 			args: args{
 				indexName: "TestMultiSearchNotExist",
-				query: &meta.ZincQuery{
+				query: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},
@@ -74,7 +74,7 @@ func TestMultiSearch(t *testing.T) {
 			name: "timeout",
 			args: args{
 				indexName: "",
-				query: &meta.ZincQuery{
+				query: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},

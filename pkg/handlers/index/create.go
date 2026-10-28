@@ -25,7 +25,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/uquery/mappings"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
@@ -118,7 +118,7 @@ func CreateIndexWorker(newIndex *meta.IndexSimple, indexName string) error {
 	if newIndex.Settings == nil {
 		newIndex.Settings = new(meta.IndexSettings)
 	}
-	analyzers, err := zincanalysis.RequestAnalyzer(newIndex.Settings.Analysis)
+	analyzers, err := zedanalysis.RequestAnalyzer(newIndex.Settings.Analysis)
 	if err != nil {
 		return errors.New(err.Error())
 	}

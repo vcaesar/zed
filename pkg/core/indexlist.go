@@ -27,7 +27,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
-var ZINC_INDEX_LIST IndexList
+var ZED_INDEX_LIST IndexList
 
 type IndexList struct {
 	Indexes map[string]*Index
@@ -44,8 +44,8 @@ func init() {
 	}
 
 	// start loading index
-	ZINC_INDEX_LIST.Indexes = make(map[string]*Index)
-	err := LoadZincIndexesFromMetadata(string(version))
+	ZED_INDEX_LIST.Indexes = make(map[string]*Index)
+	err := LoadZedIndexesFromMetadata(string(version))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error loading index")
 	}
@@ -58,7 +58,7 @@ func init() {
 		}
 	}
 
-	ZINC_INDEX_ALIAS_LIST.Aliases, err = metadata.Alias.Get()
+	ZED_INDEX_ALIAS_LIST.Aliases, err = metadata.Alias.Get()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error loading alias")
 	}

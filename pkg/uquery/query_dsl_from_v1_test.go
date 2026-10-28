@@ -26,7 +26,7 @@ import (
 	v1 "github.com/vcaesar/zedsearch/pkg/meta/v1"
 )
 
-func mustClause(t *testing.T, q *meta.ZincQuery) []interface{} {
+func mustClause(t *testing.T, q *meta.ZedQuery) []interface{} {
 	t.Helper()
 	boolQuery, ok := q.Query.(map[string]interface{})["bool"].(map[string]interface{})
 	if !assert.True(t, ok) {
@@ -42,7 +42,7 @@ func mustClause(t *testing.T, q *meta.ZincQuery) []interface{} {
 func TestParseQueryDSLFromV1(t *testing.T) {
 	t.Run("top level fields", func(t *testing.T) {
 		h := &meta.Highlight{}
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{
 			From: 5, MaxResults: 20, Explain: true, Highlight: h, Source: []string{"a"},
 			SortFields: []string{"-year", "name"},
 		})
@@ -57,13 +57,13 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	})
 
 	t.Run("no sort fields leaves sort nil", func(t *testing.T) {
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{})
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{})
 		assert.NoError(t, err)
 		assert.Nil(t, q.Sort)
 	})
 
 	t.Run("search types", func(t *testing.T) {
-		params := v1.QueryParams{Field: "name", Term: "zinc"}
+		params := v1.QueryParams{Field: "name", Term: "zed"}
 		tests := []struct {
 			searchType string
 			want       map[string]interface{}
@@ -72,17 +72,17 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 			{"matchall", map[string]interface{}{"match_all": map[string]interface{}{}}},
 			{"", map[string]interface{}{"match_all": map[string]interface{}{}}},
 			{"unknown", map[string]interface{}{"match_all": map[string]interface{}{}}},
-			{"wildcard", map[string]interface{}{"wildcard": map[string]interface{}{"name": "zinc"}}},
-			{"fuzzy", map[string]interface{}{"fuzzy": map[string]interface{}{"name": "zinc"}}},
-			{"term", map[string]interface{}{"term": map[string]interface{}{"name": "zinc"}}},
-			{"match", map[string]interface{}{"match": map[string]interface{}{"name": "zinc"}}},
-			{"matchphrase", map[string]interface{}{"match_phrase": map[string]interface{}{"name": "zinc"}}},
-			{"prefix", map[string]interface{}{"prefix": map[string]interface{}{"name": "zinc"}}},
-			{"querystring", map[string]interface{}{"query_string": map[string]interface{}{"query": "zinc"}}},
+			{"wildcard", map[string]interface{}{"wildcard": map[string]interface{}{"name": "zed"}}},
+			{"fuzzy", map[string]interface{}{"fuzzy": map[string]interface{}{"name": "zed"}}},
+			{"term", map[string]interface{}{"term": map[string]interface{}{"name": "zed"}}},
+			{"match", map[string]interface{}{"match": map[string]interface{}{"name": "zed"}}},
+			{"matchphrase", map[string]interface{}{"match_phrase": map[string]interface{}{"name": "zed"}}},
+			{"prefix", map[string]interface{}{"prefix": map[string]interface{}{"name": "zed"}}},
+			{"querystring", map[string]interface{}{"query_string": map[string]interface{}{"query": "zed"}}},
 		}
 		for _, tt := range tests {
 			t.Run(tt.searchType, func(t *testing.T) {
-				q, err := ParseQueryDSLFromV1(&v1.ZincQuery{SearchType: tt.searchType, Query: params})
+				q, err := ParseQueryDSLFromV1(&v1.ZedQuery{SearchType: tt.searchType, Query: params})
 				assert.NoError(t, err)
 				must := mustClause(t, q)
 				assert.Equal(t, []interface{}{tt.want}, must)
@@ -93,7 +93,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	t.Run("time range added before search type", func(t *testing.T) {
 		start := time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)
 		end := start.Add(24 * time.Hour)
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{SearchType: "matchall", Query: v1.QueryParams{StartTime: start, EndTime: end}})
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{SearchType: "matchall", Query: v1.QueryParams{StartTime: start, EndTime: end}})
 		assert.NoError(t, err)
 		must := mustClause(t, q)
 		assert.Len(t, must, 2)
@@ -105,7 +105,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 
 	t.Run("only start time", func(t *testing.T) {
 		start := time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{Query: v1.QueryParams{StartTime: start}})
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{Query: v1.QueryParams{StartTime: start}})
 		assert.NoError(t, err)
 		rng := mustClause(t, q)[0].(map[string]interface{})["range"].(map[string]interface{})["@timestamp"].(map[string]interface{})
 		assert.Equal(t, start.UnixMilli(), rng["gte"])
@@ -116,7 +116,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	t.Run("daterange on custom field", func(t *testing.T) {
 		start := time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Hour)
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{SearchType: "daterange", Query: v1.QueryParams{Field: "created", StartTime: start, EndTime: end}})
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{SearchType: "daterange", Query: v1.QueryParams{Field: "created", StartTime: start, EndTime: end}})
 		assert.NoError(t, err)
 		must := mustClause(t, q)
 		assert.Len(t, must, 2)
@@ -128,7 +128,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	t.Run("daterange on @timestamp is not duplicated", func(t *testing.T) {
 		start := time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)
 		for _, field := range []string{"", "@timestamp"} {
-			q, err := ParseQueryDSLFromV1(&v1.ZincQuery{SearchType: "daterange", Query: v1.QueryParams{Field: field, StartTime: start, EndTime: start.Add(time.Hour)}})
+			q, err := ParseQueryDSLFromV1(&v1.ZedQuery{SearchType: "daterange", Query: v1.QueryParams{Field: field, StartTime: start, EndTime: start.Add(time.Hour)}})
 			assert.NoError(t, err)
 			assert.Len(t, mustClause(t, q), 1)
 		}
@@ -137,7 +137,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	t.Run("aggregations", func(t *testing.T) {
 		from := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 		to := time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC)
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{Aggregations: map[string]v1.AggregationParams{
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{Aggregations: map[string]v1.AggregationParams{
 			"t":   {AggType: "terms", Field: "tag", Size: 5},
 			"t2":  {AggType: "term", Field: "tag"},
 			"r":   {AggType: "range", Field: "age", Ranges: []v1.AggregationNumberRange{{From: 1, To: 10}, {From: 10, To: 20}}},
@@ -164,7 +164,7 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	})
 
 	t.Run("nested aggregations", func(t *testing.T) {
-		q, err := ParseQueryDSLFromV1(&v1.ZincQuery{Aggregations: map[string]v1.AggregationParams{
+		q, err := ParseQueryDSLFromV1(&v1.ZedQuery{Aggregations: map[string]v1.AggregationParams{
 			"t": {AggType: "terms", Field: "tag", Aggregations: map[string]v1.AggregationParams{
 				"m": {AggType: "max", Field: "age"},
 			}},
@@ -176,10 +176,10 @@ func TestParseQueryDSLFromV1(t *testing.T) {
 	})
 
 	t.Run("unsupported aggregation", func(t *testing.T) {
-		_, err := ParseQueryDSLFromV1(&v1.ZincQuery{Aggregations: map[string]v1.AggregationParams{"h": {AggType: "histogram"}}})
+		_, err := ParseQueryDSLFromV1(&v1.ZedQuery{Aggregations: map[string]v1.AggregationParams{"h": {AggType: "histogram"}}})
 		assert.ErrorContains(t, err, "aggregation not supported histogram")
 
-		_, err = ParseQueryDSLFromV1(&v1.ZincQuery{Aggregations: map[string]v1.AggregationParams{
+		_, err = ParseQueryDSLFromV1(&v1.ZedQuery{Aggregations: map[string]v1.AggregationParams{
 			"t": {AggType: "terms", Field: "tag", Aggregations: map[string]v1.AggregationParams{"h": {AggType: "histogram"}}},
 		}})
 		assert.ErrorContains(t, err, "aggregation not supported histogram")

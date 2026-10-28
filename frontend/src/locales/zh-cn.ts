@@ -36,12 +36,12 @@ export default {
     signOut: "退出",
     account: "账号管理",
     feedback: "反馈问题",
-    zincSearch: "Zinc Search",
+    zedSearch: "ZedSearch",
     documentation: "文档",
     openapi: "开放API",
   },
   about: {
-    name: "ZincSearch",
+    name: "ZedSearch",
     introduction: "一个现代化搜索引擎.",
   },
   account: {

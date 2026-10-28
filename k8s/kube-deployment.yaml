@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: z
-  namespace: zincsearch
+  namespace: zedsearch
 spec:
   clusterIP: None
   selector:
-    app: zincsearch
+    app: zedsearch
   ports:
   - name: http
     port: 4080
@@ -18,22 +18,22 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: zincsearch
-  namespace: zincsearch
+  name: zedsearch
+  namespace: zedsearch
   labels:
-    name: zincsearch
+    name: zedsearch
 spec:
   serviceName: z
   replicas: 1
   selector:
     matchLabels:
-      name: zincsearch
-      app: zincsearch
+      name: zedsearch
+      app: zedsearch
   template:
     metadata:
       labels:
-        name: zincsearch
-        app: zincsearch
+        name: zedsearch
+        app: zedsearch
     spec:
       securityContext:
         fsGroup: 2000
@@ -42,14 +42,14 @@ spec:
         runAsNonRoot: true
       # terminationGracePeriodSeconds: 0
       containers:
-        - name: zincsearch
-          image: public.ecr.aws/zinclabs/zincsearch:latest
+        - name: zedsearch
+          image: ghcr.io/vcaesar/zedsearch:latest
           env:
-            - name: ZINC_FIRST_ADMIN_USER
+            - name: ZED_FIRST_ADMIN_USER
               value: admin
-            - name: ZINC_FIRST_ADMIN_PASSWORD
+            - name: ZED_FIRST_ADMIN_PASSWORD
               value: Complexpass#123
-            - name: ZINC_DATA_PATH
+            - name: ZED_DATA_PATH
               value: /go/bin/data
           # command: ["/bin/bash", "-c", "while true; do sleep 1; done"]
           imagePullPolicy: Always

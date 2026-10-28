@@ -24,7 +24,7 @@ import (
 // GUI function gets all events
 func GUI(c *gin.Context) {
 	// c.JSON(http.StatusOK, gin.H{
-	// 	"zinc": "Modern, Simpler, Lighter, Faster Search server. ",
+	// 	"zed": "Modern, Simpler, Lighter, Faster Search server. ",
 	// })
 
 	c.Status(http.StatusFound)

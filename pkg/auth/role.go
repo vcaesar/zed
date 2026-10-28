@@ -25,7 +25,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
-var ZINC_CACHED_PERMISSIONS = cachedPermissions{pm: map[string]map[string]struct{}{}}
+var ZED_CACHED_PERMISSIONS = cachedPermissions{pm: map[string]map[string]struct{}{}}
 
 type cachedPermissions struct {
 	pm   map[string]map[string]struct{}
@@ -90,7 +90,7 @@ func CreateRole(id, name string, permissions []string) (*meta.Role, error) {
 		return nil, err
 	}
 
-	ZINC_CACHED_PERMISSIONS.Set(newRole.ID, strArrayToMap(permissions))
+	ZED_CACHED_PERMISSIONS.Set(newRole.ID, strArrayToMap(permissions))
 
 	return newRole, nil
 }
@@ -116,6 +116,6 @@ func SetRole(id string, role meta.Role) error {
 
 func DeleteRole(id string) error {
 	id = strings.ToLower(id)
-	ZINC_CACHED_PERMISSIONS.Delete(id)
+	ZED_CACHED_PERMISSIONS.Delete(id)
 	return metadata.Role.Delete(id)
 }

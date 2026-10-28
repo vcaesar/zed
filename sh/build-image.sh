@@ -1,14 +1,14 @@
 #!/bin/sh
 # author xiaojun207
 # eg.1 : sh sh/build-image.sh
-# eg.2, set image: sh sh/build-image.sh public.ecr.aws/zinclabs/zincsearch
+# eg.2, set image: sh sh/build-image.sh ghcr.io/vcaesar/zedsearch
 
 cd "$(dirname "$0")/.." || exit 1
 
 VERSION=`git describe --tags --always` # eg.: 0.2.5
 BUILD_DATE=`date +%Y%m%d` # eg.: 20220701
 COMMIT_HASH=`git rev-parse HEAD` #
-IMAGE="zinclabs/zincsearch"
+IMAGE="vcaesar/zedsearch"
 
 if [ -n "$1" ]; then
   IMAGE="$1" #

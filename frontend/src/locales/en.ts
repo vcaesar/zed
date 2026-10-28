@@ -36,12 +36,12 @@ export default {
     signOut: "Sign Out",
     account: "Account",
     feedback: "Feedback",
-    zincSearch: "ZincSearch",
+    zedSearch: "ZedSearch",
     documentation: "Docs",
     openapi: "OpenAPI",
   },
   about: {
-    name: "ZincSearch",
+    name: "ZedSearch",
     introduction: "The modern open source search engine.",
   },
   account: {

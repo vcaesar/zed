@@ -66,8 +66,8 @@ var catHealthHeaders = []string{
 func CatIndices(c *gin.Context) {
 	patterns := elastic.SplitPatterns(c.Param("target"))
 
-	indexes := make([]*core.Index, 0, core.ZINC_INDEX_LIST.Len())
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	indexes := make([]*core.Index, 0, core.ZED_INDEX_LIST.Len())
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		if elastic.MatchAnyPattern(index.GetName(), patterns) {
 			indexes = append(indexes, index)
 		}
@@ -87,7 +87,7 @@ func CatIndices(c *gin.Context) {
 			Health: statusGreen,
 			Status: statusOpen,
 			Index:  index.GetName(),
-			// zinc has no index uuid, the name identifies the index
+			// zed has no index uuid, the name identifies the index
 			UUID:         index.GetName(),
 			Pri:          strconv.FormatInt(index.GetShardNum(), 10),
 			Rep:          strconv.FormatInt(replicas, 10),
