@@ -69,61 +69,14 @@ ZedSearch has hundreds of production installations.
 
 ## Build
 
-Source builds are **API-only by default**: no Node.js, npm, or `frontend/` directory is needed.
-Set first-start credentials via `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
-(or `conf/zed.toml`), then run from the repository root:
+Set `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`, then run from the repository root:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` requires the source checkout, Go, Node.js 24+ and npm. It runs `npm ci`,
-`npm run build`, and `go build -tags web`, producing `test/zedsearch-web`
-(`.exe` on Windows). The resulting binary embeds all UI assets and can be copied
-to another host without frontend files or Node.js. Startup retains the caller's
-working directory, configuration, and environment. A binary already built with
-`-tags web` starts directly without rebuilding, with or without the `web` argument.
-
-For manual builds:
-
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
-```
-
-API-only nodes return version JSON at `/`; `/ui/` and the Swagger UI are disabled.
-Web builds redirect `/` to `/ui/` and serve Swagger when enabled in configuration.
-`sh/build.sh`, release binaries, and the standard Docker image still include the UI.
-
-The experimental multi-node document store lives in `distribution/cmd`, not the
-empty `cmd/distr/` directory. It never requires frontend assets:
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-Use a distinct ID, data directory, Raft address and gRPC address for each node;
-see [distribution/README.md](./distribution/README.md) for joins and TLS. This is
-an independent replicated document store, not a distributed ZedSearch REST/UI server.
-
-- CI (lint, `go test` on Linux/macOS/Windows, coverage): [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly dev image `ghcr.io/vcaesar/zedsearch-dev:nightly`: [`.github/workflows/nightly.yml`](./.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- Release (`v*` tags, goreleaser, `ghcr.io/vcaesar/zedsearch`): [`.github/workflows/release.yml`](./.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **Note — Nightly / dev-image (push) fails on forks:**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> The workflow logs in to GHCR with the repository's `GITHUB_TOKEN`, which can only push packages under the
-> owner of the repository running the workflow. On a fork the token has no access to the `vcaesar` org, so
-> the push is denied. Either run the workflow from `vcaesar/zedsearch`, or change `env.IMAGE` in
-> `nightly.yml` to `ghcr.io/<your-owner>/zedsearch-dev` (and make sure the package is linked to the repo /
-> the repo has `packages: write`).
+`web` produces `test/zedsearch-web`, a standalone binary with the UI embedded.
 
 # Community
 

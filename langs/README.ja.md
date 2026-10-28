@@ -69,61 +69,14 @@ ZedSearch は数百の本番環境で導入されています。
 
 ## ビルド
 
-ソースビルドは**デフォルトで API のみ**です：Node.js、npm、`frontend/` ディレクトリは不要です。
-初回起動時の認証情報を `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
-（または `conf/zed.toml`）で設定し、リポジトリのルートから実行します：
+`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` を設定し、リポジトリのルートで実行します：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` にはソースのチェックアウト、Go、Node.js 24+、npm が必要です。`npm ci`、
-`npm run build`、`go build -tags web` を実行し、`test/zedsearch-web`
-（Windows では `.exe`）を生成します。生成されたバイナリはすべての UI アセットを埋め込んでおり、
-フロントエンドファイルや Node.js のない別のホストにコピーして使えます。起動時には呼び出し元の
-作業ディレクトリ、設定、環境変数が維持されます。すでに `-tags web` でビルドされたバイナリは、
-`web` 引数の有無にかかわらず、再ビルドせずに直接起動します。
-
-手動ビルドの場合：
-
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
-```
-
-API のみのノードは `/` でバージョン JSON を返し、`/ui/` と Swagger UI は無効です。
-Web ビルドは `/` を `/ui/` にリダイレクトし、設定で有効な場合は Swagger を提供します。
-`sh/build.sh`、リリースバイナリ、標準の Docker イメージには引き続き UI が含まれます。
-
-実験的なマルチノード・ドキュメントストアは、空の `cmd/distr/` ディレクトリではなく
-`distribution/cmd` にあります。フロントエンドアセットは一切不要です：
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-ノードごとに異なる ID、データディレクトリ、Raft アドレス、gRPC アドレスを使用してください。
-クラスターへの参加と TLS については [distribution/README.md](../distribution/README.md) を参照してください。これは
-独立したレプリケーション型ドキュメントストアであり、分散型の ZedSearch REST/UI サーバーではありません。
-
-- CI（lint、Linux/macOS/Windows での `go test`、カバレッジ）：[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly 開発イメージ `ghcr.io/vcaesar/zedsearch-dev:nightly`：[`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- リリース（`v*` タグ、goreleaser、`ghcr.io/vcaesar/zedsearch`）：[`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **注意 — Nightly / 開発イメージ（push）はフォークでは失敗します：**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> このワークフローはリポジトリの `GITHUB_TOKEN` で GHCR にログインしますが、このトークンはワークフローを実行している
-> リポジトリのオーナー配下にしかパッケージを push できません。フォークではトークンが `vcaesar` 組織にアクセスできないため、
-> push は拒否されます。`vcaesar/zedsearch` からワークフローを実行するか、`nightly.yml` の `env.IMAGE` を
-> `ghcr.io/<your-owner>/zedsearch-dev` に変更してください（パッケージがリポジトリにリンクされていること、
-> リポジトリに `packages: write` 権限があることを確認してください）。
+`web` は UI を組み込んだ単体バイナリ `test/zedsearch-web` を生成します。
 
 # コミュニティ
 

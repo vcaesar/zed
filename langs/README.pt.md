@@ -69,61 +69,14 @@ O ZedSearch tem centenas de instalações em produção.
 
 ## Build
 
-Builds a partir do código-fonte são **somente API por padrão**: não é necessário Node.js, npm nem o diretório `frontend/`.
-Defina as credenciais da primeira inicialização via `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
-(ou `conf/zed.toml`) e então execute a partir da raiz do repositório:
+Defina `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` e execute a partir da raiz do repositório:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` requer uma cópia do código-fonte, Go, Node.js 24+ e npm. Ele executa `npm ci`,
-`npm run build` e `go build -tags web`, gerando `test/zedsearch-web`
-(`.exe` no Windows). O binário resultante embute todos os recursos da interface e pode ser copiado
-para outro host sem arquivos de frontend nem Node.js. A inicialização preserva o diretório de trabalho,
-a configuração e o ambiente de quem a chama. Um binário já compilado com `-tags web`
-inicia diretamente sem recompilar, com ou sem o argumento `web`.
-
-Para builds manuais:
-
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
-```
-
-Nós somente API retornam o JSON de versão em `/`; `/ui/` e a interface do Swagger ficam desabilitados.
-Builds web redirecionam `/` para `/ui/` e servem o Swagger quando habilitado na configuração.
-`sh/build.sh`, os binários de release e a imagem Docker padrão continuam incluindo a interface.
-
-O armazenamento de documentos multinó experimental fica em `distribution/cmd`, não no
-diretório vazio `cmd/distr/`. Ele nunca requer recursos de frontend:
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-Use um ID, diretório de dados, endereço Raft e endereço gRPC distintos para cada nó;
-veja [distribution/README.md](../distribution/README.md) para entrada de nós e TLS. Este é
-um armazenamento de documentos replicado independente, não um servidor REST/UI distribuído do ZedSearch.
-
-- CI (lint, `go test` em Linux/macOS/Windows, cobertura): [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Imagem de desenvolvimento nightly `ghcr.io/vcaesar/zedsearch-dev:nightly`: [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- Release (tags `v*`, goreleaser, `ghcr.io/vcaesar/zedsearch`): [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **Nota — O push da imagem nightly / de desenvolvimento falha em forks:**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> O workflow faz login no GHCR com o `GITHUB_TOKEN` do repositório, que só pode publicar pacotes sob o
-> proprietário do repositório que executa o workflow. Em um fork, o token não tem acesso à organização `vcaesar`,
-> então o push é negado. Execute o workflow a partir de `vcaesar/zedsearch`, ou altere `env.IMAGE` em
-> `nightly.yml` para `ghcr.io/<your-owner>/zedsearch-dev` (e garanta que o pacote esteja vinculado ao repositório /
-> que o repositório tenha `packages: write`).
+`web` gera `test/zedsearch-web`, um binário independente com a interface embutida.
 
 # Comunidade
 

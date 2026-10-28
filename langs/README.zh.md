@@ -69,60 +69,14 @@ ZedSearch 已有数百个生产环境部署。
 
 ## 构建
 
-源码构建**默认仅包含 API**：不需要 Node.js、npm 或 `frontend/` 目录。
-通过 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`（或 `conf/zed.toml`）
-设置首次启动的凭据，然后在仓库根目录运行：
+设置 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`，然后在仓库根目录运行：
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-`web` 需要源码检出、Go、Node.js 24+ 和 npm。它会运行 `npm ci`、
-`npm run build` 和 `go build -tags web`，生成 `test/zedsearch-web`
-（Windows 上为 `.exe`）。生成的二进制文件内嵌了所有 UI 资源，可以复制到
-没有前端文件或 Node.js 的其他主机上运行。启动时会保留调用者的工作目录、
-配置和环境变量。已使用 `-tags web` 构建的二进制文件会直接启动而不会重新构建，
-无论是否带有 `web` 参数。
-
-手动构建：
-
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
-```
-
-仅 API 的节点在 `/` 返回版本 JSON；`/ui/` 和 Swagger UI 被禁用。
-Web 构建会将 `/` 重定向到 `/ui/`，并在配置中启用时提供 Swagger。
-`sh/build.sh`、发布的二进制文件和标准 Docker 镜像仍然包含 UI。
-
-实验性的多节点文档存储位于 `distribution/cmd`，而不是空的 `cmd/distr/` 目录。
-它从不需要前端资源：
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-每个节点需使用不同的 ID、数据目录、Raft 地址和 gRPC 地址；
-关于加入集群和 TLS，请参阅 [distribution/README.md](../distribution/README.md)。这是一个
-独立的复制文档存储，而不是分布式的 ZedSearch REST/UI 服务器。
-
-- CI（lint、在 Linux/macOS/Windows 上运行 `go test`、覆盖率）：[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Nightly 开发镜像 `ghcr.io/vcaesar/zedsearch-dev:nightly`：[`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- 发布（`v*` 标签、goreleaser、`ghcr.io/vcaesar/zedsearch`）：[`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **注意 —— Nightly / 开发镜像（推送）在 fork 仓库中会失败：**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> 该工作流使用仓库的 `GITHUB_TOKEN` 登录 GHCR，而该令牌只能向运行工作流的仓库所有者名下推送包。
-> 在 fork 中，该令牌无权访问 `vcaesar` 组织，因此推送被拒绝。请在 `vcaesar/zedsearch` 中运行该工作流，
-> 或者将 `nightly.yml` 中的 `env.IMAGE` 改为 `ghcr.io/<your-owner>/zedsearch-dev`（并确保该包已关联到仓库 /
-> 仓库拥有 `packages: write` 权限）。
+`web` 会生成 `test/zedsearch-web`，一个内嵌 UI 的独立二进制文件。
 
 # 社区
 

@@ -69,61 +69,14 @@ ZedSearch используется в сотнях производственн�
 
 ## Сборка
 
-Сборки из исходного кода по умолчанию **только API**: Node.js, npm и каталог `frontend/` не нужны.
-Задайте учётные данные для первого запуска через `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
-(или `conf/zed.toml`), затем запустите из корня репозитория:
+Задайте `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD` и выполните из корня репозитория:
 
 ```sh
 go run cmd/zedsearch/main.go      # API-only, :4080
-go run cmd/zedsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zedsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go web  # with the web UI (Node.js 24+ and npm)
 ```
 
-Для `web` нужны исходный код, Go, Node.js 24+ и npm. Команда выполняет `npm ci`,
-`npm run build` и `go build -tags web`, создавая `test/zedsearch-web`
-(`.exe` в Windows). Полученный бинарный файл содержит все ресурсы интерфейса и может быть скопирован
-на другой хост без файлов фронтенда и Node.js. При запуске сохраняются рабочий каталог,
-конфигурация и окружение вызывающего процесса. Бинарный файл, уже собранный с `-tags web`,
-запускается сразу без пересборки — с аргументом `web` или без него.
-
-Для ручной сборки:
-
-```sh
-go build -o zedsearch ./cmd/zedsearch  # API-only
-(cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zedsearch
-```
-
-Узлы только с API возвращают JSON с версией по адресу `/`; `/ui/` и Swagger UI отключены.
-Web-сборки перенаправляют `/` на `/ui/` и отдают Swagger, если он включён в конфигурации.
-`sh/build.sh`, релизные бинарные файлы и стандартный Docker-образ по-прежнему включают интерфейс.
-
-Экспериментальное многоузловое хранилище документов находится в `distribution/cmd`, а не в
-пустом каталоге `cmd/distr/`. Ему никогда не нужны ресурсы фронтенда:
-
-```sh
-(cd distribution/cmd && go run main.go -id n1 -data ../../test/n1 -bootstrap)
-```
-
-Используйте для каждого узла свой ID, каталог данных, адрес Raft и адрес gRPC;
-о присоединении узлов и TLS см. [distribution/README.md](../distribution/README.md). Это
-независимое реплицируемое хранилище документов, а не распределённый REST/UI-сервер ZedSearch.
-
-- CI (lint, `go test` на Linux/macOS/Windows, покрытие): [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml
-- Ночной dev-образ `ghcr.io/vcaesar/zedsearch-dev:nightly`: [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml
-- Релиз (теги `v*`, goreleaser, `ghcr.io/vcaesar/zedsearch`): [`.github/workflows/release.yml`](../.github/workflows/release.yml) → https://github.com/vcaesar/zedsearch/actions/workflows/release.yml
-
-> **Примечание — публикация (push) ночного / dev-образа не работает в форках:**
->
-> ```
-> Error: buildx failed with: ERROR: failed to build: failed to solve: failed to push ghcr.io/vcaesar/zedsearch-dev:0.4.11-8792c59-dev: denied: permission_denied: The requested installation does not exist.
-> ```
->
-> Workflow входит в GHCR с помощью `GITHUB_TOKEN` репозитория, который может публиковать пакеты только от имени
-> владельца репозитория, в котором запущен workflow. В форке токен не имеет доступа к организации `vcaesar`,
-> поэтому push отклоняется. Либо запускайте workflow из `vcaesar/zedsearch`, либо измените `env.IMAGE` в
-> `nightly.yml` на `ghcr.io/<your-owner>/zedsearch-dev` (и убедитесь, что пакет привязан к репозиторию /
-> у репозитория есть `packages: write`).
+`web` создаёт `test/zedsearch-web` — самостоятельный бинарный файл со встроенным UI.
 
 # Сообщество
 
