@@ -19,10 +19,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"sync"
 	"testing"
+	"testing/iotest"
 
+	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
 	segment "github.com/vcaesar/bluge_segment_api"
 	"github.com/vcaesar/riot"
@@ -228,9 +233,35 @@ func TestObjectDirectoryCache(t *testing.T) {
 		bd := NewObjectDirectory(store, cache, "blocked")
 		assert.NoError(t, bd.Persist(index.ItemKindSegment, 1, bytesWriterTo("mem"), nil))
 		data, closer, err := bd.Load(index.ItemKindSegment, 1)
-		assert.NoError(t, err)
-		assert.Equal(t, "mem", readData(t, data, closer))
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mem", readData(t, data, closer))
+		}
 	})
+
+	t.Run("cache not-exist error is not a missing object", func(t *testing.T) {
+		// mimics Windows, where a broken cache path reports ERROR_PATH_NOT_FOUND
+		assert.NoError(t, store.Put(context.Background(), "idx/000000000005.seg", []byte("five")))
+		nd := NewObjectDirectory(&notExistBodyStore{MemoryObjectStore: store}, cache, "idx")
+		data, closer, err := nd.Load(index.ItemKindSegment, 5)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "five", readData(t, data, closer))
+		}
+	})
+}
+
+// notExistBodyStore fails reading the first fetched body with fs.ErrNotExist.
+type notExistBodyStore struct {
+	*MemoryObjectStore
+	failed bool
+}
+
+func (s *notExistBodyStore) Get(ctx context.Context, key string) (io.ReadCloser, error) {
+	rc, err := s.MemoryObjectStore.Get(ctx, key)
+	if err != nil || s.failed {
+		return rc, err
+	}
+	s.failed = true
+	return io.NopCloser(iotest.ErrReader(fs.ErrNotExist)), rc.Close()
 }
 
 // TestObjectDirectoryRiot writes and reads a real riot index through the directory.
@@ -290,8 +321,136 @@ func TestSetTestObjectStore(t *testing.T) {
 func TestIsIndexItem(t *testing.T) {
 	assert.True(t, isIndexItem("000000000001.seg"))
 	assert.True(t, isIndexItem("000000000001.snp"))
+	assert.True(t, isIndexItem("0000000000010abc.hnsw"))
 	assert.False(t, isIndexItem("bluge.pid"))
 	assert.False(t, isIndexItem("wal"))
+}
+
+func TestObjectDirectoryLoadMissing(t *testing.T) {
+	cache, err := newFileCache(t.TempDir(), 1<<20)
+	assert.NoError(t, err)
+	for name, c := range map[string]*fileCache{"no cache": nil, "cache": cache} {
+		t.Run(name, func(t *testing.T) {
+			store := NewMemoryObjectStore()
+			_, _, err := NewObjectDirectory(store, c, "missing").Load(index.ItemKindGraph, 1)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+
+			store.SetErr(errors.New("boom"))
+			defer store.SetErr(nil)
+			_, _, err = NewObjectDirectory(store, c, "missing").Load(index.ItemKindGraph, 1)
+			assert.Error(t, err)
+			assert.NotErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
+}
+
+func TestNotExist(t *testing.T) {
+	err := notExist("k", minio.ErrorResponse{Code: minio.NoSuchKey})
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.Contains(t, err.Error(), "k")
+
+	other := minio.ErrorResponse{Code: minio.AccessDenied}
+	assert.Equal(t, error(other), notExist("k", other))
+}
+
+// TestHNSWGraphPersist builds an HNSW graph on first ANN search and checks it
+// is persisted next to the segment and reused, read-only, after reopening.
+func TestHNSWGraphPersist(t *testing.T) {
+	store := NewMemoryObjectStore()
+	disk := t.TempDir()
+	countObjects := func(prefix string) func(t *testing.T) int {
+		return func(t *testing.T) int {
+			objs, err := store.List(context.Background(), prefix+"/")
+			assert.NoError(t, err)
+			n := 0
+			for _, o := range objs {
+				if path.Ext(o.Key) == index.ItemKindGraph {
+					n++
+				}
+			}
+			return n
+		}
+	}
+	countFiles := func(t *testing.T) int {
+		files, err := filepath.Glob(filepath.Join(disk, "*"+index.ItemKindGraph))
+		assert.NoError(t, err)
+		return len(files)
+	}
+	cache, err := newFileCache(t.TempDir(), 1<<20)
+	assert.NoError(t, err)
+	for _, tt := range []struct {
+		name   string
+		config func() index.Config
+		graphs func(t *testing.T) int
+	}{
+		{"object", func() index.Config {
+			return index.DefaultConfigWithDirectory(func() index.Directory { return NewObjectDirectory(store, nil, "graph") })
+		}, countObjects("graph")},
+		{"object cached", func() index.Config {
+			return index.DefaultConfigWithDirectory(func() index.Directory { return NewObjectDirectory(store, cache, "graph_cached") })
+		}, countObjects("graph_cached")},
+		{"disk", func() index.Config { return index.DefaultConfig(disk) }, countFiles},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var asyncErrs []error
+			var mu sync.Mutex
+			open := func() riot.Config {
+				cfg := tt.config()
+				cfg.AsyncError = func(err error) {
+					mu.Lock()
+					defer mu.Unlock()
+					asyncErrs = append(asyncErrs, err)
+				}
+				return riot.DefaultConfigWithIndexConfig(cfg)
+			}
+			search := func(t *testing.T, r *riot.Reader) []string {
+				q := riot.NewKNNQuery("emb", []float32{1, 0.1, 0}, 2).SetANN(riot.ANNParams{M: 4, EfConstruction: 16})
+				it, err := r.Search(context.Background(), riot.NewTopNSearch(10, q))
+				assert.NoError(t, err)
+				var ids []string
+				for m, err := it.Next(); m != nil && err == nil; m, err = it.Next() {
+					assert.NoError(t, m.VisitStoredFields(func(field string, value []byte) bool {
+						if field == "_id" {
+							ids = append(ids, string(value))
+						}
+						return true
+					}))
+				}
+				return ids
+			}
+
+			w, err := riot.OpenWriter(open())
+			assert.NoError(t, err)
+			batch := riot.NewBatch()
+			for id, v := range map[string][]float32{"x": {1, 0, 0}, "y": {0, 1, 0}, "xy": {1, 1, 0}} {
+				f, err := riot.NewVectorField("emb", v)
+				assert.NoError(t, err)
+				doc := riot.NewDocument(id).AddField(f)
+				batch.Update(doc.ID(), doc)
+			}
+			assert.NoError(t, w.Batch(batch))
+			assert.NoError(t, w.Close())
+			assert.Zero(t, tt.graphs(t))
+
+			// segments loaded from the directory persist their graphs
+			w, err = riot.OpenWriter(open())
+			assert.NoError(t, err)
+			r, err := w.Reader()
+			assert.NoError(t, err)
+			assert.Equal(t, []string{"x", "xy"}, search(t, r))
+			assert.NoError(t, r.Close())
+			assert.NoError(t, w.Close())
+			assert.Equal(t, 1, tt.graphs(t))
+
+			// a read-only reader loads the persisted graph instead of rebuilding
+			r, err = riot.OpenReader(open())
+			assert.NoError(t, err)
+			assert.Equal(t, []string{"x", "xy"}, search(t, r))
+			assert.NoError(t, r.Close())
+			assert.Equal(t, 1, tt.graphs(t))
+			assert.Empty(t, asyncErrs)
+		})
+	}
 }
 
 func TestCopyDiskObjectRoundTrip(t *testing.T) {

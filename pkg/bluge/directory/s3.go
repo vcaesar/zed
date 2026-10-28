@@ -18,8 +18,10 @@ package directory
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -85,7 +87,24 @@ func (s *minioStore) List(ctx context.Context, prefix string) ([]objectInfo, err
 }
 
 func (s *minioStore) Get(ctx context.Context, key string) (io.ReadCloser, error) {
-	return s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+	// GetObject is lazy; Stat sends the GET, so a missing key fails here.
+	if _, err := obj.Stat(); err != nil {
+		return nil, errors.Join(notExist(key, err), obj.Close())
+	}
+	return obj, nil
+}
+
+// notExist wraps S3 NoSuchKey errors with fs.ErrNotExist, which riot uses to
+// tell a missing optional item (an HNSW graph not built yet) from a failure.
+func notExist(key string, err error) error {
+	if minio.ToErrorResponse(err).Code == minio.NoSuchKey {
+		return fmt.Errorf("object %s: %w: %w", key, fs.ErrNotExist, err)
+	}
+	return err
 }
 
 func (s *minioStore) Put(ctx context.Context, key string, data []byte) error {

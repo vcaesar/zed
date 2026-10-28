@@ -197,6 +197,12 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 					return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims must be a positive integer", field))
 				}
 				newProp.Dims = dims
+			case "index_options", "method":
+				opts, err := parseVectorIndexOptions(field, k, v)
+				if err != nil {
+					return nil, err
+				}
+				newProp.IndexOptions = opts
 			case "store":
 				newProp.Store = v.(bool)
 			case "sortable":
@@ -220,8 +226,8 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 			newProp.Sortable = false
 			newProp.Aggregatable = false
 			newProp.Highlightable = false
-		} else if newProp.Dims != 0 {
-			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims is only valid for type [vector]", field))
+		} else if newProp.Dims != 0 || newProp.IndexOptions != nil {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims and index_options are only valid for type [vector]", field))
 		}
 
 		if newProp.Type != "" {
@@ -282,6 +288,58 @@ func setJoinFields(mappings *meta.Mappings) {
 			mappings.SetProperty(field, meta.NewProperty("keyword"))
 		}
 	}
+}
+
+// vectorIndexLimits bounds HNSW parameters like Elasticsearch does.
+var vectorIndexLimits = map[string][2]int{"m": {2, 512}, "ef_construction": {1, 3200}}
+
+// parseVectorIndexOptions parses the HNSW parameters of a vector field from
+// Elasticsearch index_options {"type": "hnsw", "m": 16, "ef_construction": 100}
+// or OpenSearch method {"name": "hnsw", "parameters": {"m": 16, "ef_construction": 100}}.
+// Flat (brute force) types return nil, keeping exact search for the field.
+func parseVectorIndexOptions(field, key string, v interface{}) (*meta.VectorIndexOptions, error) {
+	fail := func(msg string) error {
+		return errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] %s %s", field, key, msg))
+	}
+	raw, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, fail("must be an object")
+	}
+	kind, params := "type", raw
+	if key == "method" {
+		kind, params = "name", nil
+		if p, ok := raw["parameters"]; ok {
+			if params, ok = p.(map[string]interface{}); !ok {
+				return nil, fail("parameters must be an object")
+			}
+		}
+	}
+	if t, ok := raw[kind]; ok {
+		name, err := zutils.ToString(t)
+		if err != nil {
+			return nil, fail(kind + " must be a string")
+		}
+		switch name = strings.ToLower(name); {
+		case strings.HasSuffix(name, "flat"):
+			return nil, nil
+		case !strings.HasSuffix(name, "hnsw"):
+			return nil, fail(fmt.Sprintf("unsupported %s [%s], expected hnsw or flat", kind, name))
+		}
+	}
+	opts := new(meta.VectorIndexOptions)
+	for name, dst := range map[string]*int{"m": &opts.M, "ef_construction": &opts.EfConstruction} {
+		pv, ok := params[name]
+		if !ok {
+			continue
+		}
+		limit := vectorIndexLimits[name]
+		n, err := zutils.ToInt(pv)
+		if err != nil || n < limit[0] || n > limit[1] {
+			return nil, fail(fmt.Sprintf("%s must be an integer in [%d, %d]", name, limit[0], limit[1]))
+		}
+		*dst = n
+	}
+	return opts, nil
 }
 
 // parseRelations parses relations of "join" property, mapping name of parent

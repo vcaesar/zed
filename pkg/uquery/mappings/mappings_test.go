@@ -69,6 +69,53 @@ func TestRequest_VectorAndGeo(t *testing.T) {
 	}
 }
 
+func TestRequest_VectorIndexOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		props   string
+		want    *meta.VectorIndexOptions
+		wantErr bool
+	}{
+		{name: "none", props: `{"emb": {"type": "dense_vector", "dims": 3}}`},
+		{name: "es hnsw", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "hnsw", "m": 8, "ef_construction": 64}}}`, want: &meta.VectorIndexOptions{M: 8, EfConstruction: 64}},
+		{name: "es quantized hnsw defaults", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "int8_hnsw"}}}`, want: &meta.VectorIndexOptions{}},
+		{name: "es without type", props: `{"emb": {"type": "dense_vector", "index_options": {"m": 4}}}`, want: &meta.VectorIndexOptions{M: 4}},
+		{name: "es flat stays exact", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "flat"}}}`},
+		{name: "opensearch method", props: `{"emb": {"type": "knn_vector", "dimension": 3, "method": {"name": "hnsw", "engine": "lucene", "parameters": {"m": 24, "ef_construction": 128}}}}`, want: &meta.VectorIndexOptions{M: 24, EfConstruction: 128}},
+		{name: "opensearch method without parameters", props: `{"emb": {"type": "knn_vector", "method": {"name": "hnsw"}}}`, want: &meta.VectorIndexOptions{}},
+		{name: "unsupported type", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "ivf"}}}`, wantErr: true},
+		{name: "unsupported method", props: `{"emb": {"type": "knn_vector", "method": {"name": "ivf"}}}`, wantErr: true},
+		{name: "type not string", props: `{"emb": {"type": "dense_vector", "index_options": {"type": 1}}}`, wantErr: true},
+		{name: "not object", props: `{"emb": {"type": "dense_vector", "index_options": "hnsw"}}`, wantErr: true},
+		{name: "parameters not object", props: `{"emb": {"type": "knn_vector", "method": {"name": "hnsw", "parameters": 1}}}`, wantErr: true},
+		{name: "m too small", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "hnsw", "m": 1}}}`, wantErr: true},
+		{name: "m too large", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "hnsw", "m": 513}}}`, wantErr: true},
+		{name: "ef_construction too large", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "hnsw", "ef_construction": 3201}}}`, wantErr: true},
+		{name: "ef_construction not numeric", props: `{"emb": {"type": "dense_vector", "index_options": {"type": "hnsw", "ef_construction": "x"}}}`, wantErr: true},
+		{name: "on text", props: `{"msg": {"type": "text", "index_options": {"type": "hnsw"}}}`, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var props map[string]interface{}
+			assert.NoError(t, json.Unmarshal([]byte(tt.props), &props))
+			m, err := Request(nil, map[string]interface{}{"properties": props})
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			p, ok := m.GetProperty("emb")
+			assert.True(t, ok)
+			assert.Equal(t, tt.want, p.IndexOptions)
+			clone := p.DeepClone()
+			assert.Equal(t, tt.want, clone.IndexOptions)
+			if tt.want != nil {
+				assert.NotSame(t, p.IndexOptions, clone.IndexOptions)
+			}
+		})
+	}
+}
+
 func TestRequest_NestedAndJoin(t *testing.T) {
 	t.Run("nested with properties", func(t *testing.T) {
 		m, err := Request(nil, map[string]interface{}{"properties": map[string]interface{}{

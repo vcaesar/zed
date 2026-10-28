@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -109,7 +110,7 @@ func (m *MemoryObjectStore) Get(_ context.Context, key string) (io.ReadCloser, e
 	m.gets++
 	v, ok := m.objs[key]
 	if !ok {
-		return nil, fmt.Errorf("object not found: %s", key)
+		return nil, fmt.Errorf("object %s: %w", key, fs.ErrNotExist)
 	}
 	return io.NopCloser(bytes.NewReader(v)), nil
 }
@@ -186,11 +187,12 @@ func SetTestObjectStore(storageType string, store *MemoryObjectStore) (func(), e
 	return b.setStore(store), nil
 }
 
-// isIndexItem reports whether name is a bluge index item (segment or snapshot).
-// Everything else found next to them (pid files, WAL) must not be copied.
+// isIndexItem reports whether name is a riot index item (segment, snapshot or
+// persisted HNSW graph). Everything else found next to them (pid files, WAL)
+// must not be copied.
 func isIndexItem(name string) bool {
 	ext := path.Ext(name)
-	return ext == index.ItemKindSegment || ext == index.ItemKindSnapshot
+	return ext == index.ItemKindSegment || ext == index.ItemKindSnapshot || ext == index.ItemKindGraph
 }
 
 // directoryMarker marks an object prefix as an existing directory, so a shard
@@ -439,7 +441,12 @@ func (d *ObjectDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer
 		if data, closer, ok := d.cache.Get(key); ok {
 			return data, closer, nil
 		}
-		if err := d.fetchToCache(key); err != nil {
+		// cache errors are kept apart from store errors: on Windows a broken cache
+		// path reports ERROR_PATH_NOT_FOUND, which also matches fs.ErrNotExist
+		if getErr, cacheErr := d.fetchToCache(key); errors.Is(getErr, fs.ErrNotExist) {
+			// riot builds and persists missing optional items such as HNSW graphs
+			return nil, nil, getErr
+		} else if err := errors.Join(getErr, cacheErr); err != nil {
 			log.Warn().Err(err).Str("key", key).Msg("object cache: falling back to in-memory load")
 		} else if data, closer, ok := d.cache.Get(key); ok {
 			return data, closer, nil
@@ -461,17 +468,19 @@ func (d *ObjectDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer
 	return segment.NewDataBytes(data), io.NopCloser(nil), nil
 }
 
-func (d *ObjectDirectory) fetchToCache(key string) error {
+// fetchToCache copies key from the store into the cache, returning the store
+// and cache errors separately.
+func (d *ObjectDirectory) fetchToCache(key string) (getErr, cacheErr error) {
 	rc, err := d.store.Get(context.Background(), key)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	defer func() {
 		if err := rc.Close(); err != nil {
 			log.Warn().Err(err).Str("key", key).Msg("object store: close body")
 		}
 	}()
-	return d.cache.Put(key, rc)
+	return nil, d.cache.Put(key, rc)
 }
 
 func (d *ObjectDirectory) Persist(kind string, id uint64, w index.WriterTo, closeCh chan struct{}) error {
@@ -523,3 +532,53 @@ type uint64Slice []uint64
 func (e uint64Slice) Len() int           { return len(e) }
 func (e uint64Slice) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 func (e uint64Slice) Less(i, j int) bool { return e[i] < e[j] }
+
+// PutObject stores data under key in the backend of storageType.
+func PutObject(storageType, key string, data []byte) error {
+	store, err := storeFor(storageType)
+	if err != nil {
+		return err
+	}
+	return store.Put(context.Background(), key, data)
+}
+
+// GetObject reads the object stored under key.
+func GetObject(storageType, key string) ([]byte, error) {
+	store, err := storeFor(storageType)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := store.Get(context.Background(), key)
+	if err != nil {
+		return nil, err
+	}
+	data, readErr := io.ReadAll(rc)
+	return data, errors.Join(readErr, rc.Close())
+}
+
+// ListObjects returns the keys stored under prefix, sorted.
+func ListObjects(storageType, prefix string) ([]string, error) {
+	store, err := storeFor(storageType)
+	if err != nil {
+		return nil, err
+	}
+	objs, err := store.List(context.Background(), prefix)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(objs))
+	for _, obj := range objs {
+		keys = append(keys, obj.Key)
+	}
+	sort.Strings(keys)
+	return keys, nil
+}
+
+// DeleteObject removes the object stored under key.
+func DeleteObject(storageType, key string) error {
+	store, err := storeFor(storageType)
+	if err != nil {
+		return err
+	}
+	return store.Delete(context.Background(), key)
+}

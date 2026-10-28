@@ -31,6 +31,10 @@ func vectorMappings() *meta.Mappings {
 	m.SetProperty("embedding", p)
 	m.SetProperty("any", meta.NewProperty("vector"))
 	m.SetProperty("name", meta.NewProperty("text"))
+	hnsw := meta.NewProperty("vector")
+	hnsw.Dims = 3
+	hnsw.IndexOptions = &meta.VectorIndexOptions{M: 8, EfConstruction: 64}
+	m.SetProperty("hnsw", hnsw)
 	return m
 }
 
@@ -41,12 +45,24 @@ func TestKnnQuery(t *testing.T) {
 		wantField  string
 		wantK      int
 		wantMetric riot.Metric
+		wantEf     int // 0 means exact search
 		wantErr    bool
 	}{
 		{name: "es form defaults", query: `{"field": "embedding", "query_vector": [1, 2, 3]}`, wantField: "embedding", wantK: knnDefaultK, wantMetric: riot.Cosine},
 		{name: "es form k and similarity", query: `{"field": "embedding", "query_vector": [1, 2, 3], "k": 5, "similarity": "l2_norm"}`, wantField: "embedding", wantK: 5, wantMetric: riot.L2},
 		{name: "dot product", query: `{"field": "embedding", "query_vector": [1, 2, 3], "k": 2, "similarity": "dot_product"}`, wantField: "embedding", wantK: 2, wantMetric: riot.DotProduct},
-		{name: "ignored options", query: `{"field": "embedding", "query_vector": [1, 2, 3], "num_candidates": 100, "_name": "x"}`, wantField: "embedding", wantK: knnDefaultK, wantMetric: riot.Cosine},
+		{name: "ignored options", query: `{"field": "embedding", "query_vector": [1, 2, 3], "_name": "x"}`, wantField: "embedding", wantK: knnDefaultK, wantMetric: riot.Cosine},
+		{name: "num_candidates enables ann", query: `{"field": "embedding", "query_vector": [1, 2, 3], "k": 5, "num_candidates": 100}`, wantField: "embedding", wantK: 5, wantMetric: riot.Cosine, wantEf: 100},
+		{name: "num_candidates equal k", query: `{"field": "embedding", "query_vector": [1, 2, 3], "k": 5, "num_candidates": 5}`, wantField: "embedding", wantK: 5, wantMetric: riot.Cosine, wantEf: 5},
+		{name: "opensearch ef_search", query: `{"embedding": {"vector": [1, 2, 3], "k": 2, "method_parameters": {"ef_search": 64}}}`, wantField: "embedding", wantK: 2, wantMetric: riot.Cosine, wantEf: 64},
+		{name: "num_candidates less than k", query: `{"field": "embedding", "query_vector": [1, 2, 3], "k": 5, "num_candidates": 4}`, wantErr: true},
+		{name: "num_candidates default k", query: `{"field": "embedding", "query_vector": [1, 2, 3], "num_candidates": 9}`, wantErr: true},
+		{name: "num_candidates too large", query: `{"field": "embedding", "query_vector": [1, 2, 3], "num_candidates": 10001}`, wantErr: true},
+		{name: "num_candidates zero", query: `{"field": "embedding", "query_vector": [1, 2, 3], "num_candidates": 0}`, wantErr: true},
+		{name: "num_candidates not numeric", query: `{"field": "embedding", "query_vector": [1, 2, 3], "num_candidates": "x"}`, wantErr: true},
+		{name: "method_parameters not object", query: `{"embedding": {"vector": [1, 2, 3], "method_parameters": 1}}`, wantErr: true},
+		{name: "method_parameters unknown", query: `{"embedding": {"vector": [1, 2, 3], "method_parameters": {"nprobes": 2}}}`, wantErr: true},
+		{name: "bad ef_search", query: `{"embedding": {"vector": [1, 2, 3], "method_parameters": {"ef_search": -1}}}`, wantErr: true},
 		{name: "opensearch form", query: `{"embedding": {"vector": [1, 2, 3], "k": 4, "space_type": "l2"}}`, wantField: "embedding", wantK: 4, wantMetric: riot.L2},
 		{name: "any dims", query: `{"field": "any", "query_vector": [1, 2]}`, wantField: "any", wantK: knnDefaultK, wantMetric: riot.Cosine},
 		{name: "dims mismatch", query: `{"field": "embedding", "query_vector": [1, 2]}`, wantErr: true},
@@ -76,8 +92,23 @@ func TestKnnQuery(t *testing.T) {
 			assert.Equal(t, tt.wantField, q.Field())
 			assert.Equal(t, tt.wantK, q.K())
 			assert.Equal(t, tt.wantMetric, q.Metric())
+			if tt.wantEf == 0 {
+				assert.Nil(t, q.ANN())
+			} else if assert.NotNil(t, q.ANN()) {
+				assert.Equal(t, tt.wantEf, q.ANN().EfSearch)
+			}
 		})
 	}
+
+	t.Run("mapping index_options enable ann", func(t *testing.T) {
+		got, err := KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3}`), vectorMappings())
+		assert.NoError(t, err)
+		assert.Equal(t, &riot.ANNParams{M: 8, EfConstruction: 64}, got.(*riot.KNNQuery).ANN())
+
+		got, err = KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3, "num_candidates": 40}`), vectorMappings())
+		assert.NoError(t, err)
+		assert.Equal(t, &riot.ANNParams{M: 8, EfConstruction: 64, EfSearch: 40}, got.(*riot.KNNQuery).ANN())
+	})
 
 	t.Run("boost", func(t *testing.T) {
 		got, err := KnnQuery(geoQuery(t, `{"field": "embedding", "query_vector": [1, 2, 3], "boost": 2}`), vectorMappings())
