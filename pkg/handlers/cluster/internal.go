@@ -33,8 +33,8 @@ import (
 // InternalSearchRequest is what a coordinating node sends to every owner
 // during a scatter-gather search.
 type InternalSearchRequest struct {
-	Indexes []string        `json:"indexes"`
-	Query   *meta.ZincQuery `json:"query"`
+	Indexes []string       `json:"indexes"`
+	Query   *meta.ZedQuery `json:"query"`
 }
 
 // IndexOwner is one entry of GET /api/_internal/indexes.
@@ -75,7 +75,7 @@ func InternalSearch(c *gin.Context) {
 		return
 	}
 	if req.Query == nil {
-		req.Query = &meta.ZincQuery{Size: 10}
+		req.Query = &meta.ZedQuery{Size: 10}
 	}
 
 	resp, err := searchLocal(req.Indexes, req.Query)
@@ -106,7 +106,7 @@ func InternalIndexes(c *gin.Context) {
 		out.Node = node.ID
 	}
 
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		name := index.GetName()
 		owner, _, _ := cluster.Owner(name)
 		out.Indexes = append(out.Indexes, IndexOwner{
@@ -124,7 +124,7 @@ func InternalIndexes(c *gin.Context) {
 
 // searchLocal runs the query against local indexes, the same way the user
 // facing search handler does.
-func searchLocal(indexes []string, query *meta.ZincQuery) (*meta.SearchResponse, error) {
+func searchLocal(indexes []string, query *meta.ZedQuery) (*meta.SearchResponse, error) {
 	if len(indexes) == 1 && !strings.Contains(indexes[0], "*") {
 		index, ok := core.GetIndex(indexes[0])
 		if !ok {
@@ -141,7 +141,7 @@ func searchLocal(indexes []string, query *meta.ZincQuery) (*meta.SearchResponse,
 //
 // The count is the number of documents this node matched, which is exact
 // as long as the averaged field is present in every matched document.
-func addPartialAggregations(resp *meta.SearchResponse, query *meta.ZincQuery) {
+func addPartialAggregations(resp *meta.SearchResponse, query *meta.ZedQuery) {
 	if resp == nil || len(resp.Aggregations) == 0 {
 		return
 	}

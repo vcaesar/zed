@@ -50,7 +50,7 @@ func TestLogsIndex(t *testing.T) {
 	}, false))
 	waitForDocs(t, index, 2)
 
-	query := new(meta.ZincQuery)
+	query := new(meta.ZedQuery)
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"query":{"range":{"@timestamp":{"gte":"2022-01-02T03:00:00Z","lt":"2022-01-02T05:00:00Z"}}},
 		"sort":["-@timestamp"],"size":10,
@@ -74,7 +74,7 @@ func TestLogsIndex(t *testing.T) {
 
 	// Loading persisted metadata retains both the profile and its mappings.
 	require.NoError(t, index.Close())
-	require.NoError(t, LoadZincIndexesFromMetadata(meta.Version))
+	require.NoError(t, LoadZedIndexesFromMetadata(meta.Version))
 	index, ok := GetIndex(name)
 	require.True(t, ok)
 	assert.Equal(t, meta.IndexTypeLogs, index.GetIndexType())
@@ -89,7 +89,7 @@ func TestLogsIndex(t *testing.T) {
 		"message":    "updated event",
 	}, false))
 	require.Eventually(t, func() bool {
-		res, err := index.Search(&meta.ZincQuery{Size: 10, Query: &meta.Query{Match: map[string]*meta.MatchQuery{"message": {Query: "updated"}}}})
+		res, err := index.Search(&meta.ZedQuery{Size: 10, Query: &meta.Query{Match: map[string]*meta.MatchQuery{"message": {Query: "updated"}}}})
 		return err == nil && len(res.Hits.Hits) == 1 && res.Hits.Hits[0].Timestamp.Equal(instant.Add(2*time.Hour))
 	}, 10*time.Second, 20*time.Millisecond)
 }

@@ -36,7 +36,7 @@ import (
 // @Accept  json
 // @Produce json
 // @Param   index  path  string  true  "Index"
-// @Param   query  body  v1.ZincQueryForSDK  true  "Query"
+// @Param   query  body  v1.ZedQueryForSDK  true  "Query"
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/{index}/_search [post]
@@ -48,7 +48,7 @@ func SearchV1(c *gin.Context) {
 		return
 	}
 
-	iQuery := new(v1.ZincQuery)
+	iQuery := new(v1.ZedQuery)
 	iQuery.MaxResults = 10
 	if err := zutils.GinBindJSON(c, &iQuery); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})

@@ -79,7 +79,7 @@ func (s *IndexShard) OpenWAL() error {
 	}
 
 	// set wal to consumer list
-	ZINC_INDEX_SHARD_WAL_LIST.Add(s)
+	ZED_INDEX_SHARD_WAL_LIST.Add(s)
 
 	return nil
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -89,7 +89,7 @@ func SetSettings(c *gin.Context) {
 		return
 	}
 
-	analyzers, err := zincanalysis.RequestAnalyzer(settings.Analysis)
+	analyzers, err := zedanalysis.RequestAnalyzer(settings.Analysis)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return

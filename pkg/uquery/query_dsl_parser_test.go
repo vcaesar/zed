@@ -40,7 +40,7 @@ func TestParseQueryDSL(t *testing.T) {
 	matchAll := map[string]interface{}{"match_all": map[string]interface{}{}}
 
 	t.Run("defaults", func(t *testing.T) {
-		q := &meta.ZincQuery{Query: matchAll, Size: 10}
+		q := &meta.ZedQuery{Query: matchAll, Size: 10}
 		req, err := ParseQueryDSL(q, mappings, nil)
 		assert.NoError(t, err)
 		top := req.(*riot.TopNSearch)
@@ -54,7 +54,7 @@ func TestParseQueryDSL(t *testing.T) {
 	})
 
 	t.Run("nil query is match_all", func(t *testing.T) {
-		_, err := ParseQueryDSL(&meta.ZincQuery{}, mappings, nil)
+		_, err := ParseQueryDSL(&meta.ZedQuery{}, mappings, nil)
 		assert.NoError(t, err)
 	})
 
@@ -62,7 +62,7 @@ func TestParseQueryDSL(t *testing.T) {
 		max := config.Global.MaxResults
 		config.Global.MaxResults = 50
 		t.Cleanup(func() { config.Global.MaxResults = max })
-		q := &meta.ZincQuery{Query: matchAll, Size: 500}
+		q := &meta.ZedQuery{Query: matchAll, Size: 500}
 		req, err := ParseQueryDSL(q, mappings, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, 50, q.Size)
@@ -70,7 +70,7 @@ func TestParseQueryDSL(t *testing.T) {
 	})
 
 	t.Run("from, explain, highlight, fields, source, sort", func(t *testing.T) {
-		q := &meta.ZincQuery{
+		q := &meta.ZedQuery{
 			Query:     map[string]interface{}{"term": map[string]interface{}{"tag": "go"}},
 			Size:      10,
 			From:      20,
@@ -94,21 +94,21 @@ func TestParseQueryDSL(t *testing.T) {
 	})
 
 	t.Run("non-array fields left untouched", func(t *testing.T) {
-		q := &meta.ZincQuery{Query: matchAll, Size: 1, Fields: "name"}
+		q := &meta.ZedQuery{Query: matchAll, Size: 1, Fields: "name"}
 		_, err := ParseQueryDSL(q, mappings, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "name", q.Fields)
 	})
 
 	t.Run("aggregations", func(t *testing.T) {
-		q := &meta.ZincQuery{Query: matchAll, Size: 1, Aggregations: map[string]meta.Aggregations{
+		q := &meta.ZedQuery{Query: matchAll, Size: 1, Aggregations: map[string]meta.Aggregations{
 			"tags": {Terms: &meta.AggregationsTerms{Field: "tag"}},
 			"avg":  {Avg: &meta.AggregationMetric{Field: "age"}},
 		}}
 		_, err := ParseQueryDSL(q, mappings, nil)
 		assert.NoError(t, err)
 
-		q = &meta.ZincQuery{Query: matchAll, Size: 1, Aggregations: map[string]meta.Aggregations{
+		q = &meta.ZedQuery{Query: matchAll, Size: 1, Aggregations: map[string]meta.Aggregations{
 			"bad": {Terms: &meta.AggregationsTerms{Field: "missing"}},
 		}}
 		_, err = ParseQueryDSL(q, mappings, nil)
@@ -118,15 +118,15 @@ func TestParseQueryDSL(t *testing.T) {
 	t.Run("errors", func(t *testing.T) {
 		tests := []struct {
 			name  string
-			query *meta.ZincQuery
+			query *meta.ZedQuery
 			want  string
 		}{
-			{"unknown query", &meta.ZincQuery{Query: map[string]interface{}{"nope": map[string]interface{}{}}}, "[nope] query doesn't support"},
-			{"query not a map", &meta.ZincQuery{Query: "x"}, "must be a map"},
-			{"bad fields", &meta.ZincQuery{Query: matchAll, Fields: []interface{}{1}}, "[fields]"},
-			{"bad source", &meta.ZincQuery{Query: matchAll, Source: 1}, "[_source]"},
-			{"bad sort", &meta.ZincQuery{Query: matchAll, Sort: 1}, "[sort]"},
-			{"bad sort object", &meta.ZincQuery{Query: matchAll, Sort: []interface{}{map[string]interface{}{"a": "asc", "b": "asc"}}}, "[sort]"},
+			{"unknown query", &meta.ZedQuery{Query: map[string]interface{}{"nope": map[string]interface{}{}}}, "[nope] query doesn't support"},
+			{"query not a map", &meta.ZedQuery{Query: "x"}, "must be a map"},
+			{"bad fields", &meta.ZedQuery{Query: matchAll, Fields: []interface{}{1}}, "[fields]"},
+			{"bad source", &meta.ZedQuery{Query: matchAll, Source: 1}, "[_source]"},
+			{"bad sort", &meta.ZedQuery{Query: matchAll, Sort: 1}, "[sort]"},
+			{"bad sort object", &meta.ZedQuery{Query: matchAll, Sort: []interface{}{map[string]interface{}{"a": "asc", "b": "asc"}}}, "[sort]"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

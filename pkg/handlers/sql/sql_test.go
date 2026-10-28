@@ -26,7 +26,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincsql "github.com/vcaesar/zedsearch/pkg/sql"
+	zedsql "github.com/vcaesar/zedsearch/pkg/sql"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 	"github.com/vcaesar/zedsearch/test/utils"
 )
@@ -60,7 +60,7 @@ func prepareIndex(t *testing.T, name string, docs []map[string]interface{}) {
 		require.NoError(t, index.CreateDocument(strconv.Itoa(i), doc, false))
 	}
 	require.Eventually(t, func() bool {
-		resp, err := index.Search(&meta.ZincQuery{Size: 100})
+		resp, err := index.Search(&meta.ZedQuery{Size: 100})
 		return err == nil && resp.Hits.Total.Value == len(docs)
 	}, 30*time.Second, 50*time.Millisecond, "documents not indexed")
 }
@@ -74,9 +74,9 @@ func callSearch(t *testing.T, body string, params map[string]string) (int, strin
 	return w.Code, w.Body.String()
 }
 
-func decodeResponse(t *testing.T, body string) *zincsql.Response {
+func decodeResponse(t *testing.T, body string) *zedsql.Response {
 	t.Helper()
-	resp := new(zincsql.Response)
+	resp := new(zedsql.Response)
 	require.NoError(t, json.Unmarshal([]byte(body), resp))
 	return resp
 }
@@ -89,13 +89,13 @@ func TestSearch(t *testing.T) {
 	tests := []struct {
 		name    string
 		sql     string
-		columns []zincsql.ResultColumn
+		columns []zedsql.ResultColumn
 		rows    [][]interface{}
 	}{
 		{
 			name: "select where order limit",
 			sql:  `SELECT level, count` + from + ` WHERE level = 'error' ORDER BY count DESC LIMIT 1`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "level", Type: "keyword"},
 				{Name: "count", Type: "double"},
 			},
@@ -104,7 +104,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "select where offset",
 			sql:  `SELECT count` + from + ` WHERE level = 'error' ORDER BY count ASC LIMIT 1 OFFSET 1`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "count", Type: "double"},
 			},
 			rows: [][]interface{}{{5.0}},
@@ -112,7 +112,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "count star",
 			sql:  `SELECT COUNT(*)` + from,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(*)", Type: "long"},
 			},
 			rows: [][]interface{}{{4.0}},
@@ -120,7 +120,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "count star with where",
 			sql:  `SELECT COUNT(*) AS total` + from + ` WHERE count >= 5`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "total", Type: "long"},
 			},
 			rows: [][]interface{}{{2.0}},
@@ -128,7 +128,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "metrics without group by",
 			sql:  `SELECT MIN(count), MAX(count), SUM(count)` + from,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "MIN(count)", Type: "double"},
 				{Name: "MAX(count)", Type: "double"},
 				{Name: "SUM(count)", Type: "double"},
@@ -138,7 +138,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "group by terms with avg",
 			sql:  `SELECT level, COUNT(*), AVG(count) AS avg_count` + from + ` GROUP BY level ORDER BY COUNT(*) DESC, level ASC`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "level", Type: "keyword"},
 				{Name: "COUNT(*)", Type: "long"},
 				{Name: "avg_count", Type: "double"},
@@ -152,7 +152,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "group by with having",
 			sql:  `SELECT level, COUNT(*)` + from + ` GROUP BY level HAVING COUNT(*) > 1`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "level", Type: "keyword"},
 				{Name: "COUNT(*)", Type: "long"},
 			},
@@ -161,7 +161,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "group by with limit",
 			sql:  `SELECT level, COUNT(*)` + from + ` GROUP BY level ORDER BY COUNT(*) DESC LIMIT 1`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "level", Type: "keyword"},
 				{Name: "COUNT(*)", Type: "long"},
 			},
@@ -170,7 +170,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "count distinct",
 			sql:  `SELECT COUNT(DISTINCT level)` + from,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(DISTINCT level)", Type: "long"},
 			},
 			rows: [][]interface{}{{3.0}},
@@ -178,7 +178,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "match function",
 			sql:  `SELECT COUNT(*)` + from + ` WHERE MATCH(message, 'disk')`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(*)", Type: "long"},
 			},
 			rows: [][]interface{}{{2.0}},
@@ -186,7 +186,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "query function",
 			sql:  `SELECT COUNT(*)` + from + ` WHERE QUERY('memory')`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(*)", Type: "long"},
 			},
 			rows: [][]interface{}{{1.0}},
@@ -194,7 +194,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "in and between",
 			sql:  `SELECT COUNT(*)` + from + ` WHERE level IN ('error', 'warn') AND count BETWEEN 1 AND 3`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(*)", Type: "long"},
 			},
 			rows: [][]interface{}{{2.0}},
@@ -202,7 +202,7 @@ func TestSearch(t *testing.T) {
 		{
 			name: "like",
 			sql:  `SELECT COUNT(*)` + from + ` WHERE level LIKE 'err%'`,
-			columns: []zincsql.ResultColumn{
+			columns: []zedsql.ResultColumn{
 				{Name: "COUNT(*)", Type: "long"},
 			},
 			rows: [][]interface{}{{2.0}},
@@ -247,7 +247,7 @@ func TestSearchDateHistogram(t *testing.T) {
 	require.Equal(t, http.StatusOK, code, body)
 
 	resp := decodeResponse(t, body)
-	require.Equal(t, []zincsql.ResultColumn{
+	require.Equal(t, []zedsql.ResultColumn{
 		{Name: "DATE_HISTOGRAM(@timestamp, '1d')", Type: "datetime"},
 		{Name: "COUNT(*)", Type: "long"},
 	}, resp.Columns)

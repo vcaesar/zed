@@ -27,7 +27,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 )
 
 func QueryStringQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.Query, error) {
@@ -65,7 +65,7 @@ func QueryStringQuery(query map[string]interface{}, mappings *meta.Mappings, ana
 	// TODO default_operator
 	// TODO boost
 
-	zer, _ := zincanalysis.QueryAnalyzer(analyzers, value.Analyzer)
+	zer, _ := zedanalysis.QueryAnalyzer(analyzers, value.Analyzer)
 	if zer == nil {
 		zer = analyzer.NewStandardAnalyzer()
 	}
@@ -84,7 +84,7 @@ func QueryStringQuery(query map[string]interface{}, mappings *meta.Mappings, ana
 		if prop.Type == "keyword" {
 			zer = analyzer.NewKeywordAnalyzer()
 		} else {
-			indexZer, searchZer := zincanalysis.QueryAnalyzerForField(analyzers, mappings, field)
+			indexZer, searchZer := zedanalysis.QueryAnalyzerForField(analyzers, mappings, field)
 			if zer == nil && searchZer != nil {
 				zer = searchZer
 			}

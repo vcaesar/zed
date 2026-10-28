@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: letsencrypt-prod
-  namespace: zincsearch
+  namespace: zedsearch
 spec:
   acme:
     email: youremail@yourdomain.com

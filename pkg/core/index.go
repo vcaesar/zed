@@ -27,7 +27,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/logs"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils/hash/rendezvous"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -137,7 +137,7 @@ func (index *Index) UseTemplate() error {
 			return err
 		}
 		// update analyzers
-		analyzers, err := zincanalysis.RequestAnalyzer(template.Template.Settings.Analysis)
+		analyzers, err := zedanalysis.RequestAnalyzer(template.Template.Settings.Analysis)
 		if err != nil {
 			return err
 		}

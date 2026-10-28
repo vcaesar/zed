@@ -41,14 +41,14 @@ import (
 // @Accept  json
 // @Produce json
 // @Param   index  path  string  true  "Index"
-// @Param   query  body  meta.ZincQueryForSDK true  "Query"
+// @Param   query  body  meta.ZedQueryForSDK true  "Query"
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_search [post]
 func SearchDSL(c *gin.Context) {
 	indexName := c.Param("target")
 
-	query := &meta.ZincQuery{Size: 10}
+	query := &meta.ZedQuery{Size: 10}
 	if err := zutils.GinBindJSON(c, query); err != nil {
 		log.Printf("handlers.search.searchDSL: %s", err.Error())
 		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
@@ -63,7 +63,7 @@ func SearchDSL(c *gin.Context) {
 
 	if indexName != "" {
 		// TODO: adapt this to allow strings.Split(indexName, ",") slice
-		idx, ok := core.ZINC_INDEX_LIST.Get(indexName)
+		idx, ok := core.ZED_INDEX_LIST.Get(indexName)
 		if ok {
 			storageSize := idx.GetStats().StorageSize
 			eventData := make(map[string]interface{})
@@ -116,7 +116,7 @@ func MultipleSearch(c *gin.Context) {
 	for scanner.Scan() { // Read each line
 		if nextLineIsData {
 			nextLineIsData = false
-			query := &meta.ZincQuery{Size: 10}
+			query := &meta.ZedQuery{Size: 10}
 			if err = json.Unmarshal(scanner.Bytes(), &query); err != nil {
 				log.Error().Msgf("handlers.search.MultipleSearch.json.Unmarshal: %s, err %s", scanner.Text(), err.Error())
 				responses = append(responses, &meta.SearchResponse{Error: err.Error()})
@@ -155,7 +155,7 @@ func MultipleSearch(c *gin.Context) {
 	zutils.GinRenderJSON(c, http.StatusOK, gin.H{"responses": responses})
 }
 
-func searchIndex(indexNames []string, query *meta.ZincQuery) (*meta.SearchResponse, error) {
+func searchIndex(indexNames []string, query *meta.ZedQuery) (*meta.SearchResponse, error) {
 	indexName := ""
 	if len(indexNames) > 0 {
 		indexName = indexNames[0]

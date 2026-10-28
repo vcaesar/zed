@@ -24,7 +24,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/logs"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/uquery/mappings"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -52,7 +52,7 @@ func Request(data map[string]interface{}) (*meta.Index, error) {
 		if err := meta.CheckIndexType(settings.IndexType); err != nil {
 			return nil, err
 		}
-		if analyzers, err = zincanalysis.RequestAnalyzer(settings.Analysis); err != nil {
+		if analyzers, err = zedanalysis.RequestAnalyzer(settings.Analysis); err != nil {
 			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[index] settings.analysis parse error: %s", err.Error()))
 		}
 		if settings.IndexType != "" || settings.NumberOfShards > 0 || settings.NumberOfReplicas > 0 || settings.Analysis != nil {

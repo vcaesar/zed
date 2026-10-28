@@ -25,7 +25,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -241,12 +241,12 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 
 			// check analyzer
 			if newProp.Analyzer != "" {
-				if _, err := zincanalysis.QueryAnalyzer(analyzers, newProp.Analyzer); err != nil {
+				if _, err := zedanalysis.QueryAnalyzer(analyzers, newProp.Analyzer); err != nil {
 					return nil, err
 				}
 			}
 			if newProp.SearchAnalyzer != "" {
-				if _, err := zincanalysis.QueryAnalyzer(analyzers, newProp.SearchAnalyzer); err != nil {
+				if _, err := zedanalysis.QueryAnalyzer(analyzers, newProp.SearchAnalyzer); err != nil {
 					return nil, err
 				}
 			}

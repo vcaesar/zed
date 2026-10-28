@@ -154,7 +154,7 @@ func TestAddPartialAggregations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addPartialAggregations(tt.resp, &meta.ZincQuery{Aggregations: avgDef})
+			addPartialAggregations(tt.resp, &meta.ZedQuery{Aggregations: avgDef})
 			if tt.resp == nil {
 				return
 			}

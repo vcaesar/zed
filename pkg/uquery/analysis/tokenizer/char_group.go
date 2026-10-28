@@ -19,7 +19,7 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	zedtokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
@@ -30,5 +30,5 @@ func NewCharGroupTokenizer(options interface{}) (analysis.Tokenizer, error) {
 		return nil, errors.New(errors.ErrorTypeParsingException, "[tokenizer] char_group option [tokenize_on_chars] should be an array of string")
 	}
 
-	return zinctokenizer.NewCharGroupTokenizer(chars), nil
+	return zedtokenizer.NewCharGroupTokenizer(chars), nil
 }

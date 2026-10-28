@@ -22,13 +22,13 @@ import (
 // @Accept  json
 // @Produce json
 // @Param   index  path  string  true  "Index"
-// @Param   query  body  meta.ZincQueryForSDK true  "Query"
+// @Param   query  body  meta.ZedQueryForSDK true  "Query"
 // @Success 200 {object} meta.HTTPResponseDeleteByQuery
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_delete_by_query [post]
 func DeleteByQuery(c *gin.Context) {
 	start := time.Now()
-	query := &meta.ZincQuery{Size: 10}
+	query := &meta.ZedQuery{Size: 10}
 	if err := zutils.GinBindJSON(c, query); err != nil {
 		log.Printf("handlers.search.searchDSL: %s", err.Error())
 		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})

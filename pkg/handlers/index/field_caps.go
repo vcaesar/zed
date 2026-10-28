@@ -74,7 +74,7 @@ func FieldCaps(c *gin.Context) {
 
 	indexPatterns := elastic.SplitPatterns(target)
 	indexes := make([]*core.Index, 0, 1)
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		if elastic.MatchAnyPattern(index.GetName(), indexPatterns) {
 			indexes = append(indexes, index)
 		}
@@ -126,7 +126,7 @@ func readOptionalBody(c *gin.Context) ([]byte, error) {
 	return io.ReadAll(c.Request.Body)
 }
 
-// esFieldType maps a zinc property type to the elasticsearch field type.
+// esFieldType maps a zed property type to the elasticsearch field type.
 func esFieldType(typ string) string {
 	switch typ {
 	case "numeric":

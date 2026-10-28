@@ -164,9 +164,9 @@ func fakeGoBuild(cmd *exec.Cmd) error {
 }
 
 func TestRun(t *testing.T) {
-	switch os.Getenv("ZINC_WEBBUILD_TEST_PHASE") {
+	switch os.Getenv("ZED_WEBBUILD_TEST_PHASE") {
 	case "launch":
-		require.NoError(t, os.Setenv("ZINC_WEBBUILD_TEST_PHASE", "child"))
+		require.NoError(t, os.Setenv("ZED_WEBBUILD_TEST_PHASE", "child"))
 		require.NoError(t, Run(os.Args[0], []string{"-test.run=^TestRun$", "--", "argument with spaces"}))
 		return
 	case "child":
@@ -183,7 +183,7 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 	cmd := exec.Command(binary, "-test.run=^TestRun$")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "ZINC_WEBBUILD_TEST_PHASE=launch")
+	cmd.Env = append(os.Environ(), "ZED_WEBBUILD_TEST_PHASE=launch")
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "%s", output)
 	assert.Contains(t, string(output), "child cwd: "+dir)

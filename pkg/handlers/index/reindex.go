@@ -115,7 +115,7 @@ func Reindex(c *gin.Context) {
 		}
 
 		// sort by _id so paging with from/size stays stable between batches
-		resp, err := source.Search(&meta.ZincQuery{
+		resp, err := source.Search(&meta.ZedQuery{
 			Query: req.Source.Query,
 			Sort:  []interface{}{"_id"},
 			From:  total,

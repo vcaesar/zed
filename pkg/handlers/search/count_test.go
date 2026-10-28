@@ -52,7 +52,7 @@ func TestCount(t *testing.T) {
 			name: "count with query",
 			args: args{
 				code:   http.StatusOK,
-				data:   `{"query":{"match":{"name":"zinc"}}}`,
+				data:   `{"query":{"match":{"name":"zed"}}}`,
 				params: map[string]string{"target": indexName},
 				result: `{"count":2,`,
 			},
@@ -90,11 +90,11 @@ func TestCount(t *testing.T) {
 		index, err := core.NewIndex(indexName, "disk", 2)
 		assert.NoError(t, err)
 		assert.NoError(t, core.StoreIndex(index))
-		assert.NoError(t, index.CreateDocument("1", map[string]interface{}{"name": "zinc", "num": 1}, false))
-		assert.NoError(t, index.CreateDocument("2", map[string]interface{}{"name": "zinc", "num": 2}, false))
+		assert.NoError(t, index.CreateDocument("1", map[string]interface{}{"name": "zed", "num": 1}, false))
+		assert.NoError(t, index.CreateDocument("2", map[string]interface{}{"name": "zed", "num": 2}, false))
 		assert.NoError(t, index.CreateDocument("3", map[string]interface{}{"name": "other", "num": 3}, false))
 		assert.Eventually(t, func() bool {
-			res, err := index.Search(&meta.ZincQuery{Size: 10})
+			res, err := index.Search(&meta.ZedQuery{Size: 10})
 			return err == nil && res.Hits.Total.Value == 3
 		}, 10*time.Second, 100*time.Millisecond, "documents not indexed")
 	})

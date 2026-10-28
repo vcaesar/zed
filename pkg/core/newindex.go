@@ -80,7 +80,7 @@ func CheckIndexName(name string) error {
 	return nil
 }
 
-// NewIndex creates an instance of a physical zinc index that can be used to store and retrieve data.
+// NewIndex creates an instance of a physical zed index that can be used to store and retrieve data.
 func NewIndex(name, storageType string, shardNum int64) (*Index, error) {
 	if err := CheckIndexName(name); err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func StoreIndex(index *Index) error {
 		return err
 	}
 	// cache index
-	ZINC_INDEX_LIST.Add(index)
+	ZED_INDEX_LIST.Add(index)
 	return nil
 }
 
@@ -246,9 +246,9 @@ func storeIndex(index *Index) error {
 }
 
 func GetIndex(name string) (*Index, bool) {
-	return ZINC_INDEX_LIST.Get(name)
+	return ZED_INDEX_LIST.Get(name)
 }
 
 func GetOrCreateIndex(name, storageType string, shardNum int64) (*Index, bool, error) {
-	return ZINC_INDEX_LIST.GetOrCreate(name, storageType, shardNum)
+	return ZED_INDEX_LIST.GetOrCreate(name, storageType, shardNum)
 }

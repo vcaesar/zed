@@ -28,7 +28,7 @@ import (
 
 func TestIndex_Search(t *testing.T) {
 	type args struct {
-		iQuery *meta.ZincQuery
+		iQuery *meta.ZedQuery
 	}
 	tests := []struct {
 		name    string
@@ -40,7 +40,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - Match",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Match: map[string]*meta.MatchQuery{
 							"_all": {
@@ -55,7 +55,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - Term",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Term: map[string]*meta.TermQuery{
 							"_all": {
@@ -70,7 +70,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - MatchAll",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},
@@ -82,7 +82,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - wildcard",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Wildcard: map[string]*meta.WildcardQuery{
 							"_all": {
@@ -97,7 +97,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - fuzzy",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Fuzzy: map[string]*meta.FuzzyQuery{
 							"_all": {
@@ -112,7 +112,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - fuzzy fuzziness AUTO",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Fuzzy: map[string]*meta.FuzzyQuery{
 							"_all": {
@@ -128,7 +128,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - fuzzy fuzziness AUTO",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Fuzzy: map[string]*meta.FuzzyQuery{
 							"_all": {
@@ -144,7 +144,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - fuzzy fuzziness 2",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						Fuzzy: map[string]*meta.FuzzyQuery{
 							"_all": {
@@ -160,7 +160,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - querystring",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						QueryString: &meta.QueryStringQuery{
 							Query: "angeles",
@@ -173,7 +173,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - highlight",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						QueryString: &meta.QueryStringQuery{
 							Query: "angeles",
@@ -196,7 +196,7 @@ func TestIndex_Search(t *testing.T) {
 		{
 			name: "Search Query - aggs",
 			args: args{
-				iQuery: &meta.ZincQuery{
+				iQuery: &meta.ZedQuery{
 					Query: &meta.Query{
 						MatchAll: &meta.MatchAllQuery{},
 					},
@@ -287,7 +287,7 @@ func TestIndex_Search(t *testing.T) {
 // waitForDocs waits until all shards have consumed the WAL and n documents are searchable.
 func waitForDocs(t *testing.T, index *Index, n int) {
 	t.Helper()
-	query := &meta.ZincQuery{Query: &meta.Query{MatchAll: &meta.MatchAllQuery{}}, Size: n + 1}
+	query := &meta.ZedQuery{Query: &meta.Query{MatchAll: &meta.MatchAllQuery{}}, Size: n + 1}
 	assert.Eventually(t, func() bool {
 		res, err := index.Search(query)
 		return err == nil && res.Hits.Total.Value == n

@@ -41,7 +41,7 @@ import (
 // @Accept  json
 // @Produce json
 // @Param   index  path  string  true   "Index"
-// @Param   query  body  meta.ZincQueryForSDK false  "Query"
+// @Param   query  body  meta.ZedQueryForSDK false  "Query"
 // @Success 200 {object} elastic.CountResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_count [post]
@@ -56,7 +56,7 @@ func Count(c *gin.Context) {
 		return
 	}
 
-	query := &meta.ZincQuery{}
+	query := &meta.ZedQuery{}
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, query); err != nil {
 			log.Printf("handlers.search.Count: %s", err.Error())
@@ -108,7 +108,7 @@ func readOptionalBody(c *gin.Context) ([]byte, error) {
 // countShards sums the shards of every index matching indexNames, it never returns less than 1.
 func countShards(indexNames []string) int64 {
 	var shards int64
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		if !elastic.MatchAnyPattern(index.GetName(), indexNames) {
 			continue
 		}

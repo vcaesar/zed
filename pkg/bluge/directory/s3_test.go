@@ -27,15 +27,15 @@ func TestNewMinioStore(t *testing.T) {
 	_, err := newMinioStore(config.S3Config{})
 	assert.Error(t, err, "bucket required")
 
-	s, err := newMinioStore(config.S3Config{Endpoint: "localhost:9000", Bucket: "zinc", AccessKeyID: "a", SecretAccessKey: "b"})
+	s, err := newMinioStore(config.S3Config{Endpoint: "localhost:9000", Bucket: "zed", AccessKeyID: "a", SecretAccessKey: "b"})
 	assert.NoError(t, err)
-	assert.Equal(t, "zinc", s.bucket)
+	assert.Equal(t, "zed", s.bucket)
 
-	s, err = newMinioStore(config.S3Config{Endpoint: "s3.amazonaws.com", Bucket: "zinc", UseSSL: true, Region: "us-east-1"})
+	s, err = newMinioStore(config.S3Config{Endpoint: "s3.amazonaws.com", Bucket: "zed", UseSSL: true, Region: "us-east-1"})
 	assert.NoError(t, err, "credential chain when keys are empty")
 	assert.NotNil(t, s.client)
 
-	_, err = newMinioStore(config.S3Config{Endpoint: "http://bad endpoint", Bucket: "zinc"})
+	_, err = newMinioStore(config.S3Config{Endpoint: "http://bad endpoint", Bucket: "zed"})
 	assert.Error(t, err)
 }
 

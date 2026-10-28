@@ -65,7 +65,7 @@ func Health(c *gin.Context) {
 func activeShards(target string) int64 {
 	patterns := elastic.SplitPatterns(target)
 	var shards int64
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		if !elastic.MatchAnyPattern(index.GetName(), patterns) {
 			continue
 		}

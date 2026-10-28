@@ -122,7 +122,7 @@ func (c *StatsCalculator) Count() uint64 { return c.count }
 func (c *StatsCalculator) Sum() float64 { return c.sum }
 
 // Min returns 0 when no value was collected. Elasticsearch returns null there,
-// zinc emits 0 to keep the response type a plain float.
+// zed emits 0 to keep the response type a plain float.
 func (c *StatsCalculator) Min() float64 {
 	if c.count == 0 {
 		return 0

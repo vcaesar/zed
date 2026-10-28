@@ -5,12 +5,12 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "Zinc Search engine API documents https://zincsearch-docs.zinc.dev",
-        "title": "Zinc Search engine API",
+        "description": "ZedSearch engine API documents https://github.com/vcaesar/zedsearch",
+        "title": "ZedSearch engine API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "Zinc Search",
-            "url": "https://www.zincsearch.com"
+            "name": "ZedSearch",
+            "url": "https://github.com/vcaesar/zedsearch"
         },
         "license": {
             "name": "Apache 2.0",
@@ -161,6 +161,76 @@
                 }
             }
         },
+        "/api/_internal/indexes": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "List indexes known to this node",
+                "operationId": "InternalIndexes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cluster.InternalIndexesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/_internal/search": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Search indexes owned by this node",
+                "operationId": "InternalSearch",
+                "parameters": [
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cluster.InternalSearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/meta.SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/account": {
             "put": {
                 "consumes": [
@@ -208,6 +278,64 @@
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cluster/nodes": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "List cluster nodes",
+                "operationId": "ClusterNodes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cluster.NodesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cluster/partitions": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Get partition ownership",
+                "operationId": "ClusterPartitions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cluster.PartitionsResponse"
                         }
                     }
                 }
@@ -430,6 +558,103 @@
                         "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/meta.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/index/{index}/_tier": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Get index data tier",
+                "operationId": "GetIndexTier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Move index to another data tier",
+                "operationId": "SetIndexTier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tier",
+                        "name": "tier",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/index.TierRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
                         }
                     }
                 }
@@ -1343,7 +1568,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ZincQueryForSDK"
+                            "$ref": "#/definitions/v1.ZedQueryForSDK"
                         }
                     }
                 ],
@@ -1593,6 +1818,296 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_cat/health": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Get cluster health for compatible ES",
+                "operationId": "CatHealth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Response format, json or text",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Show the column header",
+                        "name": "v",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/elastic.CatHealthResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_cat/indices": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "List indexes for compatible ES",
+                "operationId": "CatIndices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Response format, json or text",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Show the column header",
+                        "name": "v",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/elastic.CatIndexResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_cluster/health": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Get cluster health for compatible ES",
+                "operationId": "ClusterHealth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/elastic.ClusterHealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_ilm/policy": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "List index lifecycle policies",
+                "operationId": "ListILMPolicy",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_ilm/policy/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Get an index lifecycle policy",
+                "operationId": "GetILMPolicy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Policy",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Create or update an index lifecycle policy",
+                "operationId": "PutILMPolicy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Policy",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Policy",
+                        "name": "policy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/index.ILMPolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Delete an index lifecycle policy",
+                "operationId": "DeleteILMPolicy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Policy",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponse"
                         }
                     },
                     "500": {
@@ -1854,6 +2369,148 @@
                 }
             }
         },
+        "/es/_reindex": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Reindex documents for compatible ES",
+                "operationId": "Reindex",
+                "parameters": [
+                    {
+                        "description": "Reindex",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/index.ReindexRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/elastic.ReindexResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_sql": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "SQL search for compatible ES",
+                "operationId": "SQLSearch",
+                "parameters": [
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sql.Request"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Response format: json, txt, csv, tsv",
+                        "name": "format",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sql.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/_sql/translate": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "SQL translate to query DSL for compatible ES",
+                "operationId": "SQLTranslate",
+                "parameters": [
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sql.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/es/{index}": {
             "put": {
                 "security": [
@@ -1942,6 +2599,57 @@
                 }
             }
         },
+        "/es/{index}/_count": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "Count documents for compatible ES",
+                "operationId": "Count",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/meta.ZedQueryForSDK"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/elastic.CountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/es/{index}/_delete_by_query": {
             "post": {
                 "security": [
@@ -1974,7 +2682,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/meta.ZincQueryForSDK"
+                            "$ref": "#/definitions/meta.ZedQueryForSDK"
                         }
                     }
                 ],
@@ -1983,6 +2691,96 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/meta.HTTPResponseDeleteByQuery"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/{index}/_field_caps": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Get field capabilities for compatible ES",
+                "operationId": "FieldCaps",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Field patterns, comma separated",
+                        "name": "fields",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/elastic.FieldCapsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/meta.HTTPResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/es/{index}/_ilm/explain": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Index"
+                ],
+                "summary": "Explain the lifecycle state of an index",
+                "operationId": "ExplainILM",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
@@ -2067,7 +2865,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/meta.ZincQueryForSDK"
+                            "$ref": "#/definitions/meta.ZedQueryForSDK"
                         }
                     }
                 ],
@@ -2235,8 +3033,367 @@
                 }
             }
         },
+        "cluster.IndexOwner": {
+            "type": "object",
+            "properties": {
+                "local": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "partition": {
+                    "type": "integer"
+                },
+                "storage_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "cluster.InternalIndexesResponse": {
+            "type": "object",
+            "properties": {
+                "indexes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cluster.IndexOwner"
+                    }
+                },
+                "node": {
+                    "type": "string"
+                }
+            }
+        },
+        "cluster.InternalSearchRequest": {
+            "type": "object",
+            "properties": {
+                "indexes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "query": {
+                    "$ref": "#/definitions/meta.ZedQuery"
+                }
+            }
+        },
+        "cluster.NodeStatus": {
+            "type": "object",
+            "properties": {
+                "addr": {
+                    "type": "string"
+                },
+                "alive": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_leader": {
+                    "type": "boolean"
+                },
+                "partitions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "cluster.NodesResponse": {
+            "type": "object",
+            "properties": {
+                "cluster_name": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cluster.NodeStatus"
+                    }
+                }
+            }
+        },
+        "cluster.PartitionOwner": {
+            "type": "object",
+            "properties": {
+                "epoch": {
+                    "type": "integer"
+                },
+                "index": {
+                    "type": "string"
+                },
+                "local": {
+                    "type": "boolean"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "partition": {
+                    "type": "integer"
+                },
+                "replicas": {
+                    "description": "Replicas are the nodes holding a warm read replica, used for cold indexes.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "cluster.PartitionsResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "owners": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cluster.PartitionOwner"
+                    }
+                },
+                "partitions": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.Index": {
             "type": "object"
+        },
+        "elastic.CatHealthResponse": {
+            "type": "object",
+            "properties": {
+                "active_shards_percent": {
+                    "type": "string"
+                },
+                "cluster": {
+                    "type": "string"
+                },
+                "epoch": {
+                    "type": "string"
+                },
+                "init": {
+                    "type": "string"
+                },
+                "max_task_wait_time": {
+                    "type": "string"
+                },
+                "node.data": {
+                    "type": "string"
+                },
+                "node.total": {
+                    "type": "string"
+                },
+                "pending_tasks": {
+                    "type": "string"
+                },
+                "pri": {
+                    "type": "string"
+                },
+                "relo": {
+                    "type": "string"
+                },
+                "shards": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "unassign": {
+                    "type": "string"
+                }
+            }
+        },
+        "elastic.CatIndexResponse": {
+            "type": "object",
+            "properties": {
+                "docs.count": {
+                    "type": "string"
+                },
+                "docs.deleted": {
+                    "type": "string"
+                },
+                "health": {
+                    "type": "string"
+                },
+                "index": {
+                    "type": "string"
+                },
+                "pri": {
+                    "type": "string"
+                },
+                "pri.store.size": {
+                    "type": "string"
+                },
+                "rep": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "store.size": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "elastic.ClusterHealthResponse": {
+            "type": "object",
+            "properties": {
+                "active_primary_shards": {
+                    "type": "integer"
+                },
+                "active_shards": {
+                    "type": "integer"
+                },
+                "active_shards_percent_as_number": {
+                    "type": "number"
+                },
+                "cluster_name": {
+                    "type": "string"
+                },
+                "delayed_unassigned_shards": {
+                    "type": "integer"
+                },
+                "initializing_shards": {
+                    "type": "integer"
+                },
+                "number_of_data_nodes": {
+                    "type": "integer"
+                },
+                "number_of_in_flight_fetch": {
+                    "type": "integer"
+                },
+                "number_of_nodes": {
+                    "type": "integer"
+                },
+                "number_of_pending_tasks": {
+                    "type": "integer"
+                },
+                "relocating_shards": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "task_max_waiting_in_queue_millis": {
+                    "type": "integer"
+                },
+                "timed_out": {
+                    "type": "boolean"
+                },
+                "unassigned_shards": {
+                    "type": "integer"
+                }
+            }
+        },
+        "elastic.CountResponse": {
+            "type": "object",
+            "properties": {
+                "_shards": {
+                    "$ref": "#/definitions/meta.Shards"
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "elastic.FieldCap": {
+            "type": "object",
+            "properties": {
+                "aggregatable": {
+                    "type": "boolean"
+                },
+                "metadata_field": {
+                    "type": "boolean"
+                },
+                "searchable": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "elastic.FieldCapsResponse": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/elastic.FieldCap"
+                        }
+                    }
+                },
+                "indices": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "elastic.ReindexResponse": {
+            "type": "object",
+            "properties": {
+                "batches": {
+                    "type": "integer"
+                },
+                "created": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "integer"
+                },
+                "failures": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "noops": {
+                    "type": "integer"
+                },
+                "requests_per_second": {
+                    "type": "integer"
+                },
+                "retries": {
+                    "$ref": "#/definitions/meta.HttpRetriesResponse"
+                },
+                "throttled_millis": {
+                    "type": "integer"
+                },
+                "throttled_until_millis": {
+                    "type": "integer"
+                },
+                "timed_out": {
+                    "type": "boolean"
+                },
+                "took": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "updated": {
+                    "type": "integer"
+                },
+                "version_conflicts": {
+                    "type": "integer"
+                }
+            }
         },
         "index.AnalyzeResponse": {
             "type": "object",
@@ -2272,6 +3429,14 @@
                 }
             }
         },
+        "index.ILMPolicyRequest": {
+            "type": "object",
+            "properties": {
+                "policy": {
+                    "$ref": "#/definitions/metadata.ILMPolicy"
+                }
+            }
+        },
         "index.IndexListResponse": {
             "type": "object",
             "properties": {
@@ -2283,6 +3448,46 @@
                 },
                 "page": {
                     "$ref": "#/definitions/meta.Page"
+                }
+            }
+        },
+        "index.ReindexDest": {
+            "type": "object",
+            "properties": {
+                "index": {
+                    "type": "string"
+                }
+            }
+        },
+        "index.ReindexRequest": {
+            "type": "object",
+            "properties": {
+                "dest": {
+                    "$ref": "#/definitions/index.ReindexDest"
+                },
+                "max_docs": {
+                    "description": "MaxDocs limits the number of copied documents, 0 means all of them.",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/definitions/index.ReindexSource"
+                }
+            }
+        },
+        "index.ReindexSource": {
+            "type": "object",
+            "properties": {
+                "index": {
+                    "type": "string"
+                },
+                "query": {}
+            }
+        },
+        "index.TierRequest": {
+            "type": "object",
+            "properties": {
+                "tier": {
+                    "type": "string"
                 }
             }
         },
@@ -2309,6 +3514,45 @@
                 "time_zone": {
                     "description": "time_zone",
                     "type": "string"
+                }
+            }
+        },
+        "meta.AggregationBucketScript": {
+            "type": "object",
+            "properties": {
+                "buckets_path": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "format": {
+                    "type": "string"
+                },
+                "gap_policy": {
+                    "type": "string"
+                },
+                "script": {}
+            }
+        },
+        "meta.AggregationBucketSort": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "integer"
+                },
+                "gap_policy": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
                 }
             }
         },
@@ -2381,6 +3625,33 @@
                 }
             }
         },
+        "meta.AggregationExtendedStats": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "sigma": {
+                    "description": "std_deviation_bounds multiplier, default 2",
+                    "type": "number"
+                }
+            }
+        },
+        "meta.AggregationFilters": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "other_bucket": {
+                    "type": "boolean"
+                },
+                "other_bucket_key": {
+                    "type": "string"
+                }
+            }
+        },
         "meta.AggregationHistogram": {
             "type": "object",
             "properties": {
@@ -2407,6 +3678,41 @@
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "meta.AggregationHit": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "_index": {
+                    "type": "string"
+                },
+                "_score": {
+                    "type": "number"
+                },
+                "_source": {},
+                "_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "meta.AggregationHits": {
+            "type": "object",
+            "properties": {
+                "hits": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/meta.AggregationHit"
+                    }
+                },
+                "max_score": {
+                    "type": "number"
+                },
+                "total": {
+                    "$ref": "#/definitions/meta.Total"
                 }
             }
         },
@@ -2439,6 +3745,108 @@
                 }
             }
         },
+        "meta.AggregationMovingFn": {
+            "type": "object",
+            "properties": {
+                "buckets_path": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "gap_policy": {
+                    "description": "skip (default), insert_zeros, keep_values",
+                    "type": "string"
+                },
+                "script": {
+                    "type": "string"
+                },
+                "shift": {
+                    "type": "integer"
+                },
+                "window": {
+                    "type": "integer"
+                }
+            }
+        },
+        "meta.AggregationMultiTerms": {
+            "type": "object",
+            "properties": {
+                "order": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "terms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/meta.AggregationMetric"
+                    }
+                }
+            }
+        },
+        "meta.AggregationNested": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "meta.AggregationPercentileRanks": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "keyed": {
+                    "type": "boolean"
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "meta.AggregationPercentiles": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "keyed": {
+                    "type": "boolean"
+                },
+                "percents": {
+                    "description": "default [1, 5, 25, 50, 75, 95, 99]",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "meta.AggregationPipeline": {
+            "type": "object",
+            "properties": {
+                "buckets_path": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "gap_policy": {
+                    "description": "skip (default), insert_zeros, keep_values",
+                    "type": "string"
+                }
+            }
+        },
         "meta.AggregationRange": {
             "type": "object",
             "properties": {
@@ -2459,14 +3867,105 @@
         "meta.AggregationResponse": {
             "type": "object",
             "properties": {
+                "avg": {
+                    "type": "number"
+                },
                 "buckets": {
                     "description": "slice or map"
+                },
+                "count": {
+                    "description": "stats aggregation; pointers so that a zero count / min still serializes",
+                    "type": "integer"
+                },
+                "doc_count": {
+                    "description": "missing / filter / filters / nested aggregations",
+                    "type": "integer"
+                },
+                "hits": {
+                    "description": "top_hits aggregation",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/meta.AggregationHits"
+                        }
+                    ]
                 },
                 "interval": {
                     "description": "support for auto_date_histogram_aggregation",
                     "type": "string"
                 },
-                "value": {}
+                "max": {
+                    "type": "number"
+                },
+                "min": {
+                    "type": "number"
+                },
+                "std_deviation": {
+                    "type": "number"
+                },
+                "std_deviation_bounds": {
+                    "$ref": "#/definitions/meta.AggregationStdDeviationBounds"
+                },
+                "sum": {
+                    "type": "number"
+                },
+                "sum_of_squares": {
+                    "description": "extended_stats aggregation, in addition to the stats fields above",
+                    "type": "number"
+                },
+                "value": {},
+                "values": {
+                    "description": "percentiles aggregation, keyed form only: {\"1.0\": v, ...}.\nElasticsearch returns an array of {key, value} objects when keyed is\nfalse, zed always returns the keyed map.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number",
+                        "format": "float64"
+                    }
+                },
+                "variance": {
+                    "type": "number"
+                }
+            }
+        },
+        "meta.AggregationSerialDiff": {
+            "type": "object",
+            "properties": {
+                "buckets_path": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "gap_policy": {
+                    "description": "skip (default), insert_zeros, keep_values",
+                    "type": "string"
+                },
+                "lag": {
+                    "type": "integer"
+                }
+            }
+        },
+        "meta.AggregationStdDeviationBounds": {
+            "type": "object",
+            "properties": {
+                "lower": {
+                    "type": "number"
+                },
+                "upper": {
+                    "type": "number"
+                }
+            }
+        },
+        "meta.AggregationTopHits": {
+            "type": "object",
+            "properties": {
+                "_source": {},
+                "from": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "sort": {}
             }
         },
         "meta.Aggregations": {
@@ -2485,17 +3984,57 @@
                 "avg": {
                     "$ref": "#/definitions/meta.AggregationMetric"
                 },
+                "avg_bucket": {
+                    "description": "pipeline aggregations (evaluated on the response tree after bucket aggregations)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/meta.AggregationPipeline"
+                        }
+                    ]
+                },
+                "bucket_script": {
+                    "$ref": "#/definitions/meta.AggregationBucketScript"
+                },
+                "bucket_selector": {
+                    "$ref": "#/definitions/meta.AggregationBucketScript"
+                },
+                "bucket_sort": {
+                    "$ref": "#/definitions/meta.AggregationBucketSort"
+                },
                 "cardinality": {
                     "$ref": "#/definitions/meta.AggregationMetric"
                 },
                 "count": {
                     "$ref": "#/definitions/meta.AggregationMetric"
                 },
+                "cumulative_sum": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
                 "date_histogram": {
                     "$ref": "#/definitions/meta.AggregationDateHistogram"
                 },
                 "date_range": {
                     "$ref": "#/definitions/meta.AggregationDateRange"
+                },
+                "derivative": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
+                "extended_stats": {
+                    "$ref": "#/definitions/meta.AggregationExtendedStats"
+                },
+                "filter": {
+                    "description": "bucket aggregations"
+                },
+                "filters": {
+                    "description": "{\"filters\": {\"name\": {query}}}",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/meta.AggregationFilters"
+                        }
+                    ]
+                },
+                "global": {
+                    "type": "object"
                 },
                 "histogram": {
                     "$ref": "#/definitions/meta.AggregationHistogram"
@@ -2511,17 +4050,62 @@
                 "max": {
                     "$ref": "#/definitions/meta.AggregationMetric"
                 },
+                "max_bucket": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
                 "min": {
                     "$ref": "#/definitions/meta.AggregationMetric"
+                },
+                "min_bucket": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
+                "missing": {
+                    "$ref": "#/definitions/meta.AggregationMetric"
+                },
+                "moving_fn": {
+                    "$ref": "#/definitions/meta.AggregationMovingFn"
+                },
+                "multi_terms": {
+                    "$ref": "#/definitions/meta.AggregationMultiTerms"
+                },
+                "nested": {
+                    "$ref": "#/definitions/meta.AggregationNested"
+                },
+                "percentile_ranks": {
+                    "$ref": "#/definitions/meta.AggregationPercentileRanks"
+                },
+                "percentiles": {
+                    "$ref": "#/definitions/meta.AggregationPercentiles"
                 },
                 "range": {
                     "$ref": "#/definitions/meta.AggregationRange"
                 },
+                "reverse_nested": {
+                    "$ref": "#/definitions/meta.AggregationNested"
+                },
+                "serial_diff": {
+                    "$ref": "#/definitions/meta.AggregationSerialDiff"
+                },
+                "stats": {
+                    "$ref": "#/definitions/meta.AggregationMetric"
+                },
+                "stats_bucket": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
                 "sum": {
                     "$ref": "#/definitions/meta.AggregationMetric"
                 },
+                "sum_bucket": {
+                    "$ref": "#/definitions/meta.AggregationPipeline"
+                },
                 "terms": {
                     "$ref": "#/definitions/meta.AggregationsTerms"
+                },
+                "top_hits": {
+                    "$ref": "#/definitions/meta.AggregationTopHits"
+                },
+                "value_count": {
+                    "$ref": "#/definitions/meta.AggregationMetric"
                 },
                 "weighted_avg": {
                     "$ref": "#/definitions/meta.AggregationMetric"
@@ -2930,6 +4514,24 @@
                 }
             }
         },
+        "meta.IndexLifecycle": {
+            "type": "object",
+            "properties": {
+                "cold_after": {
+                    "type": "string"
+                },
+                "delete_after": {
+                    "description": "DeleteAfter removes the index entirely; empty keeps it forever.",
+                    "type": "string"
+                },
+                "policy": {
+                    "type": "string"
+                },
+                "warm_after": {
+                    "type": "string"
+                }
+            }
+        },
         "meta.IndexSettings": {
             "type": "object",
             "properties": {
@@ -2940,11 +4542,23 @@
                     "description": "IndexType selects the document profile; empty preserves standard indexes.",
                     "type": "string"
                 },
+                "lifecycle": {
+                    "description": "Lifecycle drives automatic tier transitions by index age.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/meta.IndexLifecycle"
+                        }
+                    ]
+                },
                 "number_of_replicas": {
                     "type": "integer"
                 },
                 "number_of_shards": {
                     "type": "integer"
+                },
+                "tier": {
+                    "description": "Tier is the current data tier: hot (local disk, writable), warm\n(object storage, writable) or cold (object storage, read-only,\nshared by every node). Empty means hot.",
+                    "type": "string"
                 }
             }
         },
@@ -3176,6 +4790,23 @@
                 "index": {
                     "type": "boolean"
                 },
+                "properties": {
+                    "description": "Properties holds the sub-fields of a \"nested\" property. Each element of\nthe nested array is indexed as its own hidden document tagged with\nNestedPathField / NestedParentField so nested queries and aggregations\nkeep per-object semantics.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/meta.Property"
+                    }
+                },
+                "relations": {
+                    "description": "Relations defines parent -\u003e children for a \"join\" property, e.g.\n{\"question\": [\"answer\", \"comment\"]}. Documents set the field to\n{\"name\": \"answer\", \"parent\": \"\u003cparent _id\u003e\"} or just \"question\".",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "search_analyzer": {
                     "type": "string"
                 },
@@ -3190,7 +4821,7 @@
                     "type": "string"
                 },
                 "type": {
-                    "description": "text, keyword, date, numeric, boolean, geo_point, vector",
+                    "description": "text, keyword, date, numeric, boolean, geo_point, vector, nested, join",
                     "type": "string"
                 }
             }
@@ -3628,7 +5259,46 @@
                 }
             }
         },
-        "meta.ZincQueryForSDK": {
+        "meta.ZedQuery": {
+            "type": "object",
+            "properties": {
+                "_source": {
+                    "description": "true, false, [\"field1\", \"field2.*\"]"
+                },
+                "aggs": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/meta.Aggregations"
+                    }
+                },
+                "explain": {
+                    "type": "boolean"
+                },
+                "fields": {
+                    "description": "[\"field1\", \"field2.*\", {\"field\": \"fieldName\", \"format\": \"epoch_millis\"}]"
+                },
+                "from": {
+                    "type": "integer"
+                },
+                "highlight": {
+                    "$ref": "#/definitions/meta.Highlight"
+                },
+                "query": {},
+                "size": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "description": "\"_score\", [\"+Year\",\"-Year\", {\"Year\": \"desc\"}, \"Date\": {\"order\": \"asc\"\", \"format\": \"yyyy-MM-dd\"}}\"}]"
+                },
+                "timeout": {
+                    "type": "integer"
+                },
+                "track_total_hits": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "meta.ZedQueryForSDK": {
             "type": "object",
             "properties": {
                 "_source": {
@@ -3678,6 +5348,72 @@
                 },
                 "track_total_hits": {
                     "type": "boolean"
+                }
+            }
+        },
+        "metadata.ILMPhase": {
+            "type": "object",
+            "properties": {
+                "actions": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "min_age": {
+                    "type": "string"
+                }
+            }
+        },
+        "metadata.ILMPolicy": {
+            "type": "object",
+            "properties": {
+                "phases": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/metadata.ILMPhase"
+                    }
+                }
+            }
+        },
+        "sql.Request": {
+            "type": "object",
+            "properties": {
+                "fetch_size": {
+                    "type": "integer"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "sql.Response": {
+            "type": "object",
+            "properties": {
+                "columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql.ResultColumn"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                }
+            }
+        },
+        "sql.ResultColumn": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -3769,7 +5505,7 @@
                 }
             }
         },
-        "v1.ZincQueryForSDK": {
+        "v1.ZedQueryForSDK": {
             "type": "object",
             "properties": {
                 "_source": {

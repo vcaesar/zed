@@ -24,7 +24,7 @@ import (
 
 	zerrors "github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincsql "github.com/vcaesar/zedsearch/pkg/sql"
+	zedsql "github.com/vcaesar/zedsearch/pkg/sql"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -54,13 +54,13 @@ func Search(c *gin.Context) {
 		return
 	}
 
-	format, err := zincsql.ParseFormat(requestFormat(c, req), c.GetHeader("Accept"))
+	format, err := zedsql.ParseFormat(requestFormat(c, req), c.GetHeader("Accept"))
 	if err != nil {
 		renderError(c, err)
 		return
 	}
 
-	resp, err := zincsql.Query(req.Query, req.FetchSize)
+	resp, err := zedsql.Query(req.Query, req.FetchSize)
 	if err != nil {
 		renderError(c, err)
 		return
@@ -71,7 +71,7 @@ func Search(c *gin.Context) {
 		renderError(c, err)
 		return
 	}
-	c.Data(http.StatusOK, zincsql.ContentType(format), data)
+	c.Data(http.StatusOK, zedsql.ContentType(format), data)
 }
 
 // Translate returns the query DSL a SQL query maps to
@@ -92,7 +92,7 @@ func Translate(c *gin.Context) {
 		return
 	}
 
-	dsl, err := zincsql.Translate(req.Query, req.FetchSize)
+	dsl, err := zedsql.Translate(req.Query, req.FetchSize)
 	if err != nil {
 		renderError(c, err)
 		return
@@ -123,7 +123,7 @@ func requestFormat(c *gin.Context, req *Request) string {
 }
 
 func renderError(c *gin.Context, err error) {
-	var sqlErr *zincsql.Error
+	var sqlErr *zedsql.Error
 	if zerrors.As(err, &sqlErr) {
 		log.Printf("handlers.sql: %s", err.Error())
 		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})

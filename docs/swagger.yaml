@@ -43,7 +43,243 @@ definitions:
       password:
         type: string
     type: object
+  cluster.IndexOwner:
+    properties:
+      local:
+        type: boolean
+      name:
+        type: string
+      owner:
+        type: string
+      partition:
+        type: integer
+      storage_type:
+        type: string
+    type: object
+  cluster.InternalIndexesResponse:
+    properties:
+      indexes:
+        items:
+          $ref: '#/definitions/cluster.IndexOwner'
+        type: array
+      node:
+        type: string
+    type: object
+  cluster.InternalSearchRequest:
+    properties:
+      indexes:
+        items:
+          type: string
+        type: array
+      query:
+        $ref: '#/definitions/meta.ZedQuery'
+    type: object
+  cluster.NodeStatus:
+    properties:
+      addr:
+        type: string
+      alive:
+        type: boolean
+      id:
+        type: string
+      is_leader:
+        type: boolean
+      partitions:
+        type: integer
+    type: object
+  cluster.NodesResponse:
+    properties:
+      cluster_name:
+        type: string
+      enabled:
+        type: boolean
+      nodes:
+        items:
+          $ref: '#/definitions/cluster.NodeStatus'
+        type: array
+    type: object
+  cluster.PartitionOwner:
+    properties:
+      epoch:
+        type: integer
+      index:
+        type: string
+      local:
+        type: boolean
+      owner:
+        type: string
+      partition:
+        type: integer
+      replicas:
+        description: Replicas are the nodes holding a warm read replica, used for
+          cold indexes.
+        items:
+          type: string
+        type: array
+    type: object
+  cluster.PartitionsResponse:
+    properties:
+      enabled:
+        type: boolean
+      owners:
+        items:
+          $ref: '#/definitions/cluster.PartitionOwner'
+        type: array
+      partitions:
+        type: integer
+    type: object
   core.Index:
+    type: object
+  elastic.CatHealthResponse:
+    properties:
+      active_shards_percent:
+        type: string
+      cluster:
+        type: string
+      epoch:
+        type: string
+      init:
+        type: string
+      max_task_wait_time:
+        type: string
+      node.data:
+        type: string
+      node.total:
+        type: string
+      pending_tasks:
+        type: string
+      pri:
+        type: string
+      relo:
+        type: string
+      shards:
+        type: string
+      status:
+        type: string
+      timestamp:
+        type: string
+      unassign:
+        type: string
+    type: object
+  elastic.CatIndexResponse:
+    properties:
+      docs.count:
+        type: string
+      docs.deleted:
+        type: string
+      health:
+        type: string
+      index:
+        type: string
+      pri:
+        type: string
+      pri.store.size:
+        type: string
+      rep:
+        type: string
+      status:
+        type: string
+      store.size:
+        type: string
+      uuid:
+        type: string
+    type: object
+  elastic.ClusterHealthResponse:
+    properties:
+      active_primary_shards:
+        type: integer
+      active_shards:
+        type: integer
+      active_shards_percent_as_number:
+        type: number
+      cluster_name:
+        type: string
+      delayed_unassigned_shards:
+        type: integer
+      initializing_shards:
+        type: integer
+      number_of_data_nodes:
+        type: integer
+      number_of_in_flight_fetch:
+        type: integer
+      number_of_nodes:
+        type: integer
+      number_of_pending_tasks:
+        type: integer
+      relocating_shards:
+        type: integer
+      status:
+        type: string
+      task_max_waiting_in_queue_millis:
+        type: integer
+      timed_out:
+        type: boolean
+      unassigned_shards:
+        type: integer
+    type: object
+  elastic.CountResponse:
+    properties:
+      _shards:
+        $ref: '#/definitions/meta.Shards'
+      count:
+        type: integer
+    type: object
+  elastic.FieldCap:
+    properties:
+      aggregatable:
+        type: boolean
+      metadata_field:
+        type: boolean
+      searchable:
+        type: boolean
+      type:
+        type: string
+    type: object
+  elastic.FieldCapsResponse:
+    properties:
+      fields:
+        additionalProperties:
+          additionalProperties:
+            $ref: '#/definitions/elastic.FieldCap'
+          type: object
+        type: object
+      indices:
+        items:
+          type: string
+        type: array
+    type: object
+  elastic.ReindexResponse:
+    properties:
+      batches:
+        type: integer
+      created:
+        type: integer
+      deleted:
+        type: integer
+      failures:
+        items:
+          type: string
+        type: array
+      noops:
+        type: integer
+      requests_per_second:
+        type: integer
+      retries:
+        $ref: '#/definitions/meta.HttpRetriesResponse'
+      throttled_millis:
+        type: integer
+      throttled_until_millis:
+        type: integer
+      timed_out:
+        type: boolean
+      took:
+        type: integer
+      total:
+        type: integer
+      updated:
+        type: integer
+      version_conflicts:
+        type: integer
     type: object
   index.AnalyzeResponse:
     properties:
@@ -67,6 +303,11 @@ definitions:
       type:
         type: string
     type: object
+  index.ILMPolicyRequest:
+    properties:
+      policy:
+        $ref: '#/definitions/metadata.ILMPolicy'
+    type: object
   index.IndexListResponse:
     properties:
       list:
@@ -75,6 +316,33 @@ definitions:
         type: array
       page:
         $ref: '#/definitions/meta.Page'
+    type: object
+  index.ReindexDest:
+    properties:
+      index:
+        type: string
+    type: object
+  index.ReindexRequest:
+    properties:
+      dest:
+        $ref: '#/definitions/index.ReindexDest'
+      max_docs:
+        description: MaxDocs limits the number of copied documents, 0 means all of
+          them.
+        type: integer
+      source:
+        $ref: '#/definitions/index.ReindexSource'
+    type: object
+  index.ReindexSource:
+    properties:
+      index:
+        type: string
+      query: {}
+    type: object
+  index.TierRequest:
+    properties:
+      tier:
+        type: string
     type: object
   meta.AggregationAutoDateHistogram:
     properties:
@@ -93,6 +361,32 @@ definitions:
       time_zone:
         description: time_zone
         type: string
+    type: object
+  meta.AggregationBucketScript:
+    properties:
+      buckets_path:
+        additionalProperties:
+          type: string
+        type: object
+      format:
+        type: string
+      gap_policy:
+        type: string
+      script: {}
+    type: object
+  meta.AggregationBucketSort:
+    properties:
+      from:
+        type: integer
+      gap_policy:
+        type: string
+      size:
+        type: integer
+      sort:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
     type: object
   meta.AggregationDateHistogram:
     properties:
@@ -143,6 +437,24 @@ definitions:
         description: refer
         type: string
     type: object
+  meta.AggregationExtendedStats:
+    properties:
+      field:
+        type: string
+      sigma:
+        description: std_deviation_bounds multiplier, default 2
+        type: number
+    type: object
+  meta.AggregationFilters:
+    properties:
+      filters:
+        additionalProperties: true
+        type: object
+      other_bucket:
+        type: boolean
+      other_bucket_key:
+        type: string
+    type: object
   meta.AggregationHistogram:
     properties:
       extended_bounds:
@@ -161,6 +473,29 @@ definitions:
         type: number
       size:
         type: integer
+    type: object
+  meta.AggregationHit:
+    properties:
+      _id:
+        type: string
+      _index:
+        type: string
+      _score:
+        type: number
+      _source: {}
+      _type:
+        type: string
+    type: object
+  meta.AggregationHits:
+    properties:
+      hits:
+        items:
+          $ref: '#/definitions/meta.AggregationHit'
+        type: array
+      max_score:
+        type: number
+      total:
+        $ref: '#/definitions/meta.Total'
     type: object
   meta.AggregationIPRange:
     properties:
@@ -182,6 +517,73 @@ definitions:
           weighted average aggregation
         type: string
     type: object
+  meta.AggregationMovingFn:
+    properties:
+      buckets_path:
+        type: string
+      format:
+        type: string
+      gap_policy:
+        description: skip (default), insert_zeros, keep_values
+        type: string
+      script:
+        type: string
+      shift:
+        type: integer
+      window:
+        type: integer
+    type: object
+  meta.AggregationMultiTerms:
+    properties:
+      order:
+        additionalProperties:
+          type: string
+        type: object
+      size:
+        type: integer
+      terms:
+        items:
+          $ref: '#/definitions/meta.AggregationMetric'
+        type: array
+    type: object
+  meta.AggregationNested:
+    properties:
+      path:
+        type: string
+    type: object
+  meta.AggregationPercentileRanks:
+    properties:
+      field:
+        type: string
+      keyed:
+        type: boolean
+      values:
+        items:
+          type: number
+        type: array
+    type: object
+  meta.AggregationPercentiles:
+    properties:
+      field:
+        type: string
+      keyed:
+        type: boolean
+      percents:
+        description: default [1, 5, 25, 50, 75, 95, 99]
+        items:
+          type: number
+        type: array
+    type: object
+  meta.AggregationPipeline:
+    properties:
+      buckets_path:
+        type: string
+      format:
+        type: string
+      gap_policy:
+        description: skip (default), insert_zeros, keep_values
+        type: string
+    type: object
   meta.AggregationRange:
     properties:
       field:
@@ -195,12 +597,77 @@ definitions:
     type: object
   meta.AggregationResponse:
     properties:
+      avg:
+        type: number
       buckets:
         description: slice or map
+      count:
+        description: stats aggregation; pointers so that a zero count / min still
+          serializes
+        type: integer
+      doc_count:
+        description: missing / filter / filters / nested aggregations
+        type: integer
+      hits:
+        allOf:
+        - $ref: '#/definitions/meta.AggregationHits'
+        description: top_hits aggregation
       interval:
         description: support for auto_date_histogram_aggregation
         type: string
+      max:
+        type: number
+      min:
+        type: number
+      std_deviation:
+        type: number
+      std_deviation_bounds:
+        $ref: '#/definitions/meta.AggregationStdDeviationBounds'
+      sum:
+        type: number
+      sum_of_squares:
+        description: extended_stats aggregation, in addition to the stats fields above
+        type: number
       value: {}
+      values:
+        additionalProperties:
+          format: float64
+          type: number
+        description: |-
+          percentiles aggregation, keyed form only: {"1.0": v, ...}.
+          Elasticsearch returns an array of {key, value} objects when keyed is
+          false, zed always returns the keyed map.
+        type: object
+      variance:
+        type: number
+    type: object
+  meta.AggregationSerialDiff:
+    properties:
+      buckets_path:
+        type: string
+      format:
+        type: string
+      gap_policy:
+        description: skip (default), insert_zeros, keep_values
+        type: string
+      lag:
+        type: integer
+    type: object
+  meta.AggregationStdDeviationBounds:
+    properties:
+      lower:
+        type: number
+      upper:
+        type: number
+    type: object
+  meta.AggregationTopHits:
+    properties:
+      _source: {}
+      from:
+        type: integer
+      size:
+        type: integer
+      sort: {}
     type: object
   meta.Aggregations:
     properties:
@@ -213,14 +680,39 @@ definitions:
         $ref: '#/definitions/meta.AggregationAutoDateHistogram'
       avg:
         $ref: '#/definitions/meta.AggregationMetric'
+      avg_bucket:
+        allOf:
+        - $ref: '#/definitions/meta.AggregationPipeline'
+        description: pipeline aggregations (evaluated on the response tree after bucket
+          aggregations)
+      bucket_script:
+        $ref: '#/definitions/meta.AggregationBucketScript'
+      bucket_selector:
+        $ref: '#/definitions/meta.AggregationBucketScript'
+      bucket_sort:
+        $ref: '#/definitions/meta.AggregationBucketSort'
       cardinality:
         $ref: '#/definitions/meta.AggregationMetric'
       count:
         $ref: '#/definitions/meta.AggregationMetric'
+      cumulative_sum:
+        $ref: '#/definitions/meta.AggregationPipeline'
       date_histogram:
         $ref: '#/definitions/meta.AggregationDateHistogram'
       date_range:
         $ref: '#/definitions/meta.AggregationDateRange'
+      derivative:
+        $ref: '#/definitions/meta.AggregationPipeline'
+      extended_stats:
+        $ref: '#/definitions/meta.AggregationExtendedStats'
+      filter:
+        description: bucket aggregations
+      filters:
+        allOf:
+        - $ref: '#/definitions/meta.AggregationFilters'
+        description: '{"filters": {"name": {query}}}'
+      global:
+        type: object
       histogram:
         $ref: '#/definitions/meta.AggregationHistogram'
       ip_range:
@@ -229,14 +721,44 @@ definitions:
         description: 'TODO: not implemented'
       max:
         $ref: '#/definitions/meta.AggregationMetric'
+      max_bucket:
+        $ref: '#/definitions/meta.AggregationPipeline'
       min:
         $ref: '#/definitions/meta.AggregationMetric'
+      min_bucket:
+        $ref: '#/definitions/meta.AggregationPipeline'
+      missing:
+        $ref: '#/definitions/meta.AggregationMetric'
+      moving_fn:
+        $ref: '#/definitions/meta.AggregationMovingFn'
+      multi_terms:
+        $ref: '#/definitions/meta.AggregationMultiTerms'
+      nested:
+        $ref: '#/definitions/meta.AggregationNested'
+      percentile_ranks:
+        $ref: '#/definitions/meta.AggregationPercentileRanks'
+      percentiles:
+        $ref: '#/definitions/meta.AggregationPercentiles'
       range:
         $ref: '#/definitions/meta.AggregationRange'
+      reverse_nested:
+        $ref: '#/definitions/meta.AggregationNested'
+      serial_diff:
+        $ref: '#/definitions/meta.AggregationSerialDiff'
+      stats:
+        $ref: '#/definitions/meta.AggregationMetric'
+      stats_bucket:
+        $ref: '#/definitions/meta.AggregationPipeline'
       sum:
         $ref: '#/definitions/meta.AggregationMetric'
+      sum_bucket:
+        $ref: '#/definitions/meta.AggregationPipeline'
       terms:
         $ref: '#/definitions/meta.AggregationsTerms'
+      top_hits:
+        $ref: '#/definitions/meta.AggregationTopHits'
+      value_count:
+        $ref: '#/definitions/meta.AggregationMetric'
       weighted_avg:
         $ref: '#/definitions/meta.AggregationMetric'
     type: object
@@ -507,17 +1029,40 @@ definitions:
         additionalProperties: true
         type: object
     type: object
+  meta.IndexLifecycle:
+    properties:
+      cold_after:
+        type: string
+      delete_after:
+        description: DeleteAfter removes the index entirely; empty keeps it forever.
+        type: string
+      policy:
+        type: string
+      warm_after:
+        type: string
+    type: object
   meta.IndexSettings:
     properties:
       analysis:
         $ref: '#/definitions/meta.IndexAnalysis'
       index_type:
-        description: IndexType selects the document profile; empty preserves standard indexes.
+        description: IndexType selects the document profile; empty preserves standard
+          indexes.
         type: string
+      lifecycle:
+        allOf:
+        - $ref: '#/definitions/meta.IndexLifecycle'
+        description: Lifecycle drives automatic tier transitions by index age.
       number_of_replicas:
         type: integer
       number_of_shards:
         type: integer
+      tier:
+        description: |-
+          Tier is the current data tier: hot (local disk, writable), warm
+          (object storage, writable) or cold (object storage, read-only,
+          shared by every node). Empty means hot.
+        type: string
     type: object
   meta.IndexSimple:
     properties:
@@ -679,6 +1224,25 @@ definitions:
         type: boolean
       index:
         type: boolean
+      properties:
+        additionalProperties:
+          $ref: '#/definitions/meta.Property'
+        description: |-
+          Properties holds the sub-fields of a "nested" property. Each element of
+          the nested array is indexed as its own hidden document tagged with
+          NestedPathField / NestedParentField so nested queries and aggregations
+          keep per-object semantics.
+        type: object
+      relations:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: |-
+          Relations defines parent -> children for a "join" property, e.g.
+          {"question": ["answer", "comment"]}. Documents set the field to
+          {"name": "answer", "parent": "<parent _id>"} or just "question".
+        type: object
       search_analyzer:
         type: string
       sortable:
@@ -689,7 +1253,8 @@ definitions:
         description: date format time_zone
         type: string
       type:
-        description: text, keyword, date, numeric, boolean, geo_point, vector
+        description: text, keyword, date, numeric, boolean, geo_point, vector, nested,
+          join
         type: string
     type: object
   meta.QueryForSDK:
@@ -972,7 +1537,34 @@ definitions:
       value:
         type: string
     type: object
-  meta.ZincQueryForSDK:
+  meta.ZedQuery:
+    properties:
+      _source:
+        description: true, false, ["field1", "field2.*"]
+      aggs:
+        additionalProperties:
+          $ref: '#/definitions/meta.Aggregations'
+        type: object
+      explain:
+        type: boolean
+      fields:
+        description: '["field1", "field2.*", {"field": "fieldName", "format": "epoch_millis"}]'
+      from:
+        type: integer
+      highlight:
+        $ref: '#/definitions/meta.Highlight'
+      query: {}
+      size:
+        type: integer
+      sort:
+        description: '"_score", ["+Year","-Year", {"Year": "desc"}, "Date": {"order":
+          "asc"", "format": "yyyy-MM-dd"}}"}]'
+      timeout:
+        type: integer
+      track_total_hits:
+        type: boolean
+    type: object
+  meta.ZedQueryForSDK:
     properties:
       _source:
         description: true, false, ["field1", "field2.*"]
@@ -1008,6 +1600,49 @@ definitions:
         type: integer
       track_total_hits:
         type: boolean
+    type: object
+  metadata.ILMPhase:
+    properties:
+      actions:
+        additionalProperties: true
+        type: object
+      min_age:
+        type: string
+    type: object
+  metadata.ILMPolicy:
+    properties:
+      phases:
+        additionalProperties:
+          $ref: '#/definitions/metadata.ILMPhase'
+        type: object
+    type: object
+  sql.Request:
+    properties:
+      fetch_size:
+        type: integer
+      format:
+        type: string
+      query:
+        type: string
+    type: object
+  sql.Response:
+    properties:
+      columns:
+        items:
+          $ref: '#/definitions/sql.ResultColumn'
+        type: array
+      rows:
+        items:
+          items: {}
+          type: array
+        type: array
+    type: object
+  sql.ResultColumn:
+    properties:
+      name:
+        type: string
+      type:
+        type: string
     type: object
   v1.AggregationDateRange:
     properties:
@@ -1068,7 +1703,7 @@ definitions:
           type: array
         type: array
     type: object
-  v1.ZincQueryForSDK:
+  v1.ZedQueryForSDK:
     properties:
       _source:
         items:
@@ -1099,14 +1734,14 @@ definitions:
     type: object
 info:
   contact:
-    name: Zinc Search
-    url: https://www.zincsearch.com
-  description: Zinc Search engine API documents https://zincsearch-docs.zinc.dev
+    name: ZedSearch
+    url: https://github.com/vcaesar/zedsearch
+  description: ZedSearch engine API documents https://github.com/vcaesar/zedsearch
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Zinc Search engine API
+  title: ZedSearch engine API
   version: 1.0.0
 paths:
   /api/_analyze:
@@ -1197,6 +1832,49 @@ paths:
       summary: Bulkv2 documents
       tags:
       - Document
+  /api/_internal/indexes:
+    get:
+      operationId: InternalIndexes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cluster.InternalIndexesResponse'
+      security:
+      - BasicAuth: []
+      summary: List indexes known to this node
+      tags:
+      - Cluster
+  /api/_internal/search:
+    post:
+      consumes:
+      - application/json
+      operationId: InternalSearch
+      parameters:
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/cluster.InternalSearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/meta.SearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Search indexes owned by this node
+      tags:
+      - Cluster
   /api/{index}/_analyze:
     post:
       consumes:
@@ -1494,7 +2172,7 @@ paths:
         name: query
         required: true
         schema:
-          $ref: '#/definitions/v1.ZincQueryForSDK'
+          $ref: '#/definitions/v1.ZedQueryForSDK'
       produces:
       - application/json
       responses:
@@ -1650,6 +2328,41 @@ paths:
       summary: Update own name and/or password
       tags:
       - User
+  /api/cluster/nodes:
+    get:
+      operationId: ClusterNodes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cluster.NodesResponse'
+      security:
+      - BasicAuth: []
+      summary: List cluster nodes
+      tags:
+      - Cluster
+  /api/cluster/partitions:
+    get:
+      operationId: ClusterPartitions
+      parameters:
+      - description: Index
+        in: query
+        name: index
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cluster.PartitionsResponse'
+      security:
+      - BasicAuth: []
+      summary: Get partition ownership
+      tags:
+      - Cluster
   /api/index:
     get:
       operationId: ListIndexes
@@ -1788,6 +2501,68 @@ paths:
       security:
       - BasicAuth: []
       summary: Checks if the index exists
+      tags:
+      - Index
+  /api/index/{index}/_tier:
+    get:
+      operationId: GetIndexTier
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Get index data tier
+      tags:
+      - Index
+    put:
+      consumes:
+      - application/json
+      operationId: SetIndexTier
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        required: true
+        type: string
+      - description: Tier
+        in: body
+        name: tier
+        required: true
+        schema:
+          $ref: '#/definitions/index.TierRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/meta.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Move index to another data tier
       tags:
       - Index
   /api/index/{index}/refresh:
@@ -2114,6 +2889,188 @@ paths:
       summary: ES bulk documents
       tags:
       - Document
+  /es/_cat/health:
+    get:
+      operationId: CatHealth
+      parameters:
+      - description: Response format, json or text
+        in: query
+        name: format
+        type: string
+      - description: Show the column header
+        in: query
+        name: v
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/elastic.CatHealthResponse'
+            type: array
+      security:
+      - BasicAuth: []
+      summary: Get cluster health for compatible ES
+      tags:
+      - Cluster
+  /es/_cat/indices:
+    get:
+      operationId: CatIndices
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        type: string
+      - description: Response format, json or text
+        in: query
+        name: format
+        type: string
+      - description: Show the column header
+        in: query
+        name: v
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/elastic.CatIndexResponse'
+            type: array
+      security:
+      - BasicAuth: []
+      summary: List indexes for compatible ES
+      tags:
+      - Cluster
+  /es/_cluster/health:
+    get:
+      operationId: ClusterHealth
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/elastic.ClusterHealthResponse'
+      security:
+      - BasicAuth: []
+      summary: Get cluster health for compatible ES
+      tags:
+      - Cluster
+  /es/_ilm/policy:
+    get:
+      operationId: ListILMPolicy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: List index lifecycle policies
+      tags:
+      - Index
+  /es/_ilm/policy/{name}:
+    delete:
+      operationId: DeleteILMPolicy
+      parameters:
+      - description: Policy
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/meta.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Delete an index lifecycle policy
+      tags:
+      - Index
+    get:
+      operationId: GetILMPolicy
+      parameters:
+      - description: Policy
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Get an index lifecycle policy
+      tags:
+      - Index
+    put:
+      consumes:
+      - application/json
+      operationId: PutILMPolicy
+      parameters:
+      - description: Policy
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Policy
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/index.ILMPolicyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/meta.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Create or update an index lifecycle policy
+      tags:
+      - Index
   /es/_index_template:
     get:
       operationId: ListTemplates
@@ -2271,6 +3228,95 @@ paths:
       summary: Search V2 MultipleSearch for compatible ES
       tags:
       - Search
+  /es/_reindex:
+    post:
+      consumes:
+      - application/json
+      operationId: Reindex
+      parameters:
+      - description: Reindex
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/index.ReindexRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/elastic.ReindexResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Reindex documents for compatible ES
+      tags:
+      - Index
+  /es/_sql:
+    post:
+      consumes:
+      - application/json
+      operationId: SQLSearch
+      parameters:
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/sql.Request'
+      - description: 'Response format: json, txt, csv, tsv'
+        in: query
+        name: format
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/sql.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: SQL search for compatible ES
+      tags:
+      - Search
+  /es/_sql/translate:
+    post:
+      consumes:
+      - application/json
+      operationId: SQLTranslate
+      parameters:
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/sql.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: SQL translate to query DSL for compatible ES
+      tags:
+      - Search
   /es/{index}:
     head:
       operationId: EsExists
@@ -2327,6 +3373,38 @@ paths:
       summary: Create index for compatible ES
       tags:
       - Index
+  /es/{index}/_count:
+    post:
+      consumes:
+      - application/json
+      operationId: Count
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        required: true
+        type: string
+      - description: Query
+        in: body
+        name: query
+        schema:
+          $ref: '#/definitions/meta.ZedQueryForSDK'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/elastic.CountResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Count documents for compatible ES
+      tags:
+      - Search
   /es/{index}/_delete_by_query:
     post:
       consumes:
@@ -2343,7 +3421,7 @@ paths:
         name: query
         required: true
         schema:
-          $ref: '#/definitions/meta.ZincQueryForSDK'
+          $ref: '#/definitions/meta.ZedQueryForSDK'
       produces:
       - application/json
       responses:
@@ -2360,6 +3438,63 @@ paths:
       summary: Searches the index and deletes all matched documents
       tags:
       - Search
+  /es/{index}/_field_caps:
+    post:
+      consumes:
+      - application/json
+      operationId: FieldCaps
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        required: true
+        type: string
+      - description: Field patterns, comma separated
+        in: query
+        name: fields
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/elastic.FieldCapsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Get field capabilities for compatible ES
+      tags:
+      - Index
+  /es/{index}/_ilm/explain:
+    get:
+      operationId: ExplainILM
+      parameters:
+      - description: Index
+        in: path
+        name: index
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/meta.HTTPResponseError'
+      security:
+      - BasicAuth: []
+      summary: Explain the lifecycle state of an index
+      tags:
+      - Index
   /es/{index}/_mapping:
     get:
       operationId: ESGetMapping
@@ -2402,7 +3537,7 @@ paths:
         name: query
         required: true
         schema:
-          $ref: '#/definitions/meta.ZincQueryForSDK'
+          $ref: '#/definitions/meta.ZedQueryForSDK'
       produces:
       - application/json
       responses:

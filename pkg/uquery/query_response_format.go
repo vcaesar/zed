@@ -24,7 +24,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/uquery/aggregation"
 )
 
-func FormatResponse(resp *meta.SearchResponse, q *meta.ZincQuery, buckets *search.Bucket) error {
+func FormatResponse(resp *meta.SearchResponse, q *meta.ZedQuery, buckets *search.Bucket) error {
 	var err error
 	// format aggregations
 	if len(q.Aggregations) > 0 {

@@ -196,7 +196,7 @@ func isIndexItem(name string) bool {
 // directoryMarker marks an object prefix as an existing directory, so a shard
 // that holds no segments yet can still be opened read-only. Its name matches no
 // item kind, so List and Load never see it.
-const directoryMarker = ".zinc_directory"
+const directoryMarker = ".zed_directory"
 
 // CopyDiskToObject uploads every index item of indexName found under rootPath to
 // the object storage backend of storageType. Items are immutable and keyed by

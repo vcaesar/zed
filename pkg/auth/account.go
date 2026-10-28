@@ -53,6 +53,6 @@ func UpdateAccount(id, password, name, newPassword string) (*meta.User, error) {
 	if err := accountUserStore.Set(updated.ID, updated); err != nil {
 		return nil, err
 	}
-	ZINC_CACHED_USERS.Set(updated.ID, &updated)
+	ZED_CACHED_USERS.Set(updated.ID, &updated)
 	return &updated, nil
 }

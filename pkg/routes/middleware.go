@@ -72,7 +72,7 @@ func IndexAliasMiddleware(c *gin.Context) {
 		return
 	}
 
-	indexes, ok := core.ZINC_INDEX_ALIAS_LIST.GetIndexesForAlias(target)
+	indexes, ok := core.ZED_INDEX_ALIAS_LIST.GetIndexesForAlias(target)
 	if !ok {
 		c.Next()
 		return

@@ -24,8 +24,8 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
-	zincanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -73,12 +73,12 @@ func MatchQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers
 	var err error
 	var zer *analysis.Analyzer
 	if value.Analyzer != "" {
-		zer, err = zincanalysis.QueryAnalyzer(analyzers, value.Analyzer)
+		zer, err = zedanalysis.QueryAnalyzer(analyzers, value.Analyzer)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		indexZer, searchZer := zincanalysis.QueryAnalyzerForField(analyzers, mappings, field)
+		indexZer, searchZer := zedanalysis.QueryAnalyzerForField(analyzers, mappings, field)
 		if zer == nil && searchZer != nil {
 			zer = searchZer
 		}
@@ -127,7 +127,7 @@ func MatchQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers
 
 func genQueryWithMinimumShouldMatch(ana *analysis.Analyzer, field string, value *meta.MatchQuery, minimumShouldMatch interface{}) (riot.Query, error) {
 	if ana == nil {
-		ana, _ = zincanalyzer.NewStandardAnalyzer(nil)
+		ana, _ = zedanalyzer.NewStandardAnalyzer(nil)
 	}
 
 	var fuzziness int

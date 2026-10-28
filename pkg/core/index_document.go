@@ -25,7 +25,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
-// CreateDocument inserts or updates a document in the zinc index
+// CreateDocument inserts or updates a document in the zed index
 func (index *Index) CreateDocument(docID string, doc map[string]interface{}, update bool) error {
 	if err := index.checkWritable(); err != nil {
 		return err
@@ -50,7 +50,7 @@ func (index *Index) CreateDocument(docID string, doc map[string]interface{}, upd
 	return index.writeDocument(shard, mappings, docID, doc, update, secondShardID)
 }
 
-// GetDocument get a document in the zinc index
+// GetDocument get a document in the zed index
 func (index *Index) GetDocument(docID string) (*meta.Hit, error) {
 	// check WAL
 	shard := index.GetShardByDocID(docID)
@@ -79,7 +79,7 @@ func (index *Index) GetDocument(docID string) (*meta.Hit, error) {
 	return nil, errors.ErrorIDNotFound
 }
 
-// UpdateDocument updates a document in the zinc index
+// UpdateDocument updates a document in the zed index
 func (index *Index) UpdateDocument(docID string, doc map[string]interface{}, insert bool) error {
 	if err := index.checkWritable(); err != nil {
 		return err
@@ -108,7 +108,7 @@ func (index *Index) UpdateDocument(docID string, doc map[string]interface{}, ins
 	return index.writeDocument(shard, mappings, docID, doc, update, secondShardID)
 }
 
-// DeleteDocument deletes a document in the zinc index
+// DeleteDocument deletes a document in the zed index
 func (index *Index) DeleteDocument(docID string) error {
 	if err := index.checkWritable(); err != nil {
 		return err

@@ -24,7 +24,7 @@ import (
 	"github.com/vcaesar/riot/analysis/char"
 
 	"github.com/vcaesar/zedsearch/pkg/errors"
-	zincchar "github.com/vcaesar/zedsearch/pkg/uquery/analysis/char"
+	zedchar "github.com/vcaesar/zedsearch/pkg/uquery/analysis/char"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -90,11 +90,11 @@ func RequestCharFilterSingle(name string, options interface{}) (analysis.CharFil
 	case "zero_width_non_joiner":
 		return char.NewZeroWidthNonJoinerCharFilter(), nil
 	case "regexp", "pattern", "pattern_replace":
-		return zincchar.NewRegexpCharFilter(options)
+		return zedchar.NewRegexpCharFilter(options)
 	case "mapping":
-		return zincchar.NewMappingCharFilter(options)
+		return zedchar.NewMappingCharFilter(options)
 	case "stconvert":
-		return zincchar.NewSTConvertCharFilter(options)
+		return zedchar.NewSTConvertCharFilter(options)
 	default:
 		return nil, errors.New(errors.ErrorTypeXContentParseException, fmt.Sprintf("[char_filter] unknown character filter [%s]", name))
 	}

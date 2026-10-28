@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:8080/ui/. Vite proxies `/api`, `/es`, `/version` and `/swagger` to http://localhost:4080. Set `ZINC_API_TARGET` to change the development proxy target.
+Open http://localhost:8080/ui/. Vite proxies `/api`, `/es`, `/version` and `/swagger` to http://localhost:4080. Set `ZED_API_TARGET` to change the development proxy target.
 
 ```sh
 npm run lint       # strict TypeScript check

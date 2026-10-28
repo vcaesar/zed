@@ -65,7 +65,7 @@ type config struct {
 	ObjectCacheSize           int64         `toml:"zed_object_cache_size"`   // local disk LRU cache for object storage indexes, bytes, 0 disables
 	WalSyncInterval           time.Duration `toml:"zed_wal_sync_interval"`   // sync wal to disk, 1s, 10ms
 	WalRedoLogNoSync          bool          `toml:"zed_wal_redolog_no_sync"` // control sync after every write
-	ZincSwaggerEnable         bool          `toml:"zed_swagger_enable"`
+	ZedSwaggerEnable          bool          `toml:"zed_swagger_enable"`
 	LogLevel                  string        `toml:"zed_log_level"`
 	Cluster                   cluster
 	Tier                      tier

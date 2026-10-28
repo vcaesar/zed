@@ -27,7 +27,7 @@ import (
 func AccessLog(app *gin.Engine) {
 	app.Use(func(c *gin.Context) {
 		timeStart := time.Now()
-		c.Writer.Header().Set("Zinc", meta.Version)
+		c.Writer.Header().Set("Zed", meta.Version)
 
 		c.Next()
 

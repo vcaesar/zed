@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type Theme = 'system' | 'light' | 'dark';
-const storageKey = 'zincsearch-theme';
+const storageKey = 'zedsearch-theme';
 function readTheme(): Theme {
   try {
     const value = localStorage.getItem(storageKey);

@@ -37,13 +37,13 @@ export default {
     signOut: "Abmelden",
     account: "Konto",
     feedback: "Feedback",
-    zincSearch: "ZincSearch",
+    zedSearch: "ZedSearch",
     documentation: "Dokumentation",
     openapi: "OpenAPI",
     language: "Sprache",
   },
   about: {
-    name: "ZincSearch",
+    name: "ZedSearch",
     introduction: "Die moderne Open-Source-Suchmaschine.",
   },
   account: {

@@ -104,7 +104,7 @@ func TestNewExceptionTokenizer(t *testing.T) {
 	t.Run("keeps matched patterns whole", func(t *testing.T) {
 		z, err := NewExceptionTokenizer(map[string]interface{}{"patterns": []interface{}{`[a-z]+\.[a-z]+`}})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"visit", "zinc.com", "now"}, testutil.Terms(z.Tokenize([]byte("visit zinc.com now"))))
+		assert.Equal(t, []string{"visit", "zed.com", "now"}, testutil.Terms(z.Tokenize([]byte("visit zed.com now"))))
 	})
 	t.Run("missing patterns", func(t *testing.T) {
 		z, err := NewExceptionTokenizer(nil)

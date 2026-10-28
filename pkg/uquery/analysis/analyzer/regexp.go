@@ -24,7 +24,7 @@ import (
 	"github.com/vcaesar/riot/analysis/token"
 	"github.com/vcaesar/riot/analysis/tokenizer"
 
-	zinctoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	zedtoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
@@ -51,7 +51,7 @@ func NewRegexpAnalyzer(options interface{}) (*analysis.Analyzer, error) {
 	}
 
 	if len(stopwords) > 0 {
-		ana.TokenFilters = append(ana.TokenFilters, zinctoken.NewStopTokenFilter(stopwords))
+		ana.TokenFilters = append(ana.TokenFilters, zedtoken.NewStopTokenFilter(stopwords))
 	}
 
 	return ana, nil

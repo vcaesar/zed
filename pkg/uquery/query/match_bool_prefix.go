@@ -26,7 +26,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 )
 
 func MatchBoolPrefixQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.Query, error) {
@@ -64,12 +64,12 @@ func MatchBoolPrefixQuery(query map[string]interface{}, mappings *meta.Mappings,
 	var err error
 	var zer *analysis.Analyzer
 	if value.Analyzer != "" {
-		zer, err = zincanalysis.QueryAnalyzer(analyzers, value.Analyzer)
+		zer, err = zedanalysis.QueryAnalyzer(analyzers, value.Analyzer)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		indexZer, searchZer := zincanalysis.QueryAnalyzerForField(analyzers, mappings, field)
+		indexZer, searchZer := zedanalysis.QueryAnalyzerForField(analyzers, mappings, field)
 		if zer == nil && searchZer != nil {
 			zer = searchZer
 		}

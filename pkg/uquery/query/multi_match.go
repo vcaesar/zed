@@ -25,7 +25,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -60,7 +60,7 @@ func MultiMatchQuery(query map[string]interface{}, mappings *meta.Mappings, anal
 
 	var zer *analysis.Analyzer
 	if value.Analyzer != "" {
-		zer, _ = zincanalysis.QueryAnalyzer(analyzers, value.Analyzer)
+		zer, _ = zedanalysis.QueryAnalyzer(analyzers, value.Analyzer)
 	}
 
 	var operator riot.MatchQueryOperator = riot.MatchQueryOperatorOr
@@ -92,7 +92,7 @@ func MultiMatchQuery(query map[string]interface{}, mappings *meta.Mappings, anal
 		if zer != nil {
 			subqq.SetAnalyzer(zer)
 		} else {
-			indexZer, searchZer := zincanalysis.QueryAnalyzerForField(analyzers, mappings, field)
+			indexZer, searchZer := zedanalysis.QueryAnalyzerForField(analyzers, mappings, field)
 			if zer == nil && searchZer != nil {
 				zer = searchZer
 			}

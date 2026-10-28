@@ -20,10 +20,10 @@ import (
 	ginprometheus "github.com/zincsearch/go-gin-prometheus"
 )
 
-var ZINC_METRICS *ginprometheus.Metric
+var ZED_METRICS *ginprometheus.Metric
 
 func init() {
-	ZINC_METRICS = &ginprometheus.Metric{
+	ZED_METRICS = &ginprometheus.Metric{
 		ID:          "indexStats",                 // Identifier
 		Name:        "index_stats",                // Metric Name
 		Description: "Summary index stats metric", // Help Description
@@ -36,15 +36,15 @@ func init() {
 }
 
 func SetMetricStatsByIndex(index, field string, val float64) {
-	if ZINC_METRICS.MetricCollector == nil {
+	if ZED_METRICS.MetricCollector == nil {
 		return
 	}
-	ZINC_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Set(val)
+	ZED_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Set(val)
 }
 
 func IncrMetricStatsByIndex(index, field string) {
-	if ZINC_METRICS.MetricCollector == nil {
+	if ZED_METRICS.MetricCollector == nil {
 		return
 	}
-	ZINC_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Inc()
+	ZED_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Inc()
 }

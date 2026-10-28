@@ -66,7 +66,7 @@ func StartTiering(ctx context.Context) {
 // runTieringOnce applies the lifecycle of every index once, using now as the
 // current time. Errors are logged and never stop the other indexes.
 func runTieringOnce(now time.Time) {
-	for _, index := range ZINC_INDEX_LIST.List() {
+	for _, index := range ZED_INDEX_LIST.List() {
 		lifecycle, err := ResolveLifecycle(index)
 		if err != nil {
 			log.Error().Err(err).Str("index", index.GetName()).Msg("tiering: lifecycle")

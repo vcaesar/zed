@@ -51,7 +51,7 @@ func isFirstStart() (bool, error) {
 	}
 
 	for _, user := range users {
-		ZINC_CACHED_USERS.Set(user.ID, user)
+		ZED_CACHED_USERS.Set(user.ID, user)
 	}
 
 	return false, nil
@@ -64,7 +64,7 @@ func initPermissionCache() error {
 	}
 
 	for _, role := range roles {
-		ZINC_CACHED_PERMISSIONS.Set(role.ID, strArrayToMap(role.Permission))
+		ZED_CACHED_PERMISSIONS.Set(role.ID, strArrayToMap(role.Permission))
 	}
 
 	return nil

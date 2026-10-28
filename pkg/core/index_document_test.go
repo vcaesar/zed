@@ -114,7 +114,7 @@ func TestIndex_CreateUpdateDocument(t *testing.T) {
 			time.Sleep(time.Second)
 
 			assert.NoError(t, err)
-			query := &meta.ZincQuery{
+			query := &meta.ZedQuery{
 				Query: &meta.Query{
 					Match: map[string]*meta.MatchQuery{
 						"_all": {
@@ -489,9 +489,9 @@ func TestIndex_CreateUpdateDocumentWithDateField(t *testing.T) {
 			// wait for WAL write to index
 			time.Sleep(time.Second)
 
-			var query *meta.ZincQuery
+			var query *meta.ZedQuery
 			if tt.isRange {
-				query = &meta.ZincQuery{
+				query = &meta.ZedQuery{
 					Aggregations: map[string]meta.Aggregations{
 						"agg_res": {
 							DateHistogram: &meta.AggregationDateHistogram{
@@ -507,7 +507,7 @@ func TestIndex_CreateUpdateDocumentWithDateField(t *testing.T) {
 					},
 				}
 			} else {
-				query = &meta.ZincQuery{
+				query = &meta.ZedQuery{
 					Query: &meta.Query{
 						Range: map[string]*meta.RangeQuery{
 							tt.fields.Name: {

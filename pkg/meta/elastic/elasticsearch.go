@@ -40,7 +40,7 @@ func NewESInfo(c *gin.Context) *ESInfo {
 		version = v
 	}
 	return &ESInfo{
-		Name:        "zinc",
+		Name:        "zed",
 		ClusterName: "N/A",
 		ClusterUUID: "N/A",
 		Version: ESInfoVersion{

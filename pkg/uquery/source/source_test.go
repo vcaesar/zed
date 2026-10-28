@@ -61,7 +61,7 @@ func TestRequest(t *testing.T) {
 }
 
 func TestResponse(t *testing.T) {
-	data := []byte(`{"name":"zinc","age":3,"addr.city":"sf","addr.zip":"94103"}`)
+	data := []byte(`{"name":"zed","age":3,"addr.city":"sf","addr.zip":"94103"}`)
 	tests := []struct {
 		name   string
 		source *meta.Source
@@ -71,9 +71,9 @@ func TestResponse(t *testing.T) {
 		{"disabled returns empty", &meta.Source{Enable: false}, data, map[string]interface{}{}},
 		{"invalid json returns nil", &meta.Source{Enable: true}, []byte(`{`), nil},
 		{"no fields returns all", &meta.Source{Enable: true}, data,
-			map[string]interface{}{"name": "zinc", "age": float64(3), "addr.city": "sf", "addr.zip": "94103"}},
+			map[string]interface{}{"name": "zed", "age": float64(3), "addr.city": "sf", "addr.zip": "94103"}},
 		{"exact fields", &meta.Source{Enable: true, Fields: []string{"name", "missing"}}, data,
-			map[string]interface{}{"name": "zinc"}},
+			map[string]interface{}{"name": "zed"}},
 		{"wildcard fields", &meta.Source{Enable: true, Fields: []string{"addr.*"}}, data,
 			map[string]interface{}{"addr.city": "sf", "addr.zip": "94103"}},
 		{"mixed exact and wildcard", &meta.Source{Enable: true, Fields: []string{"age", "addr.*"}}, data,

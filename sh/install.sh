@@ -11,7 +11,7 @@ header() {
     cat 1>&2 <<EOF
 ZedSearch Installer
 
-Website: https://zinc.dev
+Website: https://github.com/vcaesar/zedsearch
 Docs: https://zincsearch-docs.zinc.dev
 Repo: https://github.com/vcaesar/zedsearch
 
@@ -37,9 +37,9 @@ install_zedsearch()
 {
 	trap 'echo -e "Aborted, error $? in command: $BASH_COMMAND"; trap ERR; exit 1' ERR
 	install_path="/usr/local/bin"
-	zinc_os="unsupported"
-	zinc_arch="unknown"
-	zinc_arm=""
+	zed_os="unsupported"
+	zed_arch="unknown"
+	zed_arm=""
 
 	header
 	check_tools
@@ -60,24 +60,24 @@ install_zedsearch()
 	# Which OS and version? #
 	#########################
 
-	zinc_bin="zedsearch"
-	zinc_dl_ext=".tar.gz"
+	zed_bin="zedsearch"
+	zed_dl_ext=".tar.gz"
 
 	# NOTE: `uname -m` is more accurate and universal than `arch`
 	# See https://en.wikipedia.org/wiki/Uname
 	unamem="$(uname -m)"
 	if [[ $unamem == *aarch64* ]]; then
-		zinc_arch="arm64"
+		zed_arch="arm64"
     elif [[ $unamem == *arm64* ]]; then
-		zinc_arch="arm64"
+		zed_arch="arm64"
 	elif [[ $unamem == *64* ]]; then
-		zinc_arch="x86_64"
+		zed_arch="x86_64"
 	elif [[ $unamem == *armv6l* ]]; then
-		zinc_arch="arm"
-		zinc_arm="v6"
+		zed_arch="arm"
+		zed_arm="v6"
 	elif [[ $unamem == *armv7l* ]]; then
-		zinc_arch="arm"
-		zinc_arm="v7"
+		zed_arch="arm"
+		zed_arm="v7"
 	else
 		echo "Aborted, unsupported or unknown architecture: $unamem"
 		return 2
@@ -85,19 +85,19 @@ install_zedsearch()
 
 	unameu="$(tr '[:lower:]' '[:upper:]' <<<$(uname))"
 	if [[ $unameu == *DARWIN* ]]; then
-		zinc_os="Darwin"
+		zed_os="Darwin"
 		version=${vers##*ProductVersion:}
 	elif [[ $unameu == *LINUX* ]]; then
-		zinc_os="Linux"
+		zed_os="Linux"
 	elif [[ $unameu == *FREEBSD* ]]; then
-		zinc_os="freebsd"
+		zed_os="freebsd"
 	elif [[ $unameu == *OPENBSD* ]]; then
-		zinc_os="openbsd"
+		zed_os="openbsd"
 	elif [[ $unameu == *WIN* || $unameu == MSYS* ]]; then
 		# Should catch cygwin
 		sudo_cmd=""
-		zinc_os="Windows"
-		zinc_bin=$zinc_bin.exe
+		zed_os="Windows"
+		zed_bin=$zed_bin.exe
 	else
 		echo "Aborted, unsupported or unknown os: $uname"
 		return 6
@@ -107,43 +107,43 @@ install_zedsearch()
 	# Download and extract #
 	########################
 
-	echo "Downloading ZedSearch for ${zinc_os}/${zinc_arch}${zinc_arm}..."
-	zinc_file="zedsearch_${zinc_os}_${zinc_arch}${zinc_arm}${zinc_dl_ext}"
+	echo "Downloading ZedSearch for ${zed_os}/${zed_arch}${zed_arm}..."
+	zed_file="zedsearch_${zed_os}_${zed_arch}${zed_arm}${zed_dl_ext}"
 
 	if [[ "$#" -eq 0 ]]; then
 		# get latest release
-		zinc_tag=$(curl -s https://api.github.com/repos/vcaesar/zedsearch/releases/latest | grep 'tag_name' | cut -d\" -f4)
-		zinc_version=$(echo ${zinc_tag} | cut -c2-)
+		zed_tag=$(curl -s https://api.github.com/repos/vcaesar/zedsearch/releases/latest | grep 'tag_name' | cut -d\" -f4)
+		zed_version=$(echo ${zed_tag} | cut -c2-)
 	elif [[ "$#" -gt 1 ]]; then
 		echo "Too many arguments."
 		exit 1
 	elif [ -n $1  ]; then
 		# try to get passed version
-		zinc_tag="v$1"
-		zinc_version=$1
+		zed_tag="v$1"
+		zed_version=$1
 	fi
 
-	zinc_url="https://github.com/vcaesar/zedsearch/releases/download/${zinc_tag}/zedsearch_${zinc_version}_${zinc_os}_${zinc_arch}${zinc_arm}.tar.gz"
+	zed_url="https://github.com/vcaesar/zedsearch/releases/download/${zed_tag}/zedsearch_${zed_version}_${zed_os}_${zed_arch}${zed_arm}.tar.gz"
 
-	dl="/tmp/$zinc_file"
+	dl="/tmp/$zed_file"
 	rm -rf -- "$dl"
 
-    echo "Downloading $zinc_url"
+    echo "Downloading $zed_url"
 
-	curl -fsSL "$zinc_url" -o "$dl"
+	curl -fsSL "$zed_url" -o "$dl"
 
 	echo "Extracting..."
-	case "$zinc_file" in
-		*.tar.gz) tar -xzf "$dl" -C "$PREFIX/tmp/" "$zinc_bin" ;;
+	case "$zed_file" in
+		*.tar.gz) tar -xzf "$dl" -C "$PREFIX/tmp/" "$zed_bin" ;;
 	esac
-	chmod +x "$PREFIX/tmp/$zinc_bin"
+	chmod +x "$PREFIX/tmp/$zed_bin"
 
 	echo "Putting ZedSearch in $install_path (may require password)"
-	$sudo_cmd mv "$PREFIX/tmp/$zinc_bin" "$install_path/$zinc_bin"
+	$sudo_cmd mv "$PREFIX/tmp/$zed_bin" "$install_path/$zed_bin"
 	$sudo_cmd rm -- "$dl"
 
 	# check installation
-	# $zinc_bin -version
+	# $zed_bin -version
 
 	echo "Successfully installed ZedSearch"
 	trap ERR

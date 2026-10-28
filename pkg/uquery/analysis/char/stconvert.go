@@ -2,7 +2,7 @@ package char
 
 import (
 	"github.com/vcaesar/riot/analysis"
-	zincchar "github.com/vcaesar/zedsearch/pkg/bluge/analysis/char"
+	zedchar "github.com/vcaesar/zedsearch/pkg/bluge/analysis/char"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -11,5 +11,5 @@ func NewSTConvertCharFilter(options interface{}) (analysis.CharFilter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return zincchar.NewSTConvertCharFilter(conversion)
+	return zedchar.NewSTConvertCharFilter(conversion)
 }

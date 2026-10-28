@@ -33,9 +33,9 @@ func TestApiESCompat(t *testing.T) {
 	esIndex := "escompat"
 	esIndexCopy := "escompatcopy"
 	esBulkData := `{"index": {"_index": "escompat", "_id": "1"}}
-{"name": "zinc", "num": 1}
+{"name": "zed", "num": 1}
 {"index": {"_index": "escompat", "_id": "2"}}
-{"name": "zinc", "num": 2}
+{"name": "zed", "num": 2}
 {"index": {"_index": "escompat", "_id": "3"}}
 {"name": "other", "num": 3}`
 
@@ -64,7 +64,7 @@ func TestApiESCompat(t *testing.T) {
 	})
 
 	t.Run("POST /es/:target/_count with query", func(t *testing.T) {
-		body := bytes.NewBufferString(`{"query":{"match":{"name":"zinc"}}}`)
+		body := bytes.NewBufferString(`{"query":{"match":{"name":"zed"}}}`)
 		resp := request("POST", "/es/"+esIndex+"/_count", body)
 		assert.Equal(t, http.StatusOK, resp.Code)
 

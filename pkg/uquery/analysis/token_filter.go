@@ -47,7 +47,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
 	"github.com/vcaesar/zedsearch/pkg/errors"
-	zinctoken "github.com/vcaesar/zedsearch/pkg/uquery/analysis/token"
+	zedtoken "github.com/vcaesar/zedsearch/pkg/uquery/analysis/token"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -111,39 +111,39 @@ func RequestTokenFilterSingle(name string, options interface{}) (analysis.TokenF
 	case "camel_case", "camelcase":
 		return token.NewCamelCaseFilter(), nil
 	case "dict":
-		return zinctoken.NewDictTokenFilter(options)
+		return zedtoken.NewDictTokenFilter(options)
 	case "edge_ngram":
-		return zinctoken.NewEdgeNgramTokenFilter(options)
+		return zedtoken.NewEdgeNgramTokenFilter(options)
 	case "elision":
-		return zinctoken.NewElisionTokenFilter(options)
+		return zedtoken.NewElisionTokenFilter(options)
 	case "keyword", "keyword_marker":
-		return zinctoken.NewKeywordTokenFilter(options)
+		return zedtoken.NewKeywordTokenFilter(options)
 	case "length":
-		return zinctoken.NewLengthTokenFilter(options)
+		return zedtoken.NewLengthTokenFilter(options)
 	case "lower_case", "lowercase":
 		return token.NewLowerCaseFilter(), nil
 	case "ngram":
-		return zinctoken.NewNgramTokenFilter(options)
+		return zedtoken.NewNgramTokenFilter(options)
 	case "porter", "stemmer":
 		return token.NewPorterStemmer(), nil
 	case "reverse":
 		return token.NewReverseFilter(), nil
 	case "regexp", "pattern_replace":
-		return zinctoken.NewRegexpTokenFilter(options)
+		return zedtoken.NewRegexpTokenFilter(options)
 	case "shingle":
-		return zinctoken.NewShingleTokenFilter(options)
+		return zedtoken.NewShingleTokenFilter(options)
 	case "trim":
-		return zinctoken.NewTrimTokenFilter()
+		return zedtoken.NewTrimTokenFilter()
 	case "stop":
-		return zinctoken.NewStopTokenFilter(options)
+		return zedtoken.NewStopTokenFilter(options)
 	case "truncate":
-		return zinctoken.NewTruncateTokenFilter(options)
+		return zedtoken.NewTruncateTokenFilter(options)
 	case "unicodenorm":
-		return zinctoken.NewUnicodenormTokenFilter(options)
+		return zedtoken.NewUnicodenormTokenFilter(options)
 	case "unique":
 		return token.NewUniqueTermFilter(), nil
 	case "upper_case", "uppercase":
-		return zinctoken.NewUpperCaseTokenFilter()
+		return zedtoken.NewUpperCaseTokenFilter()
 	case "gse_stop":
 		return chs.NewGseStopTokenFilter(), nil
 		// language filters

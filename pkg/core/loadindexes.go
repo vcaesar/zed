@@ -23,12 +23,12 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/metadata"
 	"github.com/vcaesar/zedsearch/pkg/upgrade"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils/hash/rendezvous"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
-func LoadZincIndexesFromMetadata(version string) error {
+func LoadZedIndexesFromMetadata(version string) error {
 	indexes, err := metadata.Index.List(0, 0)
 	if err != nil {
 		return err
@@ -115,14 +115,14 @@ func LoadZincIndexesFromMetadata(version string) error {
 
 		// load index analysis
 		if index.ref.Settings != nil && index.ref.Settings.Analysis != nil {
-			index.analyzers, err = zincanalysis.RequestAnalyzer(index.ref.Settings.Analysis)
+			index.analyzers, err = zedanalysis.RequestAnalyzer(index.ref.Settings.Analysis)
 			if err != nil {
 				return errors.New(errors.ErrorTypeRuntimeException, "parse stored analysis error").Cause(err)
 			}
 		}
 
 		// load in memory
-		ZINC_INDEX_LIST.Add(index)
+		ZED_INDEX_LIST.Add(index)
 	}
 
 	return nil

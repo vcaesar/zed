@@ -26,17 +26,17 @@ import (
 func TestNewGCSStore(t *testing.T) {
 	_, err := newGCSStore(config.GCSConfig{})
 	assert.Error(t, err, "bucket required")
-	_, err = newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zinc"})
+	_, err = newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zed"})
 	assert.Error(t, err, "HMAC keys required")
-	_, err = newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zinc", AccessKeyID: "a"})
+	_, err = newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zed", AccessKeyID: "a"})
 	assert.Error(t, err, "both keys required")
 
-	s, err := newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zinc", AccessKeyID: "a", SecretAccessKey: "b"})
+	s, err := newGCSStore(config.GCSConfig{Endpoint: "storage.googleapis.com", Bucket: "zed", AccessKeyID: "a", SecretAccessKey: "b"})
 	assert.NoError(t, err)
-	assert.Equal(t, "zinc", s.bucket)
+	assert.Equal(t, "zed", s.bucket)
 	assert.Equal(t, "https://storage.googleapis.com", s.client.EndpointURL().String())
 
-	_, err = newGCSStore(config.GCSConfig{Endpoint: "other.googleapis.com", Bucket: "zinc", AccessKeyID: "a", SecretAccessKey: "b"})
+	_, err = newGCSStore(config.GCSConfig{Endpoint: "other.googleapis.com", Bucket: "zed", AccessKeyID: "a", SecretAccessKey: "b"})
 	assert.Error(t, err, "minio rejects non-storage googleapis hosts")
 }
 

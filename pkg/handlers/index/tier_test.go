@@ -38,7 +38,7 @@ func useObjectStore(t *testing.T) *directory.MemoryObjectStore {
 
 	oldBucket := config.Global.S3.Bucket
 	oldCold := config.Global.Tier.ColdStorageType
-	config.Global.S3.Bucket = "zinc-test"
+	config.Global.S3.Bucket = "zed-test"
 	config.Global.Tier.ColdStorageType = "s3"
 	t.Cleanup(func() {
 		config.Global.S3.Bucket = oldBucket

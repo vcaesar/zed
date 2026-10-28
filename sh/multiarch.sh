@@ -2,9 +2,9 @@
 
 cd "$(dirname "$0")/.." || exit 1
 
-aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/zinclabs
+echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
 
-# docker buildx build --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag public.ecr.aws/zinclabs/zincsearch:test .
+# docker buildx build --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag ghcr.io/vcaesar/zedsearch:test .
 
-docker buildx build --push --platform linux/amd64 --tag public.ecr.aws/zinclabs/zincsearch:test .
+docker buildx build --push --platform linux/amd64 --tag ghcr.io/vcaesar/zedsearch:test .
 

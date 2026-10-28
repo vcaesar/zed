@@ -33,9 +33,9 @@ params = {
 headers = {"Content-type": "application/json",
            "Authorization": "Basic " + bas64encoded_creds}
 index = "games3"
-zinc_host = "http://localhost:4080"
-zinc_url = zinc_host + "/api/" + index + "/_search"
+zed_host = "http://localhost:4080"
+zed_url = zed_host + "/api/" + index + "/_search"
 
-res = requests.post(zinc_url, headers=headers, data=json.dumps(params))
+res = requests.post(zed_url, headers=headers, data=json.dumps(params))
 
 print(res.text)

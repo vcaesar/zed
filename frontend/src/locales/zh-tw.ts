@@ -36,12 +36,12 @@ export default {
     signOut: "登出",
     account: "帳號",
     feedback: "意見回饋",
-    zincSearch: "ZincSearch",
+    zedSearch: "ZedSearch",
     documentation: "說明文件",
     openapi: "OpenAPI",
   },
   about: {
-    name: "ZincSearch",
+    name: "ZedSearch",
     introduction: "現代化的開放原始碼搜尋引擎。",
   },
   account: {

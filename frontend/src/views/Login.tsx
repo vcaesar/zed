@@ -47,7 +47,7 @@ export default function Login() {
   return <main className="login-page">
     <form className="card login-card w-full max-w-sm space-y-5" onSubmit={submit} noValidate>
       <div className="workspace-avatar" aria-hidden="true">ZS</div>
-      <h1>Zinc Search</h1>
+      <h1>ZedSearch</h1>
       <ThemeSelect />
       <Select className="language-select" aria-label={t('menu.language')} value={locale} onValueChange={value => changeLanguage(value as Locale)}>{Object.entries(languages).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>
       <label className="block">{t('login.userid')}<input className="mt-1 w-full" data-cy="login-user-id" autoComplete="username" value={id} onChange={e => setId(e.target.value)} required /></label>

@@ -24,9 +24,9 @@ import (
 	v1 "github.com/vcaesar/zedsearch/pkg/meta/v1"
 )
 
-// ParseQueryDSLFromV1 parse query DSL from search v1 and return new zinc query DSL
-func ParseQueryDSLFromV1(q *v1.ZincQuery) (*meta.ZincQuery, error) {
-	newquery := new(meta.ZincQuery)
+// ParseQueryDSLFromV1 parse query DSL from search v1 and return new zed query DSL
+func ParseQueryDSLFromV1(q *v1.ZedQuery) (*meta.ZedQuery, error) {
+	newquery := new(meta.ZedQuery)
 	newquery.From = q.From
 	newquery.Size = q.MaxResults
 	newquery.Explain = q.Explain

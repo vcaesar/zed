@@ -101,7 +101,7 @@ func TestStatsCalculator(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			// elasticsearch returns null for min/max/avg here, zinc returns 0
+			// elasticsearch returns null for min/max/avg here, zed returns 0
 		},
 		{
 			name: "single value", values: []float64{5},

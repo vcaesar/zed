@@ -92,7 +92,7 @@ func (t *telemetry) initBaseInfo() {
 		t.baseInfo = map[string]interface{}{
 			"os":           runtime.GOOS,
 			"arch":         runtime.GOARCH,
-			"zinc_version": meta.Version,
+			"zed_version":  meta.Version,
 			"time_zone":    zone,
 			"cpu_count":    cpuCount,
 			"total_memory": m.Total / 1024 / 1024,
@@ -106,7 +106,7 @@ func (t *telemetry) Instance() {
 	}
 
 	traits := analytics.NewTraits().
-		Set("index_count", ZINC_INDEX_LIST.Len()).
+		Set("index_count", ZED_INDEX_LIST.Len()).
 		Set("total_index_size_mb", t.TotalIndexSize())
 
 	for k, v := range t.baseInfo {
@@ -147,14 +147,14 @@ func (t *telemetry) runEvents() {
 
 func (t *telemetry) TotalIndexSize() uint64 {
 	TotalIndexSize := uint64(0)
-	for _, idx := range ZINC_INDEX_LIST.List() {
+	for _, idx := range ZED_INDEX_LIST.List() {
 		TotalIndexSize += t.GetIndexSize(idx.GetName())
 	}
 	return TotalIndexSize
 }
 
 func (t *telemetry) GetIndexSize(indexName string) uint64 {
-	if index, ok := ZINC_INDEX_LIST.Get(indexName); ok {
+	if index, ok := ZED_INDEX_LIST.Get(indexName); ok {
 		return atomic.LoadUint64(&index.ref.Stats.StorageSize) / 1024 / 1024 // convert to MB
 	}
 	return 0
@@ -167,7 +167,7 @@ func (t *telemetry) HeartBeat() {
 		return
 	}
 	data := make(map[string]interface{})
-	data["index_count"] = ZINC_INDEX_LIST.Len()
+	data["index_count"] = ZED_INDEX_LIST.Len()
 	data["total_index_size_mb"] = t.TotalIndexSize()
 	data["memory_used_percent"] = m.UsedPercent
 	t.Event("heartbeat", data)

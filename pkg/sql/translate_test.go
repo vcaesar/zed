@@ -582,7 +582,7 @@ func TestPreprocess(t *testing.T) {
 		{
 			name: "match is renamed",
 			sql:  `SELECT a FROM t WHERE MATCH (a, 'x')`,
-			want: `SELECT a FROM t WHERE zinc_match (a, 'x')`,
+			want: `SELECT a FROM t WHERE zed_match (a, 'x')`,
 		},
 		{
 			name: "match inside a string is kept",

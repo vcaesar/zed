@@ -27,7 +27,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/logs"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/flatten"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
@@ -132,7 +132,7 @@ func (s *IndexShard) buildField(mappings *meta.Mappings, bdoc *riot.Document, ke
 			return nil
 		}
 		field = riot.NewTextField(key, v).SearchTermPositions()
-		fieldAnalyzer, _ := zincanalysis.QueryAnalyzerForField(s.root.GetAnalyzers(), mappings, key)
+		fieldAnalyzer, _ := zedanalysis.QueryAnalyzerForField(s.root.GetAnalyzers(), mappings, key)
 		if fieldAnalyzer != nil {
 			field.WithAnalyzer(fieldAnalyzer)
 		}

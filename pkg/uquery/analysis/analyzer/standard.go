@@ -20,7 +20,7 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/analyzer"
 
-	zinctoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	zedtoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -29,7 +29,7 @@ func NewStandardAnalyzer(options interface{}) (*analysis.Analyzer, error) {
 
 	ana := analyzer.NewStandardAnalyzer()
 	if len(stopwords) > 0 {
-		ana.TokenFilters = append(ana.TokenFilters, zinctoken.NewStopTokenFilter(stopwords))
+		ana.TokenFilters = append(ana.TokenFilters, zedtoken.NewStopTokenFilter(stopwords))
 	}
 
 	return ana, nil

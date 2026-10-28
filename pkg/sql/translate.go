@@ -35,7 +35,7 @@ const MaxBuckets = 1000
 // GroupAggName is the name of the GROUP BY bucket aggregation.
 const GroupAggName = "groupby"
 
-// FieldTypes maps a field name to its zinc mapping type. Unmapped fields
+// FieldTypes maps a field name to its zed mapping type. Unmapped fields
 // resolve to the empty string and are treated as keywords.
 type FieldTypes map[string]string
 
@@ -54,7 +54,7 @@ var calendarIntervals = map[string]bool{
 	"year": true, "1y": true,
 }
 
-// BuildDSL translates a statement into the zinc query DSL. fetchSize, when
+// BuildDSL translates a statement into the zed query DSL. fetchSize, when
 // positive, caps the requested number of rows.
 func BuildDSL(stmt *Statement, fields FieldTypes, fetchSize int) (map[string]interface{}, error) {
 	query, err := whereQuery(stmt.Where, fields)
@@ -109,12 +109,12 @@ func BuildDSL(stmt *Statement, fields FieldTypes, fetchSize int) (map[string]int
 
 // BuildQuery converts a DSL document into the query object the search
 // engine consumes.
-func BuildQuery(dsl map[string]interface{}) (*meta.ZincQuery, error) {
+func BuildQuery(dsl map[string]interface{}) (*meta.ZedQuery, error) {
 	data, err := json.Marshal(dsl)
 	if err != nil {
 		return nil, fmt.Errorf("marshal query DSL: %w", err)
 	}
-	query := new(meta.ZincQuery)
+	query := new(meta.ZedQuery)
 	if err := json.Unmarshal(data, query); err != nil {
 		return nil, fmt.Errorf("unmarshal query DSL: %w", err)
 	}

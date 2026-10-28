@@ -18,8 +18,8 @@ package meta
 
 import "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 
-// ZincQuery is the query object for the zinc index. compatible ES Query DSL
-type ZincQuery struct {
+// ZedQuery is the query object for the zed index. compatible ES Query DSL
+type ZedQuery struct {
 	Query          interface{}             `json:"query"`
 	Aggregations   map[string]Aggregations `json:"aggs"`
 	Highlight      *Highlight              `json:"highlight"`
@@ -33,7 +33,7 @@ type ZincQuery struct {
 	TrackTotalHits bool                    `json:"track_total_hits"`
 }
 
-type ZincQueryForSDK struct {
+type ZedQueryForSDK struct {
 	Query          QueryForSDK             `json:"query"`
 	Aggregations   map[string]Aggregations `json:"aggs"`
 	Highlight      *Highlight              `json:"highlight"`

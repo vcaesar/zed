@@ -26,7 +26,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
-	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -65,7 +65,7 @@ func FuzzyQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers
 	}
 
 	var zer *analysis.Analyzer
-	indexZer, searchZer := zincanalysis.QueryAnalyzerForField(analyzers, mappings, field)
+	indexZer, searchZer := zedanalysis.QueryAnalyzerForField(analyzers, mappings, field)
 	if zer == nil && searchZer != nil {
 		zer = searchZer
 	}

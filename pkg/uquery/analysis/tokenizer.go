@@ -25,7 +25,7 @@ import (
 
 	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
 	"github.com/vcaesar/zedsearch/pkg/errors"
-	zinctokenizer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/tokenizer"
+	zedtokenizer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/tokenizer"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -75,23 +75,23 @@ func RequestTokenizerSingle(name string, options interface{}) (analysis.Tokenize
 	name = strings.ToLower(name)
 	switch name {
 	case "character":
-		return zinctokenizer.NewCharacterTokenizer(options)
+		return zedtokenizer.NewCharacterTokenizer(options)
 	case "char_group":
-		return zinctokenizer.NewCharGroupTokenizer(options)
+		return zedtokenizer.NewCharGroupTokenizer(options)
 	case "edge_ngram":
-		return zinctokenizer.NewEdgeNgramTokenizer(options)
+		return zedtokenizer.NewEdgeNgramTokenizer(options)
 	case "exception":
-		return zinctokenizer.NewExceptionTokenizer(options)
+		return zedtokenizer.NewExceptionTokenizer(options)
 	case "letter", "simple":
 		return tokenizer.NewLetterTokenizer(), nil
 	case "lower_case", "lowercase":
-		return zinctokenizer.NewLowerCaseTokenizer()
+		return zedtokenizer.NewLowerCaseTokenizer()
 	case "ngram":
-		return zinctokenizer.NewNgramTokenizer(options)
+		return zedtokenizer.NewNgramTokenizer(options)
 	case "path_hierarchy":
-		return zinctokenizer.NewPathHierarchyTokenizer(options)
+		return zedtokenizer.NewPathHierarchyTokenizer(options)
 	case "regexp", "pattern":
-		return zinctokenizer.NewRegexpTokenizer(options)
+		return zedtokenizer.NewRegexpTokenizer(options)
 	case "single", "keyword":
 		return tokenizer.NewSingleTokenTokenizer(), nil
 	case "unicode", "standard":
