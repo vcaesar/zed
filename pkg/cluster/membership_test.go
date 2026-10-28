@@ -143,6 +143,52 @@ func TestMembershipKeepAliveRejoinsAfterExpiry(t *testing.T) {
 	assert.NotEqual(t, lease, member.Lease())
 }
 
+// A node whose renewals keep failing must stop trusting its ownership once
+// its lease may have expired on the store side.
+func TestMembershipLiveExpiresWithoutRenewal(t *testing.T) {
+	ctx := context.Background()
+	store := &failingKeepAlive{Store: NewMemoryStore()}
+	defer func() { require.NoError(t, store.Close()) }()
+
+	ttl := 50 * time.Millisecond
+	member := testMembership(store, "node-a", ttl)
+	assert.False(t, member.Live(), "not joined yet")
+	require.NoError(t, member.Join(ctx))
+	assert.True(t, member.Live())
+
+	store.fail = true
+	require.Error(t, member.KeepAlive(ctx))
+	time.Sleep(ttl)
+	assert.False(t, member.Live())
+
+	store.fail = false
+	require.NoError(t, member.KeepAlive(ctx))
+	assert.True(t, member.Live())
+
+	require.NoError(t, member.Leave(ctx))
+	assert.False(t, member.Live())
+}
+
+// Leave must not remove a record that a newer process with the same id wrote.
+func TestMembershipLeaveKeepsNewerRecord(t *testing.T) {
+	ctx := context.Background()
+	clock := newFakeClock()
+	store := NewMemoryStore()
+	store.SetClock(clock.Now)
+	defer func() { require.NoError(t, store.Close()) }()
+
+	old := testMembership(store, "node-a", 15*time.Second)
+	require.NoError(t, old.Join(ctx))
+	clock.Advance(30 * time.Second) // old process paused past its ttl
+	restarted := testMembership(store, "node-a", 15*time.Second)
+	require.NoError(t, restarted.Join(ctx))
+
+	require.NoError(t, old.Leave(ctx))
+	nodes, err := restarted.ListNodes(ctx)
+	require.NoError(t, err)
+	require.Len(t, nodes, 1)
+}
+
 func TestMembershipWatch(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

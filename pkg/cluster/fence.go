@@ -180,6 +180,10 @@ func (f *Fence) apply(event Event) {
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	// an event queued before a Refresh must not roll back newer ownership
+	if current, ok := f.assignments[partition]; ok && event.KV.Revision <= current.Epoch {
+		return
+	}
 	if event.Type == EventDelete {
 		delete(f.assignments, partition)
 		return

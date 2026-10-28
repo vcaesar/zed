@@ -64,6 +64,37 @@ func TestFenceOwner(t *testing.T) {
 	assert.Equal(t, map[string]int{"node-a": 1}, fence.PartitionCounts())
 }
 
+// A watch event queued before a Refresh must not roll back newer ownership.
+func TestFenceIgnoresStaleEvent(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	defer func() { require.NoError(t, store.Close()) }()
+
+	fence, assigner := newTestFence(t, store, "node-a")
+	const index = "logs-2024"
+	partition := PartitionOfN(index, fencePartitions)
+
+	first, ok, err := assigner.Set(ctx, partition, "node-a", 0)
+	require.NoError(t, err)
+	require.True(t, ok)
+	second, ok, err := assigner.Set(ctx, partition, "node-b", first.Epoch)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.NoError(t, fence.Refresh(ctx))
+
+	key := assigner.AssignPrefix() + strconv.Itoa(partition)
+	fence.apply(Event{Type: EventPut, KV: KV{Key: key, Value: []byte(`{"owner":"node-a"}`), Revision: first.Epoch}})
+	owner, epoch, ok := fence.Owner(index)
+	require.True(t, ok)
+	assert.Equal(t, "node-b", owner)
+	assert.Equal(t, second.Epoch, epoch)
+
+	// a newer delete still applies
+	fence.apply(Event{Type: EventDelete, KV: KV{Key: key, Revision: second.Epoch + 1}})
+	_, _, ok = fence.Owner(index)
+	assert.False(t, ok)
+}
+
 func TestFenceCheckEpoch(t *testing.T) {
 	ctx := context.Background()
 	store := NewMemoryStore()

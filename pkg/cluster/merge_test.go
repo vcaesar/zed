@@ -16,11 +16,14 @@
 package cluster
 
 import (
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -368,9 +371,9 @@ func TestMergeSearchAggregations(t *testing.T) {
 				Size:         10,
 				Aggregations: map[string]meta.Aggregations{"agg": tt.def},
 			}
-			left := response(0, 0, 1)
+			left := response(1, 0, 1)
 			left.Aggregations = map[string]meta.AggregationResponse{"agg": tt.left}
-			right := response(0, 0, 1)
+			right := response(1, 0, 1)
 			right.Aggregations = map[string]meta.AggregationResponse{"agg": tt.right}
 
 			got := MergeSearch([]*meta.SearchResponse{left, right}, query)
@@ -420,4 +423,124 @@ func TestDecodeSearchResponseInvalid(t *testing.T) {
 
 func uintPtr(v uint64) *uint64 {
 	return &v
+}
+
+func TestMergeSearchMetricsIgnoreEmptyNodes(t *testing.T) {
+	query := &meta.ZedQuery{Size: 10, Aggregations: map[string]meta.Aggregations{
+		"lo": {Min: &meta.AggregationMetric{Field: "n"}},
+		"hi": {Max: &meta.AggregationMetric{Field: "n"}},
+		"errors": {
+			Filter: map[string]interface{}{},
+			Aggregations: map[string]meta.Aggregations{
+				"lo": {Min: &meta.AggregationMetric{Field: "n"}},
+			},
+		},
+	}}
+	full := response(5, 0, 1)
+	full.Aggregations = map[string]meta.AggregationResponse{
+		"lo": valueAgg(4), "hi": valueAgg(-3),
+		"errors": {DocCount: uintPtr(2), Aggregations: map[string]meta.AggregationResponse{"lo": valueAgg(7)}},
+	}
+	// an empty node renders min and max as 0
+	empty := response(0, 0, 1)
+	empty.Aggregations = map[string]meta.AggregationResponse{
+		"lo": valueAgg(0), "hi": valueAgg(0),
+		"errors": {DocCount: uintPtr(0), Aggregations: map[string]meta.AggregationResponse{"lo": valueAgg(0)}},
+	}
+
+	for _, order := range [][]*meta.SearchResponse{{full, empty}, {empty, full}} {
+		got := MergeSearch(order, query)
+		assert.InDelta(t, 4.0, got.Aggregations["lo"].Value, 0.0001)
+		assert.InDelta(t, -3.0, got.Aggregations["hi"].Value, 0.0001)
+		assert.InDelta(t, 7.0, got.Aggregations["errors"].Aggregations["lo"].Value, 0.0001)
+	}
+}
+
+// Averages inside buckets carry no _partial counters, they are weighted by
+// the bucket doc_count, whatever the response order.
+func TestMergeSearchBucketAvgWeighted(t *testing.T) {
+	query := &meta.ZedQuery{Size: 10, Aggregations: map[string]meta.Aggregations{
+		"errors": {
+			Filter:       map[string]interface{}{},
+			Aggregations: map[string]meta.Aggregations{"avg_n": {Avg: &meta.AggregationMetric{Field: "n"}}},
+		},
+	}}
+	node := func(docs uint64, avg float64) *meta.SearchResponse {
+		resp := response(int(docs), 0, 1)
+		resp.Aggregations = map[string]meta.AggregationResponse{
+			"errors": {DocCount: uintPtr(docs), Aggregations: map[string]meta.AggregationResponse{"avg_n": valueAgg(avg)}},
+		}
+		return resp
+	}
+	a, b, c := node(3, 10), node(1, 2), node(0, 0)
+	for _, order := range [][]*meta.SearchResponse{{a, b, c}, {a, c, b}, {b, a, c}, {b, c, a}, {c, a, b}, {c, b, a}} {
+		got := MergeSearch(order, query)
+		assert.InDelta(t, 8.0, got.Aggregations["errors"].Aggregations["avg_n"].Value, 0.0001)
+	}
+}
+
+func TestMergeSearchTermsOrderAndSize(t *testing.T) {
+	merge := func(def meta.Aggregations, left, right meta.AggregationResponse) []string {
+		query := &meta.ZedQuery{Size: 10, Aggregations: map[string]meta.Aggregations{"agg": def}}
+		l, r := response(1, 0, 1), response(1, 0, 1)
+		l.Aggregations = map[string]meta.AggregationResponse{"agg": left}
+		r.Aggregations = map[string]meta.AggregationResponse{"agg": right}
+		buckets, ok := MergeSearch([]*meta.SearchResponse{l, r}, query).Aggregations["agg"].Buckets.([]interface{})
+		require.True(t, ok)
+		keys := make([]string, 0, len(buckets))
+		for _, b := range buckets {
+			keys = append(keys, b.(map[string]interface{})["key"].(string))
+		}
+		return keys
+	}
+
+	left := bucketAgg(bucket("a", 1), bucket("b", 1))
+	right := bucketAgg(bucket("a", 1), bucket("c", 5))
+	assert.Equal(t, []string{"a", "b"}, merge(meta.Aggregations{Terms: &meta.AggregationsTerms{
+		Field: "f", Size: 2, Order: map[string]string{"_key": "asc"}}}, left, right))
+	assert.Equal(t, []string{"b", "a", "c"}, merge(meta.Aggregations{Terms: &meta.AggregationsTerms{
+		Field: "f", Size: 3, Order: map[string]string{"_count": "asc"}}}, left, right))
+
+	previous := config.Global.AggregationTermsSize
+	t.Cleanup(func() { config.Global.AggregationTermsSize = previous })
+	config.Global.AggregationTermsSize = 2
+	assert.Equal(t, []string{"c", "a"}, merge(meta.Aggregations{Terms: &meta.AggregationsTerms{Field: "f"}}, left, right))
+}
+
+func TestMergeSearchTimestampSortAndSizeZero(t *testing.T) {
+	at := func(id string, ts time.Time) meta.Hit { return meta.Hit{ID: id, Timestamp: ts} }
+	now := time.Now()
+	responses := []*meta.SearchResponse{
+		response(1, 0, 1, at("old", now.Add(-time.Hour))),
+		response(1, 0, 1, at("new", now)),
+	}
+	got := MergeSearch(responses, &meta.ZedQuery{Size: 10, Sort: []interface{}{map[string]interface{}{"@timestamp": "desc"}}})
+	assert.Equal(t, []string{"new", "old"}, hitIDs(got.Hits.Hits))
+
+	got = MergeSearch(responses, &meta.ZedQuery{From: 1, Size: 0})
+	assert.Empty(t, got.Hits.Hits)
+	assert.Equal(t, 2, got.Hits.Total.Value)
+}
+
+func TestDecodeSearchResponseSubAggNamedLikeField(t *testing.T) {
+	decode := func(max float64) *meta.SearchResponse {
+		data := []byte(`{"hits":{"total":{"value":2}},"aggregations":{"errors":{"doc_count":2,"max":{"value":` +
+			strconv.FormatFloat(max, 'f', -1, 64) + `}}}}`)
+		resp, err := DecodeSearchResponse(data)
+		require.NoError(t, err)
+		return resp
+	}
+	first := decode(7)
+	require.Contains(t, first.Aggregations["errors"].Aggregations, "max")
+	assert.InDelta(t, 7.0, first.Aggregations["errors"].Aggregations["max"].Value, 0.0001)
+
+	query := &meta.ZedQuery{Size: 10, Aggregations: map[string]meta.Aggregations{
+		"errors": {
+			Filter:       map[string]interface{}{},
+			Aggregations: map[string]meta.Aggregations{"max": {Max: &meta.AggregationMetric{Field: "n"}}},
+		},
+	}}
+	got := MergeSearch([]*meta.SearchResponse{first, decode(9)}, query)
+	assert.InDelta(t, 9.0, got.Aggregations["errors"].Aggregations["max"].Value, 0.0001)
+	assert.Equal(t, uint64(4), *got.Aggregations["errors"].DocCount)
 }

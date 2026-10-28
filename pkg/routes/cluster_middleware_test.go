@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -51,6 +52,13 @@ type clusterTestEnv struct {
 // setupClusterEnv makes node-a own localIndex and node-b own remoteIndex.
 func setupClusterEnv(t *testing.T) *clusterTestEnv {
 	t.Helper()
+	return setupClusterEnvWith(t, 15*time.Second, nil)
+}
+
+// setupClusterEnvWith is setupClusterEnv with a heartbeat ttl and an optional
+// wrapper around the store node-a runs on.
+func setupClusterEnvWith(t *testing.T, ttl time.Duration, wrap func(cluster.Store) cluster.Store) *clusterTestEnv {
+	t.Helper()
 	ctx := context.Background()
 
 	env := &clusterTestEnv{requests: make(chan *http.Request, 4)}
@@ -68,16 +76,20 @@ func setupClusterEnv(t *testing.T) *clusterTestEnv {
 	config.Global.Cluster.NodeID = "node-a"
 	config.Global.Cluster.AdvertiseAddr = "http://127.0.0.1:0"
 	config.Global.Cluster.Partitions = testPartitions
-	config.Global.Cluster.HeartbeatTTL = 15 * time.Second
+	config.Global.Cluster.HeartbeatTTL = ttl
 	config.Global.Cluster.HeartbeatInterval = 100 * time.Millisecond
 
 	env.store = cluster.NewMemoryStore()
+	var store cluster.Store = env.store
+	if wrap != nil {
+		store = wrap(store)
+	}
 	// a foreign leader keeps node-a's coordinator from rebalancing the
 	// partitions the tests assign by hand
 	_, won, err := env.store.Create(ctx, cluster.KeyPrefix()+"leader", []byte("node-z"), cluster.NoLease)
 	require.NoError(t, err)
 	require.True(t, won)
-	require.NoError(t, cluster.StartWith(ctx, env.store))
+	require.NoError(t, cluster.StartWith(ctx, store))
 	t.Cleanup(func() {
 		cluster.Stop()
 		config.Global.Cluster = previous
@@ -204,6 +216,43 @@ func TestClusterRouteRejectsWriteAfterHandoff(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	assert.Equal(t, "partition moved", body["error"])
 	assert.Equal(t, "node-b", body["owner"])
+}
+
+// failingKeepAlive fails lease renewals once fail is set.
+type failingKeepAlive struct {
+	cluster.Store
+	fail atomic.Bool
+}
+
+func (s *failingKeepAlive) KeepAlive(ctx context.Context, id cluster.LeaseID) error {
+	if s.fail.Load() {
+		return context.DeadlineExceeded
+	}
+	return s.Store.KeepAlive(ctx, id)
+}
+
+// A node whose lease may have expired must reject writes before they reach
+// the handler (and the WAL), its partitions may be owned elsewhere.
+func TestClusterRouteRejectsWriteWhenNotLive(t *testing.T) {
+	var flaky *failingKeepAlive
+	ttl := time.Second
+	env := setupClusterEnvWith(t, ttl, func(store cluster.Store) cluster.Store {
+		flaky = &failingKeepAlive{Store: store}
+		return flaky
+	})
+	called := false
+	env.engine.POST("/api/:target/_write", func(c zhttp.Context) {
+		called = true
+		c.JSON(http.StatusCreated, zhttp.H{"written": true})
+	})
+
+	flaky.fail.Store(true)
+	time.Sleep(ttl + 100*time.Millisecond)
+
+	w := env.do(httptest.NewRequest(http.MethodPost, "/api/"+localIndex+"/_write", nil))
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.False(t, called, "the write must not run")
+	assert.False(t, cluster.IsLocalOwner(localIndex))
 }
 
 func TestClusterRouteWriteKeepsEpoch(t *testing.T) {

@@ -142,11 +142,12 @@ func (c *HTTPContext) ServeHTTP(h http.Handler) { h.ServeHTTP(c.writer, c.Reques
 func (c *HTTPContext) Next() { c.next(c) }
 
 func (c *HTTPContext) NextBuffered() func() error {
-	out, status, size := c.writer.ResponseWriter, c.writer.status, c.writer.size
-	held := &bufferedWriter{ResponseWriter: out}
+	saved := *c.writer
+	held := &bufferedWriter{ResponseWriter: saved.ResponseWriter}
 	c.writer.ResponseWriter = held
+	// restore on panic too, so the recovery's 500 reaches the client
+	defer func() { *c.writer = saved }()
 	c.Next()
-	c.writer.ResponseWriter, c.writer.status, c.writer.size = out, status, size
 	return func() error { return held.flush(c.writer) }
 }
 
@@ -163,16 +164,22 @@ func (c *HTTPContext) AbortWithStatusJSON(code int, obj interface{}) {
 // responseWriter records the status and size of a response.
 type responseWriter struct {
 	http.ResponseWriter
-	status int
-	size   int
+	status  int
+	size    int
+	written bool
 }
 
+// WriteHeader records code unless the body was written: the status is sent
+// with the first write, a later one cannot change it.
 func (w *responseWriter) WriteHeader(code int) {
-	w.status = code
+	if !w.written {
+		w.status = code
+	}
 	w.ResponseWriter.WriteHeader(code)
 }
 
 func (w *responseWriter) Write(data []byte) (int, error) {
+	w.written = true
 	n, err := w.ResponseWriter.Write(data)
 	w.size += n
 	return n, err

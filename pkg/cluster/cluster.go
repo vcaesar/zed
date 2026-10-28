@@ -17,6 +17,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"sync"
@@ -36,6 +37,10 @@ type NodeStatus struct {
 	IsLeader   bool   `json:"is_leader"`
 }
 
+// ErrNotLive is returned when the local membership lease may have expired,
+// so the ownership map this node sees can be stale.
+var ErrNotLive = errors.New("cluster: membership lease may have expired")
+
 // node holds everything a running cluster member needs. Nil when
 // clustering is disabled, which is the single node build.
 type node struct {
@@ -53,6 +58,8 @@ type node struct {
 var (
 	mu      sync.RWMutex
 	current *node
+	// lifecycle serializes Start and Stop, a join is too slow to hold mu
+	lifecycle sync.Mutex
 )
 
 // Enabled reports whether this process participates in a cluster.
@@ -74,11 +81,16 @@ func Start(ctx context.Context) error {
 	if !config.Global.Cluster.Enable {
 		return nil
 	}
+	lifecycle.Lock()
+	defer lifecycle.Unlock()
+	if Enabled() {
+		return nil // a second store would never be closed
+	}
 	store, err := NewEtcdStore()
 	if err != nil {
 		return err
 	}
-	if err := start(ctx, store); err != nil {
+	if err := startLocked(ctx, store); err != nil {
 		if closeErr := store.Close(); closeErr != nil {
 			log.Error().Err(closeErr).Msg("cluster: close store")
 		}
@@ -90,17 +102,16 @@ func Start(ctx context.Context) error {
 // StartWith joins the cluster using a caller provided store. Tests use it
 // with a MemoryStore, production goes through Start.
 func StartWith(ctx context.Context, store Store) error {
-	return start(ctx, store)
+	lifecycle.Lock()
+	defer lifecycle.Unlock()
+	return startLocked(ctx, store)
 }
 
-// start joins the cluster using store, tests call it with a MemoryStore.
-func start(ctx context.Context, store Store) error {
-	mu.Lock()
-	if current != nil {
-		mu.Unlock()
+// startLocked joins the cluster using store, callers hold lifecycle.
+func startLocked(ctx context.Context, store Store) error {
+	if Enabled() {
 		return nil
 	}
-	mu.Unlock()
 
 	prefix := keyPrefix()
 	ttl, interval := heartbeat()
@@ -122,6 +133,10 @@ func start(ctx context.Context, store Store) error {
 		return err
 	}
 	if err := fence.Refresh(runCtx); err != nil {
+		// do not stay registered: the leader would hand partitions to us
+		if leaveErr := membership.Leave(runCtx); leaveErr != nil {
+			log.Error().Err(leaveErr).Msg("cluster: leave after failed start")
+		}
 		cancel()
 		return err
 	}
@@ -156,6 +171,8 @@ func start(ctx context.Context, store Store) error {
 // Stop leaves the cluster: resign leadership, drop the membership record so
 // peers stop routing here, then close the store.
 func Stop() {
+	lifecycle.Lock()
+	defer lifecycle.Unlock()
 	mu.Lock()
 	n := current
 	current = nil
@@ -277,13 +294,15 @@ func Owner(indexName string) (string, int64, bool) {
 	return n.fence.Owner(indexName)
 }
 
-// IsLocalOwner reports whether this node may write indexName.
+// IsLocalOwner reports whether this node may write indexName. A node whose
+// membership lease may have expired owns nothing: its partitions may have
+// been handed to another node it cannot hear from.
 func IsLocalOwner(indexName string) bool {
 	n := get()
 	if n == nil {
 		return true
 	}
-	return n.fence.IsLocalOwner(indexName)
+	return n.membership.Live() && n.fence.IsLocalOwner(indexName)
 }
 
 // Replicas returns the nodes keeping a warm read replica of indexName,
@@ -313,6 +332,9 @@ func CheckEpoch(indexName string, epoch int64) error {
 	n := get()
 	if n == nil {
 		return nil
+	}
+	if !n.membership.Live() {
+		return ErrNotLive
 	}
 	return n.fence.CheckEpoch(indexName, epoch)
 }

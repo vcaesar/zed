@@ -46,6 +46,7 @@ type Membership struct {
 
 	mu      sync.Mutex
 	lease   LeaseID
+	renewed time.Time       // start of the last successful grant or renewal
 	members map[string]Node // cache of the member list, kept current by Run
 }
 
@@ -78,21 +79,34 @@ func (m *Membership) Lease() LeaseID {
 
 // Join grants a lease and registers the local node under it.
 func (m *Membership) Join(ctx context.Context) error {
-	lease, err := m.store.Grant(ctx, m.ttl)
-	if err != nil {
-		return err
-	}
 	value, err := json.Marshal(m.local)
 	if err != nil {
 		return err
 	}
+	start := time.Now()
+	lease, err := m.store.Grant(ctx, m.ttl)
+	if err != nil {
+		return err
+	}
 	if _, err = m.store.Put(ctx, m.nodeKey(m.local.ID), value, lease); err != nil {
+		if revokeErr := m.store.Revoke(context.WithoutCancel(ctx), lease); revokeErr != nil {
+			log.Warn().Err(revokeErr).Msg("cluster: revoke unused membership lease")
+		}
 		return err
 	}
 	m.mu.Lock()
-	m.lease = lease
+	m.lease, m.renewed = lease, start
 	m.mu.Unlock()
 	return nil
+}
+
+// Live reports whether the local node record cannot have expired yet: once
+// renewals keep failing past the ttl, the partitions may already be owned by
+// another node.
+func (m *Membership) Live() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.lease != NoLease && time.Since(m.renewed) < m.ttl
 }
 
 // KeepAlive refreshes the lease once. A lease that the store no longer knows
@@ -103,7 +117,16 @@ func (m *Membership) KeepAlive(ctx context.Context) error {
 	if lease == NoLease {
 		return m.Join(ctx)
 	}
+	start := time.Now()
 	err := m.store.KeepAlive(ctx, lease)
+	if err == nil {
+		m.mu.Lock()
+		if m.lease == lease {
+			m.renewed = start
+		}
+		m.mu.Unlock()
+		return nil
+	}
 	if errors.Is(err, errors.ErrKeyNotFound) {
 		log.Warn().Str("node", m.local.ID).Msg("cluster: lease expired, re-joining")
 		return m.Join(ctx)
@@ -111,16 +134,14 @@ func (m *Membership) KeepAlive(ctx context.Context) error {
 	return err
 }
 
-// Leave revokes the lease and removes the node record.
+// Leave revokes the lease, which removes the node record. The key is not
+// deleted by name: a newer process with the same id may own it by now.
 func (m *Membership) Leave(ctx context.Context) error {
 	m.mu.Lock()
 	lease := m.lease
 	m.lease = NoLease
 	m.mu.Unlock()
 
-	if err := m.store.Delete(ctx, m.nodeKey(m.local.ID)); err != nil {
-		return err
-	}
 	if lease == NoLease {
 		return nil
 	}
