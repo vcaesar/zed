@@ -42,6 +42,11 @@ type Index struct {
 	// on every node at once and reject every write. Read without the index lock.
 	readOnly atomic.Bool
 	lock     sync.RWMutex
+	// writes is held shared by every document write and exclusively by
+	// Flush, so a flush never closes the WAL under a write.
+	writes sync.RWMutex
+	// retired is set on a copy replaced by InstallSnapshot
+	retired atomic.Bool
 }
 
 func (index *Index) MarshalJSON() ([]byte, error) {

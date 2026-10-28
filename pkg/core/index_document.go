@@ -27,6 +27,8 @@ import (
 
 // CreateDocument inserts or updates a document in the zed index
 func (index *Index) CreateDocument(docID string, doc map[string]interface{}, update bool) error {
+	index.writes.RLock()
+	defer index.writes.RUnlock()
 	if err := index.checkWritable(); err != nil {
 		return err
 	}
@@ -81,6 +83,8 @@ func (index *Index) GetDocument(docID string) (*meta.Hit, error) {
 
 // UpdateDocument updates a document in the zed index
 func (index *Index) UpdateDocument(docID string, doc map[string]interface{}, insert bool) error {
+	index.writes.RLock()
+	defer index.writes.RUnlock()
 	if err := index.checkWritable(); err != nil {
 		return err
 	}
@@ -110,6 +114,8 @@ func (index *Index) UpdateDocument(docID string, doc map[string]interface{}, ins
 
 // DeleteDocument deletes a document in the zed index
 func (index *Index) DeleteDocument(docID string) error {
+	index.writes.RLock()
+	defer index.writes.RUnlock()
 	if err := index.checkWritable(); err != nil {
 		return err
 	}

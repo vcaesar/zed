@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
 
 	"github.com/vcaesar/zedsearch/pkg/config"
@@ -203,6 +204,21 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 					return nil, err
 				}
 				newProp.IndexOptions = opts
+				if m, ok := v.(map[string]interface{}); ok && k == "method" && m["space_type"] != nil {
+					if newProp.Similarity, err = parseVectorSimilarity(field, m["space_type"]); err != nil {
+						return nil, err
+					}
+				}
+			case "similarity", "space_type":
+				// on other types similarity names a text scoring model, ignored
+				if newProp.Type != "vector" {
+					continue
+				}
+				metric, err := parseVectorSimilarity(field, v)
+				if err != nil {
+					return nil, err
+				}
+				newProp.Similarity = metric
 			case "store":
 				newProp.Store = v.(bool)
 			case "sortable":
@@ -226,8 +242,8 @@ func Request(analyzers map[string]*analysis.Analyzer, data map[string]interface{
 			newProp.Sortable = false
 			newProp.Aggregatable = false
 			newProp.Highlightable = false
-		} else if newProp.Dims != 0 || newProp.IndexOptions != nil {
-			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims and index_options are only valid for type [vector]", field))
+		} else if newProp.Dims != 0 || newProp.IndexOptions != nil || newProp.Similarity != "" {
+			return nil, errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] dims, index_options and space_type are only valid for type [vector]", field))
 		}
 
 		if newProp.Type != "" {
@@ -288,6 +304,23 @@ func setJoinFields(mappings *meta.Mappings) {
 			mappings.SetProperty(field, meta.NewProperty("keyword"))
 		}
 	}
+}
+
+// parseVectorSimilarity parses the Elasticsearch similarity or OpenSearch
+// space_type of a vector field.
+func parseVectorSimilarity(field string, v interface{}) (riot.Metric, error) {
+	fail := func(msg string) error {
+		return errors.New(errors.ErrorTypeParsingException, fmt.Sprintf("[mappings] properties [%s] %s", field, msg))
+	}
+	name, err := zutils.ToString(v)
+	if err != nil {
+		return "", fail("similarity must be a string")
+	}
+	metric, err := meta.ParseVectorMetric(name)
+	if err != nil {
+		return "", fail(err.Error())
+	}
+	return metric, nil
 }
 
 // vectorIndexLimits bounds HNSW parameters like Elasticsearch does.

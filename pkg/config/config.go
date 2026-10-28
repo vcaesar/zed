@@ -93,6 +93,17 @@ type cluster struct {
 	// Replicas is the number of extra nodes that keep a warm read-only copy of
 	// each partition's object-storage indexes for failover reads.
 	Replicas int `toml:"zed_cluster_replicas"`
+	// Replication is how disk indexes reach their replicas: "document"
+	// (replicas index every operation), "segment" (replicas copy the owner's
+	// segments) or "none". Object-storage indexes always use the remote
+	// translog.
+	Replication string `toml:"zed_cluster_replication"`
+	// ReplicationInterval paces segment checkpoints, remote translog flushes
+	// and the replica catch-up loop.
+	ReplicationInterval time.Duration `toml:"zed_cluster_replication_interval"`
+	// Secret authenticates node to node replication calls, required when
+	// replication is on.
+	Secret string `toml:"zed_cluster_secret"`
 }
 
 type tier struct {

@@ -87,6 +87,10 @@ func TestNestedJoinSearch(t *testing.T) {
 		for docID := range docs {
 			waitForDocument(t, nestedIndexName, docID)
 		}
+		// hidden nested documents are separate WAL entries, applied after the root
+		for _, docID := range []string{"q1%23comments%230", "q1%23comments%231", "q2%23comments%230"} {
+			waitForDocument(t, nestedIndexName, docID)
+		}
 	})
 
 	t.Run("POST /es/:target/_search", func(t *testing.T) {

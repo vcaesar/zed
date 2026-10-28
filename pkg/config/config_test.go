@@ -175,11 +175,13 @@ func TestTOMLDefaults(t *testing.T) {
 	assert.True(t, c.ZedSwaggerEnable)
 	assert.Equal(t, "debug", c.LogLevel)
 	assert.Equal(t, cluster{
-		Name:              "ZedCluster",
-		Partitions:        256,
-		HeartbeatInterval: 5 * time.Second,
-		HeartbeatTTL:      15 * time.Second,
-		Replicas:          1,
+		Name:                "ZedCluster",
+		Partitions:          256,
+		HeartbeatInterval:   5 * time.Second,
+		HeartbeatTTL:        15 * time.Second,
+		Replicas:            1,
+		Replication:         "document",
+		ReplicationInterval: 10 * time.Second,
 	}, c.Cluster)
 	assert.Equal(t, tier{CheckInterval: 10 * time.Minute, ColdStorageType: "s3"}, c.Tier)
 	assert.Equal(t, shard{GoroutineNum: 3, Num: 3, MaxSize: 1073741824}, c.Shard)

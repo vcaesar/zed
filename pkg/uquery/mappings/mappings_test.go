@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/vcaesar/riot"
 
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
@@ -112,6 +113,40 @@ func TestRequest_VectorIndexOptions(t *testing.T) {
 			if tt.want != nil {
 				assert.NotSame(t, p.IndexOptions, clone.IndexOptions)
 			}
+		})
+	}
+}
+
+func TestRequest_VectorSimilarity(t *testing.T) {
+	tests := []struct {
+		name    string
+		props   string
+		want    riot.Metric
+		wantErr bool
+	}{
+		{name: "default", props: `{"emb": {"type": "dense_vector", "dims": 3}}`},
+		{name: "es l2_norm", props: `{"emb": {"type": "dense_vector", "similarity": "l2_norm"}}`, want: riot.L2},
+		{name: "es max_inner_product", props: `{"emb": {"type": "dense_vector", "similarity": "max_inner_product"}}`, want: riot.DotProduct},
+		{name: "opensearch space_type", props: `{"emb": {"type": "knn_vector", "space_type": "innerproduct"}}`, want: riot.DotProduct},
+		{name: "opensearch method space_type", props: `{"emb": {"type": "knn_vector", "method": {"name": "hnsw", "space_type": "l2"}}}`, want: riot.L2},
+		{name: "text similarity ignored", props: `{"emb": {"type": "text", "similarity": "BM25"}}`},
+		{name: "unsupported", props: `{"emb": {"type": "dense_vector", "similarity": "hamming"}}`, wantErr: true},
+		{name: "not string", props: `{"emb": {"type": "dense_vector", "similarity": 1}}`, wantErr: true},
+		{name: "bad method space_type", props: `{"emb": {"type": "knn_vector", "method": {"name": "hnsw", "space_type": "l1"}}}`, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var props map[string]interface{}
+			assert.NoError(t, json.Unmarshal([]byte(tt.props), &props))
+			m, err := Request(nil, map[string]interface{}{"properties": props})
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			p, _ := m.GetProperty("emb")
+			assert.Equal(t, tt.want, p.Similarity)
+			assert.Equal(t, tt.want, p.DeepClone().Similarity)
 		})
 	}
 }

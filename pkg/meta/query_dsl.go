@@ -21,6 +21,7 @@ import "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 // ZedQuery is the query object for the zed index. compatible ES Query DSL
 type ZedQuery struct {
 	Query          interface{}             `json:"query"`
+	Knn            interface{}             `json:"knn,omitempty"` // top-level knn: one object or an array, ORed with query
 	Aggregations   map[string]Aggregations `json:"aggs"`
 	Highlight      *Highlight              `json:"highlight"`
 	Fields         interface{}             `json:"fields"`  // ["field1", "field2.*", {"field": "fieldName", "format": "epoch_millis"}]

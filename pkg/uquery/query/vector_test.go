@@ -81,7 +81,7 @@ func TestKnnQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := KnnQuery(geoQuery(t, tt.query), vectorMappings())
+			got, err := KnnQuery(geoQuery(t, tt.query), vectorMappings(), nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -101,17 +101,17 @@ func TestKnnQuery(t *testing.T) {
 	}
 
 	t.Run("mapping index_options enable ann", func(t *testing.T) {
-		got, err := KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3}`), vectorMappings())
+		got, err := KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3}`), vectorMappings(), nil)
 		assert.NoError(t, err)
 		assert.Equal(t, &riot.ANNParams{M: 8, EfConstruction: 64}, got.(*riot.KNNQuery).ANN())
 
-		got, err = KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3, "num_candidates": 40}`), vectorMappings())
+		got, err = KnnQuery(geoQuery(t, `{"field": "hnsw", "query_vector": [1, 2, 3], "k": 3, "num_candidates": 40}`), vectorMappings(), nil)
 		assert.NoError(t, err)
 		assert.Equal(t, &riot.ANNParams{M: 8, EfConstruction: 64, EfSearch: 40}, got.(*riot.KNNQuery).ANN())
 	})
 
 	t.Run("boost", func(t *testing.T) {
-		got, err := KnnQuery(geoQuery(t, `{"field": "embedding", "query_vector": [1, 2, 3], "boost": 2}`), vectorMappings())
+		got, err := KnnQuery(geoQuery(t, `{"field": "embedding", "query_vector": [1, 2, 3], "boost": 2}`), vectorMappings(), nil)
 		assert.NoError(t, err)
 		assert.Equal(t, 2.0, got.(*riot.KNNQuery).Boost())
 	})
@@ -127,4 +127,47 @@ func TestKnnQuery(t *testing.T) {
 		_, ok = got.(*riot.BooleanQuery)
 		assert.True(t, ok)
 	})
+}
+
+func TestKnnQuery_Extensions(t *testing.T) {
+	m := vectorMappings()
+	l2 := meta.NewProperty("vector")
+	l2.Similarity = riot.L2
+	m.SetProperty("l2", l2)
+
+	t.Run("mapping similarity is the default metric", func(t *testing.T) {
+		got, err := KnnQuery(geoQuery(t, `{"field": "l2", "query_vector": [1, 2]}`), m, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, riot.L2, got.(*riot.KNNQuery).Metric())
+
+		got, err = KnnQuery(geoQuery(t, `{"field": "l2", "query_vector": [1, 2], "similarity": "cosine"}`), m, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, riot.Cosine, got.(*riot.KNNQuery).Metric())
+	})
+
+	t.Run("filter and minimum similarity wrap the query", func(t *testing.T) {
+		got, err := KnnQuery(geoQuery(t, `{"field": "embedding", "query_vector": [1, 2, 3], "filter": {"term": {"name": "x"}}, "similarity": 0.5}`), m, nil)
+		assert.NoError(t, err)
+		q, ok := got.(*knnQuery)
+		assert.True(t, ok)
+		assert.NotNil(t, q.filter)
+		assert.Equal(t, 0.5, *q.similarity)
+
+		got, err = KnnQuery(geoQuery(t, `{"embedding": {"vector": [1, 2, 3], "filter": [{"term": {"name": "x"}}, {"match_all": {}}]}}`), m, nil)
+		assert.NoError(t, err)
+		_, ok = got.(*knnQuery).filter.(*riot.BooleanQuery)
+		assert.True(t, ok)
+	})
+
+	for name, query := range map[string]string{
+		"bad filter":         `{"field": "embedding", "query_vector": [1, 2, 3], "filter": {"nope": {}}}`,
+		"bad filter element": `{"field": "embedding", "query_vector": [1, 2, 3], "filter": [1]}`,
+		"bad similarity":     `{"field": "embedding", "query_vector": [1, 2, 3], "similarity": true}`,
+		"k too large":        `{"field": "embedding", "query_vector": [1, 2, 3], "k": 10001}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := KnnQuery(geoQuery(t, query), m, nil)
+			assert.Error(t, err)
+		})
+	}
 }

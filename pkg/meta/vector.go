@@ -18,9 +18,29 @@ package meta
 import (
 	"fmt"
 	"math"
+	"strings"
+
+	"github.com/vcaesar/riot"
 
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
+
+// vectorMetrics maps Elasticsearch/OpenSearch similarity names to riot metrics.
+var vectorMetrics = map[string]riot.Metric{
+	"cosine": riot.Cosine, "cosinesimil": riot.Cosine,
+	"dot_product": riot.DotProduct, "dot": riot.DotProduct, "innerproduct": riot.DotProduct, "max_inner_product": riot.DotProduct,
+	"l2_norm": riot.L2, "l2": riot.L2, "euclidean": riot.L2,
+}
+
+// ParseVectorMetric resolves an Elasticsearch similarity or OpenSearch
+// space_type name to a riot metric.
+func ParseVectorMetric(name string) (riot.Metric, error) {
+	m, ok := vectorMetrics[strings.ToLower(name)]
+	if !ok {
+		return "", fmt.Errorf("unsupported similarity %q, expected cosine, dot_product or l2_norm", name)
+	}
+	return m, nil
+}
 
 // ParseVector accepts a vector field value as a numeric array and checks it
 // against dims when dims > 0. All values must be finite.

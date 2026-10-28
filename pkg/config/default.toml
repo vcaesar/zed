@@ -44,6 +44,9 @@ zed_cluster_partitions = 256
 zed_cluster_heartbeat_interval = 5000000000
 zed_cluster_heartbeat_ttl = 15000000000
 zed_cluster_replicas = 1
+zed_cluster_replication = "document"
+zed_cluster_replication_interval = 10000000000
+zed_cluster_secret = ""
 
 [Tier]
 zed_tier_enable = false

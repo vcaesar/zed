@@ -56,6 +56,8 @@ type IndexShard struct {
 	wal    *wal.Log
 	lock   sync.RWMutex
 	close  chan struct{}
+	// hookMu keeps WALHook calls in WAL order
+	hookMu sync.Mutex
 }
 
 // IndexSecondShard second layer shard by auto increate shards for index.
@@ -152,7 +154,7 @@ func (s *IndexShard) NewShard() error {
 
 // GetWriter return the newest shard writer or special shard writer
 func (s *IndexShard) GetWriter(shardID ...int64) (*riot.Writer, error) {
-	if s.root.IsCold() {
+	if s.root.IsCold() || s.root.retired.Load() {
 		return nil, ErrIndexReadOnly
 	}
 	var id int64

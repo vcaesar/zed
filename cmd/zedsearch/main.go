@@ -34,6 +34,7 @@ import (
 
 	"github.com/vcaesar/zedsearch"
 	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/cluster/replication"
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
@@ -103,6 +104,11 @@ func main() {
 	if err := cluster.Start(context.Background()); err != nil {
 		log.Fatal().Err(err).Msg("Cluster start")
 	}
+	// Keep every index on more than one node: document or segment
+	// replication for disk indexes, the remote translog for object storage.
+	if err := replication.Start(context.Background()); err != nil {
+		log.Fatal().Err(err).Msg("Replication start")
+	}
 
 	// Move indexes between hot, warm and cold by their lifecycle.
 	// No-op unless tiering is enabled.
@@ -126,7 +132,8 @@ func main() {
 		}
 
 		log.Info().Msg("Index closing...")
-		// leave the cluster, peers stop routing here
+		// stop replicating, then leave the cluster so peers stop routing here
+		replication.Stop()
 		cluster.Stop()
 		// close indexes
 		err := core.ZED_INDEX_LIST.Close()

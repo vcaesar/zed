@@ -51,6 +51,15 @@ func (t *IndexShardWALList) Remove(name string) {
 	t.lock.Unlock()
 }
 
+// removeClosed drops name unless its shard was opened again.
+func (t *IndexShardWALList) removeClosed(name string) {
+	t.lock.Lock()
+	if shard, ok := t.Shards[name]; ok && atomic.LoadUint64(&shard.open) == 0 {
+		delete(t.Shards, name)
+	}
+	t.lock.Unlock()
+}
+
 func (t *IndexShardWALList) List() []*IndexShard {
 	t.lock.RLock()
 	shards := make([]*IndexShard, 0, len(t.Shards))
@@ -80,6 +89,10 @@ func (t *IndexShardWALList) ConsumeWAL() {
 			shard := shard
 			indexes[shard.GetIndexName()] = shard.root
 			eg.Go(func() error {
+				if atomic.LoadUint64(&shard.open) == 0 {
+					shardClosed <- shard.GetShardName()
+					return nil
+				}
 				select {
 				case <-shard.close:
 					shardClosed <- shard.GetShardName()
@@ -98,9 +111,9 @@ func (t *IndexShardWALList) ConsumeWAL() {
 		close(shardClosed)
 		close(indexUpdated)
 
-		// check shard closed
+		// check shard closed; a shard reopened meanwhile stays
 		for name := range shardClosed {
-			t.Remove(name)
+			t.removeClosed(name)
 		}
 
 		// update index stats

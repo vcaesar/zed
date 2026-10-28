@@ -45,13 +45,31 @@ func (s *IndexShard) writeWAL(data []byte) error {
 	if s.wal == nil {
 		return ErrIndexReadOnly
 	}
-	return s.wal.Write(data)
+	if guard := WriteGuard; guard != nil {
+		if err := guard(s.GetIndexName()); err != nil {
+			return err
+		}
+	}
+	hook := WALHook
+	if hook == nil {
+		return s.wal.Write(data)
+	}
+	s.hookMu.Lock()
+	defer s.hookMu.Unlock()
+	if err := s.wal.Write(data); err != nil {
+		return err
+	}
+	hook(s.GetIndexName(), s.GetID(), data)
+	return nil
 }
 
 // OpenWAL open WAL for index
 func (s *IndexShard) OpenWAL() error {
 	if atomic.LoadUint64(&s.open) == 1 {
 		return nil
+	}
+	if s.root.retired.Load() {
+		return ErrIndexReadOnly
 	}
 
 	// open wal
@@ -153,6 +171,13 @@ func (s *IndexShard) Rollback() error {
 
 // ConsumeWAL consume WAL for index returns if there is any data updated
 func (s *IndexShard) ConsumeWAL() bool {
+	// a flush or snapshot install may close the shard between ticks
+	s.lock.RLock()
+	closed := s.wal == nil
+	s.lock.RUnlock()
+	if closed {
+		return false
+	}
 	if err := s.wal.Sync(); err != nil {
 		log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.Sync()")
 	}
