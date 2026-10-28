@@ -1,5 +1,5 @@
 {
-  "name": "zincsearch-console",
+  "name": "zedsearch-console",
   "private": true,
   "version": "0.10.0",
   "type": "module",
@@ -14,31 +14,31 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "axios": "1.20.0",
+    "axios": "1.21.0",
     "js-cookie": "^3.0.8",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router": "^8.3.1"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^8.5.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.7",
+    "@testing-library/user-event": "^14.6.8",
     "@types/js-cookie": "3.0.6",
     "@types/node": "latest",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/swagger-ui-dist": "^3.30.6",
-    "@vitejs/plugin-react": "^6.0.0",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "immutable": "^5.1.9",
-    "jsdom": "^30.0.1",
-    "postcss": "^8.5.28",
-    "swagger-ui-dist": "^5.32.15",
+    "jsdom": "^30.1.3",
+    "postcss": "^8.5.32",
+    "swagger-ui-dist": "^5.34.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0",
-    "vitest": "^5.0.0"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   }
 }
