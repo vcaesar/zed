@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"testing/iotest"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
@@ -232,9 +233,35 @@ func TestObjectDirectoryCache(t *testing.T) {
 		bd := NewObjectDirectory(store, cache, "blocked")
 		assert.NoError(t, bd.Persist(index.ItemKindSegment, 1, bytesWriterTo("mem"), nil))
 		data, closer, err := bd.Load(index.ItemKindSegment, 1)
-		assert.NoError(t, err)
-		assert.Equal(t, "mem", readData(t, data, closer))
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mem", readData(t, data, closer))
+		}
 	})
+
+	t.Run("cache not-exist error is not a missing object", func(t *testing.T) {
+		// mimics Windows, where a broken cache path reports ERROR_PATH_NOT_FOUND
+		assert.NoError(t, store.Put(context.Background(), "idx/000000000005.seg", []byte("five")))
+		nd := NewObjectDirectory(&notExistBodyStore{MemoryObjectStore: store}, cache, "idx")
+		data, closer, err := nd.Load(index.ItemKindSegment, 5)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "five", readData(t, data, closer))
+		}
+	})
+}
+
+// notExistBodyStore fails reading the first fetched body with fs.ErrNotExist.
+type notExistBodyStore struct {
+	*MemoryObjectStore
+	failed bool
+}
+
+func (s *notExistBodyStore) Get(ctx context.Context, key string) (io.ReadCloser, error) {
+	rc, err := s.MemoryObjectStore.Get(ctx, key)
+	if err != nil || s.failed {
+		return rc, err
+	}
+	s.failed = true
+	return io.NopCloser(iotest.ErrReader(fs.ErrNotExist)), rc.Close()
 }
 
 // TestObjectDirectoryRiot writes and reads a real riot index through the directory.
