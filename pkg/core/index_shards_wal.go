@@ -195,18 +195,17 @@ func (s *IndexShard) ConsumeWAL() bool {
 			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.entry.Unmarshal()")
 			return false
 		}
+		if docs.InOtherShard(doc) {
+			// the document went to another second layer shard: apply what came
+			// before first, the merge must not reorder its actions
+			if !s.writeWALDocs(docs, batch, startID, minID-1) {
+				return false
+			}
+			startID = minID
+		}
 		docs.AddDocument(doc)
 		if docs.MaxShardLen() >= config.Global.BatchSize {
-			if err = s.writeRedoLog(RedoActionRead, startID, minID); err != nil {
-				log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "read").Msg("consume wal.redolog.Write()")
-				return false
-			}
-			if err = docs.WriteTo(s, batch, false); err != nil {
-				log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.docs.WriteTo()")
-				return false
-			}
-			if err = s.writeRedoLog(RedoActionWrite, startID, minID); err != nil {
-				log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "write").Msg("consume wal.redolog.Write()")
+			if !s.writeWALDocs(docs, batch, startID, minID) {
 				return false
 			}
 			// Reset startID to nextID
@@ -217,19 +216,8 @@ func (s *IndexShard) ConsumeWAL() bool {
 	minID-- // need reduce one, because the next loop add one
 
 	// check if there is any docs to write
-	if docs.MaxShardLen() > 0 {
-		if err = s.writeRedoLog(RedoActionRead, startID, minID); err != nil {
-			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "read").Msg("consume wal.redolog.Write()")
-			return false
-		}
-		if err := docs.WriteTo(s, batch, false); err != nil {
-			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.docs.WriteTo()")
-			return false
-		}
-		if err = s.writeRedoLog(RedoActionWrite, startID, minID); err != nil {
-			log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "write").Msg("consume wal.redolog.Write()")
-			return false
-		}
+	if docs.MaxShardLen() > 0 && !s.writeWALDocs(docs, batch, startID, minID) {
+		return false
 	}
 	log.Debug().Str("index", s.GetIndexName()).Str("shard", s.GetID()).Uint64("minID", minID).Uint64("maxID", maxID).Msg("consume wal end")
 
@@ -247,6 +235,24 @@ func (s *IndexShard) ConsumeWAL() bool {
 
 	//  update metadata
 	s.root.UpdateMetadataByShard(s.GetID())
+	return true
+}
+
+// writeWALDocs applies docs read from WAL entries startID..endID to the
+// index, tracked in the redo log.
+func (s *IndexShard) writeWALDocs(docs walMergeDocs, batch *blugeindex.Batch, startID, endID uint64) bool {
+	if err := s.writeRedoLog(RedoActionRead, startID, endID); err != nil {
+		log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "read").Msg("consume wal.redolog.Write()")
+		return false
+	}
+	if err := docs.WriteTo(s, batch, false); err != nil {
+		log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Msg("consume wal.docs.WriteTo()")
+		return false
+	}
+	if err := s.writeRedoLog(RedoActionWrite, startID, endID); err != nil {
+		log.Error().Err(err).Str("index", s.GetIndexName()).Str("shard", s.GetID()).Str("stage", "write").Msg("consume wal.redolog.Write()")
+		return false
+	}
 	return true
 }
 
@@ -315,6 +321,19 @@ func (w *walMergeDocs) Reset() {
 			delete(v, k)
 		}
 	}
+}
+
+// InOtherShard reports whether the document of data is pending under
+// another second layer shard than data targets.
+func (w *walMergeDocs) InOtherShard(data map[string]interface{}) bool {
+	docID := data[meta.IDFieldName].(string)
+	shardID := int64(data[meta.ShardFieldName].(float64))
+	for id, docs := range *w {
+		if _, ok := docs[docID]; ok && id != shardID {
+			return true
+		}
+	}
+	return false
 }
 
 func (w *walMergeDocs) AddDocument(data map[string]interface{}) {

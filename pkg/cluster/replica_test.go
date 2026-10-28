@@ -205,6 +205,43 @@ func TestFenceTracksReplicas(t *testing.T) {
 	require.Eventually(t, func() bool { return !fence.IsLocalReplica(index) }, 2*time.Second, 5*time.Millisecond)
 }
 
+// gapStore runs beforeWatch as a watch on key opens, a write landing as Run
+// starts.
+type gapStore struct {
+	*MemoryStore
+	key         string
+	beforeWatch func()
+}
+
+func (s *gapStore) Watch(ctx context.Context, prefix string) (<-chan Event, error) {
+	if prefix == s.key && s.beforeWatch != nil {
+		s.beforeWatch()
+	}
+	return s.MemoryStore.Watch(ctx, prefix)
+}
+
+// A change between the first read and the watch must not be lost until the
+// next resync.
+func TestFenceRunSeesChangeBeforeWatch(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	store := &gapStore{MemoryStore: NewMemoryStore()}
+	defer func() { require.NoError(t, store.Close()) }()
+
+	fence, assigner := newTestFence(t, store, "node-a")
+	const index = "logs-2024"
+	partition := PartitionOfN(index, fencePartitions)
+	store.key = assigner.ReplicasKey()
+	store.beforeWatch = func() {
+		ok, err := assigner.SetReplicas(ctx, map[int][]string{partition: {"node-a"}}, 0)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	}
+	go fence.Run(ctx, time.Hour)
+
+	require.Eventually(t, func() bool { return fence.IsLocalReplica(index) }, 2*time.Second, 5*time.Millisecond)
+}
+
 func TestCoordinatorWritesReplicas(t *testing.T) {
 	ctx := context.Background()
 	store := NewMemoryStore()

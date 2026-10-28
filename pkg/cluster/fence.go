@@ -106,12 +106,10 @@ func (f *Fence) Refresh(ctx context.Context) error {
 	return nil
 }
 
-// Run keeps the local copy current until ctx is done: one full read, then
-// the watch stream, with a periodic re-read so a dropped watch heals.
+// Run keeps the local copy current until ctx is done: the watch stream, one
+// full read, with a periodic re-read so a dropped watch heals. The watches
+// open before the read so no change falls between the two.
 func (f *Fence) Run(ctx context.Context, resync time.Duration) {
-	if err := f.Refresh(ctx); err != nil {
-		log.Error().Err(err).Msg("cluster: load assignments")
-	}
 	events, err := f.assigner.store.Watch(ctx, f.assigner.AssignPrefix())
 	if err != nil {
 		log.Error().Err(err).Msg("cluster: watch assignments")
@@ -121,6 +119,9 @@ func (f *Fence) Run(ctx context.Context, resync time.Duration) {
 	if err != nil {
 		log.Error().Err(err).Msg("cluster: watch replicas")
 		replicaEvents = nil
+	}
+	if err := f.Refresh(ctx); err != nil {
+		log.Error().Err(err).Msg("cluster: load assignments")
 	}
 	ticker := time.NewTicker(resync)
 	defer ticker.Stop()
