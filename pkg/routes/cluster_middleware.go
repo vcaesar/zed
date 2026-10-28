@@ -31,6 +31,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/cluster/replication"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
@@ -79,7 +80,7 @@ func ClusterRoute() zhttp.HandlerFunc {
 			return
 		}
 		if target == "" {
-			c.Next()
+			serveUntargeted(c)
 			return
 		}
 
@@ -95,7 +96,7 @@ func ClusterRoute() zhttp.HandlerFunc {
 				return
 			}
 			var fallbacks []string
-			if read && replicaReadable(target) {
+			if read && (replicaReadable(target) || replicated(target)) {
 				fallbacks = cluster.Replicas(target)
 			}
 			forward(c, owner, fallbacks)
@@ -120,8 +121,25 @@ func serveFenced(c zhttp.Context, target string, epoch int64) {
 		rejectWrite(c, target, cluster.ErrNotLive)
 		return
 	}
+	// a replica that just became owner replays what it kept first; a bulk
+	// body may name other indexes than the path
+	bulk := isBulk(c.Path())
+	prepare := func(ctx context.Context) error { return replication.Prepare(ctx, target) }
+	commit := func(ctx context.Context) error { return replication.Commit(ctx, target) }
+	if bulk {
+		prepare, commit = replication.PrepareAll, replication.CommitAll
+	}
+	if err := prepare(c.Context()); err != nil {
+		rejectUnreplicated(c, target, err)
+		return
+	}
 	flush := c.NextBuffered()
 
+	// acknowledge only what every in-sync replica (or the bucket) holds
+	if err := commit(c.Context()); err != nil {
+		rejectUnreplicated(c, target, err)
+		return
+	}
 	err := cluster.CheckEpoch(target, epoch)
 	if err == nil {
 		if flushErr := flush(); flushErr != nil {
@@ -143,6 +161,41 @@ func rejectWrite(c zhttp.Context, target string, err error) {
 		Msg("cluster: rejecting write, partition moved")
 	c.Abort()
 	zutils.RenderJSON(c, http.StatusConflict, zhttp.H{"error": "partition moved", "owner": owner})
+}
+
+// rejectUnreplicated answers 503 for a write that could not be made
+// durable on the replicas: the client must not count it as stored.
+func rejectUnreplicated(c zhttp.Context, target string, err error) {
+	log.Error().Err(err).Str("index", target).Msg("cluster: write not replicated")
+	c.Abort()
+	zutils.RenderJSON(c, http.StatusServiceUnavailable, zhttp.H{"error": "write not replicated: " + err.Error()})
+}
+
+// serveUntargeted runs a request without an index in the path. A write
+// such as `_bulk` names its indexes in the body, so every index it touched
+// is committed before the response leaves.
+func serveUntargeted(c zhttp.Context) {
+	if !replication.Enabled() || !isMutating(c.Method(), c.Path()) || strings.HasPrefix(c.Path(), "/api/_internal/") {
+		c.Next()
+		return
+	}
+	if err := replication.PrepareAll(c.Context()); err != nil {
+		rejectUnreplicated(c, "", err)
+		return
+	}
+	flush := c.NextBuffered()
+	if err := replication.CommitAll(c.Context()); err != nil {
+		rejectUnreplicated(c, "", err)
+		return
+	}
+	if err := flush(); err != nil {
+		log.Error().Err(err).Msg("cluster: flush buffered response")
+	}
+}
+
+// isBulk reports whether path is a bulk write, whose body names indexes.
+func isBulk(path string) bool {
+	return strings.Contains(path, "/_bulk")
 }
 
 // forward proxies the request to the node that owns the index. When the
@@ -327,14 +380,23 @@ func groupByOwner(indexes []string) map[string][]string {
 	return groups
 }
 
-// replicaReadable reports whether a node other than the owner may serve
-// reads of an index. Only cold indexes qualify: they are read-only, live on
-// object storage and are opened without a writer or WAL, so every node sees
-// the same data. Hot and warm indexes are read through the owner's writer
-// and local-disk indexes exist on the owner only. A variable for tests.
+// replicaReadable reports whether this node may serve reads of an index it
+// replicates: a cold index is read-only on object storage, so every node
+// sees the same data; a disk index qualifies once its replicated copy is
+// installed. A variable for tests.
 var replicaReadable = func(name string) bool {
 	index, ok := core.GetIndex(name)
-	return ok && index.IsCold()
+	return ok && (index.IsCold() || replication.Ready(name))
+}
+
+// replicated reports whether the replicas of a disk index hold a copy, so
+// a read may fall back to them when the owner is gone.
+func replicated(name string) bool {
+	if !replication.Enabled() || replication.Mode() == replication.ModeNone {
+		return false
+	}
+	index, ok := core.GetIndex(name)
+	return ok && index.IsDisk()
 }
 
 // resolveIndexes expands a target into concrete index names using the

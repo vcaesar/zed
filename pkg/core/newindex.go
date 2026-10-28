@@ -234,6 +234,9 @@ func checkIndex(index *Index) {
 }
 
 func storeIndex(index *Index) error {
+	if StoreGuard != nil && !StoreGuard(index.GetName()) {
+		return nil
+	}
 	data, err := index.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("core.storeIndex: index: %s, error: %s", index.ref.Name, err.Error())

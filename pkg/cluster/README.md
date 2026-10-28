@@ -24,7 +24,8 @@ The ownership map lives in etcd under
 | `nodes/<id>` | member record, written under a lease, disappears when the node dies |
 | `leader` | leader lock, created with a lease, whoever creates it rebalances |
 | `assign/<partition>` | `{"owner": "<node id>"}`, its etcd mod revision is the **epoch** |
-| `replicas` | `{"<partition>": ["<node id>", ...]}`, warm read replicas, a separate key so a replica change never bumps an epoch |
+| `replicas` | `{"<partition>": ["<node id>", ...]}`, replicas, a separate key so a replica change never bumps an epoch |
+| `insync` | `{"<index>": ["<node id>", ...]}`, replicas holding every acknowledged write (OpenSearch in-sync allocation ids) |
 
 The epoch is never written by us: it is the store revision of the assignment
 key, so it grows on every handoff and can be used as a fencing token.
@@ -86,21 +87,72 @@ Merging (`MergeSearch`):
   pipelines) keeps the first node's value and logs a warning - those are
   approximations across nodes
 
-## Warm read replicas
+## Replication (full HA)
+
+`pkg/cluster/replication` follows the three OpenSearch replication paths.
+Every write is acknowledged only after it is durable on more than one node
+(or in the bucket):
+
+| path | indexes | how | OpenSearch counterpart |
+| --- | --- | --- | --- |
+| `document` (default) | disk | the owner records every WAL entry with a sequence number and ships it to each replica before answering; replicas append it to their own WAL and index it | document replication, `ReplicationOperation` |
+| `segment` | disk | entries are shipped the same way but replicas only keep them; every `zed_cluster_replication_interval` they copy the owner's segments (a checkpoint) and drop the entries it covers; on promotion they replay what they kept | segment replication, `FULL_REPLICATION` translog + `SegmentReplicationTarget` |
+| `remote` | `s3`/`gcs`/`oss`, writable | entries are uploaded to `<index>/_translog/` before answering; segments already live in the bucket; a new owner replays the translog, a periodic flush persists the segments and trims it | remote-backed storage, `RemoteFsTranslog` |
+
+`zed_cluster_replication` picks `document`, `segment` or `none` for disk
+indexes; object-storage indexes always use the remote translog when
+replication is on. Cold indexes take no writes and need none of this.
+
+Write path on the owner (`serveFenced`):
+
+1. `replication.Prepare` - the first write after a promotion replays the
+   kept entries (segment) or the remote translog (remote)
+2. the handler runs, `core.WALHook` records each entry in WAL order
+3. `replication.Commit` ships everything recorded to every replica (or
+   uploads it). A replica that fails is removed from the in-sync set
+   *before* the write is acknowledged (OpenSearch `failShardIfNeeded`); if
+   that removal cannot be written the write fails with `503`
+4. the epoch is checked as before, then the response is sent
+
+`_bulk` without an index in the path commits every index it touched.
+
+The **term** is unique per owner incarnation (epoch + start time). A
+replica on another term, or one missing entries the owner no longer
+retains (100k entries), is asked to recover: it downloads a tar of the
+owner's segments (`riot` point-in-time backup after the WAL was applied),
+replaces its copy and continues from the snapshot's sequence number.
+Entries are rewritten to idempotent updates, so an entry already in the
+snapshot is harmless when replayed. A replica whose entries are retained is
+caught up from the log without copying files.
+
+**Promotion.** The leader only hands a replicated partition to a node in
+the in-sync set of all its indexes. When the owner dies with no live
+in-sync replica the partition stays on the dead owner (unavailable, like a
+red shard) instead of going to a stale node. A rebalance never moves a
+replicated partition off a live owner to a node that has not caught up.
+
+**Reads.** Replicas serve reads of their copy once installed (near real
+time, like OpenSearch replicas) and are the fallback when the owner is gone.
+
+Node to node calls (`/api/_internal/replication/*`) carry
+`X-Zed-Cluster-Secret`; set `zed_cluster_secret` to the same value on every
+node. Replication refuses to start without it.
+
+## Read replicas
 
 `zed_cluster_replicas` (default 1) is the number of extra nodes the leader
 assigns to each partition next to its owner. The start node rotates with
 the partition, so one owner's replicas spread over all the other nodes.
 
-Replicas only serve **cold** indexes: those are read-only, live on object
-storage and are opened without a writer or WAL, so every node sees the same
-data. Hot and warm indexes are read through the owner's writer, and disk
-indexes exist on the owner only, so they always go to the owner.
+Replicas serve reads of **cold** indexes (read-only on object storage,
+every node sees the same data) and, with replication on, of **disk**
+indexes once their copy is installed. Hot and warm object-storage indexes
+are read through the owner's writer.
 
 * a read of a cold index on one of its replicas is served locally
 * a read whose owner cannot be resolved (died, not yet reassigned) is sent
   to the first live replica instead of failing with 503
-* scatter-gather serves the cold indexes this node replicates locally
+* scatter-gather serves the indexes this node holds a ready replica of locally
 * when an owner dies the rebalance hands its partitions to a live replica
   first (within quota), so failover lands on a node already serving them
 
@@ -117,7 +169,10 @@ zed_cluster_advertise_addr = "http://10.0.0.1:4080"
 zed_cluster_partitions = 256
 zed_cluster_heartbeat_interval = 5000000000   # 5s, in ns
 zed_cluster_heartbeat_ttl = 15000000000       # 15s, in ns
-zed_cluster_replicas = 1                      # warm read replicas per partition
+zed_cluster_replicas = 1                      # replicas per partition
+zed_cluster_replication = "document"          # document | segment | none
+zed_cluster_replication_interval = 10000000000 # 10s: checkpoints, flushes, catch-up
+zed_cluster_secret = "change-me"              # same on every node
 
 zed_etcd_endpoints = ["http://10.0.0.10:2379"]
 zed_etcd_prefix = "/zed"
@@ -143,6 +198,7 @@ export ZED_CLUSTER_NAME=prod
 export ZED_ETCD_ENDPOINTS=http://10.0.0.10:2379
 export ZED_CLUSTER_NODE_ID=node-1
 export ZED_CLUSTER_ADVERTISE_ADDR=http://10.0.0.1:4080
+export ZED_CLUSTER_SECRET=***
 ./zedsearch
 ```
 
@@ -168,32 +224,33 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
   `zed_cluster_heartbeat_ttl`
 * indexes on object storage (`s3`, `gcs`, `oss`) are readable by whichever
   node takes over, so they survive node loss
+* with replication on, an acknowledged write is on every in-sync replica
+  (document, segment) or in the bucket (remote), and only an in-sync
+  replica is promoted, so losing the owner loses no acknowledged write
 
 ## Limits
 
-* **disk indexes are not replicated**. When a node dies its `disk` indexes
-  are unavailable until it comes back, even though the partition is
-  reassigned. Use object storage for data that must survive a node. This is
-  failover by reassignment, not full HA.
-* index metadata is shared through etcd: cluster mode always stores it there,
-  whatever `ZED_METADATA_STORAGE` says, so every node sees every index.
-* read replicas serve cold indexes only; hot/warm object-storage indexes
-  still read through the owner (they need its writer)
-* replica fallback covers an owner missing from membership, not an owner
-  that is listed but not answering (that still returns 502)
+* replica state (term, sequence numbers, segment-mode kept entries) is in
+  memory: a restarted replica copies the index from the owner again, and
+  a restarted owner starts a new term, which makes its replicas recover
+* recovery and segment checkpoints copy every segment of the index, not
+  only the new ones; checkpoints are skipped when nothing changed
+* with `zed_cluster_replicas = 0`, or `zed_cluster_replication = "none"`,
+  disk indexes are back to failover by reassignment
+* index metadata is shared through etcd: cluster mode always stores it
+  there, whatever `ZED_METADATA_STORAGE` says, so every node sees every index
+* the remote flush closes the writers of the index briefly, writes wait for
+  it
 * a 409 is not retried for the client, the caller has to repeat the request
 * `cardinality`, `percentiles`, `stats` and `top_hits` are approximated in a
   scatter-gather search, the first responding owner wins
 * an `avg` is weighted by the number of documents each node matched, which is
   exact only when the averaged field is present in every matched document
-* the WAL is local to the owner: a write accepted just before a handoff is
-  not undone by the fence, it is simply no longer visible through the new
-  owner until the old owner's WAL is applied
 
 ## Tests
 
 ```shell
-go test ./pkg/cluster/...                    # unit tests, in-memory store
+go test ./pkg/cluster/...                    # unit tests, in-memory store and replication
 ZED_ETCD_ENDPOINTS=http://127.0.0.1:2379 \
   go test ./pkg/cluster/ -run TestEtcdStoreIntegration   # against a real etcd
 ```

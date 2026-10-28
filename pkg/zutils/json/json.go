@@ -29,3 +29,6 @@ var (
 	// Valid uses the standard library scanner: it allocates nothing, whereas goccy's builds a value tree.
 	Valid = stdjson.Valid
 )
+
+// RawMessage is a raw encoded JSON value.
+type RawMessage = stdjson.RawMessage

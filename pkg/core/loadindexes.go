@@ -36,13 +36,6 @@ func LoadZedIndexesFromMetadata(version string) error {
 
 	for i := range indexes {
 		readIndex := indexes[i]
-		index := new(Index)
-		index.ref = new(meta.Index)
-		index.ref.Name = readIndex.Name
-		index.ref.StorageType = readIndex.StorageType
-		index.ref.Settings = readIndex.Settings
-		index.ref.Mappings = readIndex.Mappings
-		index.ref.Stats = readIndex.Stats
 
 		// upgrade from old version
 		if readIndex.Version != "" {
@@ -64,66 +57,83 @@ func LoadZedIndexesFromMetadata(version string) error {
 			}
 		}
 
-		// init shards
-		index.ref.ShardNum = readIndex.ShardNum
-		index.ref.Shards = make(map[string]*meta.IndexShard, index.shardNum)
-		for id := range readIndex.Shards {
-			index.ref.Shards[id] = &meta.IndexShard{
-				ID:       readIndex.Shards[id].ID,
-				ShardNum: readIndex.Shards[id].ShardNum,
-				Stats:    readIndex.Shards[id].Stats,
-			}
-			index.ref.Shards[id].Shards = make([]*meta.IndexSecondShard, index.ref.Shards[id].ShardNum)
-			for j := range readIndex.Shards[id].Shards {
-				index.ref.Shards[id].Shards[j] = &meta.IndexSecondShard{
-					ID:    readIndex.Shards[id].Shards[j].ID,
-					Stats: readIndex.Shards[id].Shards[j].Stats,
-				}
-			}
+		index, err := newIndexFromMeta(readIndex)
+		if err != nil {
+			return err
 		}
-
-		// init shards wrapper
-		totalShardNum := 0
-		index.shardNum = index.ref.ShardNum
-		index.shards = make(map[string]*IndexShard, index.shardNum)
-		for id := range index.ref.Shards {
-			index.shards[id] = &IndexShard{
-				root: index,
-				ref:  index.ref.Shards[id],
-				name: index.ref.Name + "/" + index.ref.Shards[id].ID,
-			}
-			index.shards[id].shards = make([]*IndexSecondShard, index.ref.Shards[id].ShardNum)
-			for j := range index.ref.Shards[id].Shards {
-				index.shards[id].shards[j] = &IndexSecondShard{
-					root: index,
-					ref:  index.ref.Shards[id].Shards[j],
-				}
-				totalShardNum++
-			}
-		}
-
-		// init shards hashing
-		index.shardHashing = rendezvous.New()
-		for id := range index.shards {
-			index.shardHashing.Add(id)
-		}
-
-		// a cold index is read-only on every node that loads it
-		index.applyTier(index.GetTier())
-
-		log.Info().Msgf("Loading  index... [%s:%s] shards[%d:%d]", index.ref.Name, index.ref.StorageType, index.ref.ShardNum, totalShardNum)
-
-		// load index analysis
-		if index.ref.Settings != nil && index.ref.Settings.Analysis != nil {
-			index.analyzers, err = zedanalysis.RequestAnalyzer(index.ref.Settings.Analysis)
-			if err != nil {
-				return errors.New(errors.ErrorTypeRuntimeException, "parse stored analysis error").Cause(err)
-			}
-		}
-
 		// load in memory
 		ZED_INDEX_LIST.Add(index)
 	}
 
 	return nil
+}
+
+// newIndexFromMeta builds the in-memory index of a stored index record.
+func newIndexFromMeta(readIndex *meta.Index) (*Index, error) {
+	var err error
+	index := new(Index)
+	index.ref = new(meta.Index)
+	index.ref.Name = readIndex.Name
+	index.ref.StorageType = readIndex.StorageType
+	index.ref.Settings = readIndex.Settings
+	index.ref.Mappings = readIndex.Mappings
+	index.ref.Stats = readIndex.Stats
+
+	// init shards
+	index.ref.ShardNum = readIndex.ShardNum
+	index.ref.Shards = make(map[string]*meta.IndexShard, index.shardNum)
+	for id := range readIndex.Shards {
+		index.ref.Shards[id] = &meta.IndexShard{
+			ID:       readIndex.Shards[id].ID,
+			ShardNum: readIndex.Shards[id].ShardNum,
+			Stats:    readIndex.Shards[id].Stats,
+		}
+		index.ref.Shards[id].Shards = make([]*meta.IndexSecondShard, index.ref.Shards[id].ShardNum)
+		for j := range readIndex.Shards[id].Shards {
+			index.ref.Shards[id].Shards[j] = &meta.IndexSecondShard{
+				ID:    readIndex.Shards[id].Shards[j].ID,
+				Stats: readIndex.Shards[id].Shards[j].Stats,
+			}
+		}
+	}
+
+	// init shards wrapper
+	totalShardNum := 0
+	index.shardNum = index.ref.ShardNum
+	index.shards = make(map[string]*IndexShard, index.shardNum)
+	for id := range index.ref.Shards {
+		index.shards[id] = &IndexShard{
+			root: index,
+			ref:  index.ref.Shards[id],
+			name: index.ref.Name + "/" + index.ref.Shards[id].ID,
+		}
+		index.shards[id].shards = make([]*IndexSecondShard, index.ref.Shards[id].ShardNum)
+		for j := range index.ref.Shards[id].Shards {
+			index.shards[id].shards[j] = &IndexSecondShard{
+				root: index,
+				ref:  index.ref.Shards[id].Shards[j],
+			}
+			totalShardNum++
+		}
+	}
+
+	// init shards hashing
+	index.shardHashing = rendezvous.New()
+	for id := range index.shards {
+		index.shardHashing.Add(id)
+	}
+
+	// a cold index is read-only on every node that loads it
+	index.applyTier(index.GetTier())
+
+	log.Info().Msgf("Loading  index... [%s:%s] shards[%d:%d]", index.ref.Name, index.ref.StorageType, index.ref.ShardNum, totalShardNum)
+
+	// load index analysis
+	if index.ref.Settings != nil && index.ref.Settings.Analysis != nil {
+		index.analyzers, err = zedanalysis.RequestAnalyzer(index.ref.Settings.Analysis)
+		if err != nil {
+			return nil, errors.New(errors.ErrorTypeRuntimeException, "parse stored analysis error").Cause(err)
+		}
+	}
+	return index, nil
 }

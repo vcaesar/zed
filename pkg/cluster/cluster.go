@@ -412,3 +412,23 @@ func heartbeat() (ttl, interval time.Duration) {
 	}
 	return ttl, interval
 }
+
+// UpdateInSync records the in-sync replicas of an index this node owns, nil
+// drops the entry. A no-op with clustering disabled.
+func UpdateInSync(ctx context.Context, index string, nodes []string) error {
+	n := get()
+	if n == nil {
+		return nil
+	}
+	return n.assigner.UpdateInSync(ctx, index, nodes)
+}
+
+// InSync returns the in-sync map, empty with clustering disabled.
+func InSync(ctx context.Context) (map[string][]string, error) {
+	n := get()
+	if n == nil {
+		return map[string][]string{}, nil
+	}
+	insync, _, err := n.assigner.ListInSync(ctx)
+	return insync, err
+}

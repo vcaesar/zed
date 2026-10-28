@@ -16,6 +16,10 @@
 package routes
 
 import (
+	"net/http"
+
+	"github.com/vcaesar/zedsearch/pkg/cluster/replication"
+	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/handlers/cluster"
 	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
@@ -36,4 +40,19 @@ func SetClusterRoutes(r *zhttp.Engine) {
 	// node to node, the caller's credentials are forwarded unchanged
 	r.POST("/api/_internal/search", AuthMiddleware("cluster.InternalSearch"), cluster.InternalSearch)
 	r.GET("/api/_internal/indexes", AuthMiddleware("cluster.InternalIndexes"), cluster.InternalIndexes)
+
+	// replication, authenticated with the cluster secret only
+	r.POST(replication.ReplicatePath, ClusterSecretMiddleware, cluster.ReplicationReplicate)
+	r.POST(replication.RecoverPath, ClusterSecretMiddleware, cluster.ReplicationRecover)
+	r.GET(replication.SnapshotPath, ClusterSecretMiddleware, cluster.ReplicationSnapshot)
+}
+
+// ClusterSecretMiddleware admits node to node calls carrying
+// `zed_cluster_secret`. Background replication has no user credentials.
+func ClusterSecretMiddleware(c zhttp.Context) {
+	if !replication.CheckSecret(c.GetHeader(replication.SecretHeader), config.Global.Cluster.Secret) {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, zhttp.H{"auth": "Invalid cluster secret"})
+		return
+	}
+	c.Next()
 }
