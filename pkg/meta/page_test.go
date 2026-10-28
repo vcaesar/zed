@@ -64,12 +64,12 @@ func TestNewPage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, _ := utils.NewGinContext()
+			c, _ := utils.NewContext()
 			params := map[string]string{
 				"page_num":  tt.args.pageNum,
 				"page_size": tt.args.pageSize,
 			}
-			utils.SetGinRequestURL(c, "/", params)
+			utils.SetRequestURL(c, "/", params)
 			got := NewPage(c)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewPage() = %v, want %v", got, tt.want)

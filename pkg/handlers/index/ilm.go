@@ -20,11 +20,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -45,14 +44,14 @@ type ILMPolicyRequest struct {
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /es/_ilm/policy/{name} [put]
-func PutILMPolicy(c *gin.Context) {
+func PutILMPolicy(c zhttp.Context) {
 	name := c.Param("name")
 	if name == "" {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "policy name should be not empty"})
 		return
 	}
 	var req ILMPolicyRequest
-	if err := zutils.GinBindJSON(c, &req); err != nil {
+	if err := zutils.BindJSON(c, &req); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
@@ -108,14 +107,14 @@ func checkILMPolicy(policy metadata.ILMPolicy) error {
 // @Success 200 {object} map[string]interface{}
 // @Failure 404 {object} meta.HTTPResponseError
 // @Router /es/_ilm/policy/{name} [get]
-func GetILMPolicy(c *gin.Context) {
+func GetILMPolicy(c zhttp.Context) {
 	name := c.Param("name")
 	record, err := metadata.ILM.Get(name)
 	if err != nil {
 		c.JSON(http.StatusNotFound, meta.HTTPResponseError{Error: "ilm policy " + name + " does not exists"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{name: policyResponse(record)})
+	c.JSON(http.StatusOK, zhttp.H{name: policyResponse(record)})
 }
 
 // @Id ListILMPolicy
@@ -126,13 +125,13 @@ func GetILMPolicy(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /es/_ilm/policy [get]
-func ListILMPolicy(c *gin.Context) {
+func ListILMPolicy(c zhttp.Context) {
 	records, err := metadata.ILM.List(0, 0)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
-	out := gin.H{}
+	out := zhttp.H{}
 	for _, record := range records {
 		out[record.Name] = policyResponse(record)
 	}
@@ -148,7 +147,7 @@ func ListILMPolicy(c *gin.Context) {
 // @Success 200 {object} meta.HTTPResponse
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /es/_ilm/policy/{name} [delete]
-func DeleteILMPolicy(c *gin.Context) {
+func DeleteILMPolicy(c zhttp.Context) {
 	name := c.Param("name")
 	if err := metadata.ILM.Delete(name); err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
@@ -157,8 +156,8 @@ func DeleteILMPolicy(c *gin.Context) {
 	c.JSON(http.StatusOK, meta.HTTPResponse{Message: "ok"})
 }
 
-func policyResponse(record *metadata.ILMPolicyRecord) gin.H {
-	return gin.H{
+func policyResponse(record *metadata.ILMPolicyRecord) zhttp.H {
+	return zhttp.H{
 		"version":       record.Version,
 		"modified_date": record.ModifiedDate,
 		"policy":        record.Policy,
@@ -174,7 +173,7 @@ func policyResponse(record *metadata.ILMPolicyRecord) gin.H {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_ilm/explain [get]
-func ExplainILM(c *gin.Context) {
+func ExplainILM(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {
@@ -182,7 +181,7 @@ func ExplainILM(c *gin.Context) {
 		return
 	}
 
-	explain := gin.H{
+	explain := zhttp.H{
 		"index":        index.GetName(),
 		"tier":         index.GetTier(),
 		"storage_type": index.GetStorageType(),
@@ -205,5 +204,5 @@ func ExplainILM(c *gin.Context) {
 	explain["action"] = action
 	explain["next_tier"] = next
 
-	c.JSON(http.StatusOK, gin.H{"indices": gin.H{index.GetName(): explain}})
+	c.JSON(http.StatusOK, zhttp.H{"indices": zhttp.H{index.GetName(): explain}})
 }

@@ -118,9 +118,9 @@ func TestDeleteByQuery(t *testing.T) {
 			assert.NoError(t, index.CreateDocument(id, test.arg.doc, false))
 			time.Sleep(time.Second)
 
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, test.arg.query)
-			utils.SetGinRequestParams(c, test.arg.params)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, test.arg.query)
+			utils.SetRequestParams(c, test.arg.params)
 			DeleteByQuery(c)
 
 			if test.want.success.outcome {

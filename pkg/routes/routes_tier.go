@@ -19,10 +19,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/handlers/index"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // documentWritePaths are the route suffixes that add, change or remove
@@ -31,8 +30,8 @@ var documentWritePaths = []string{"/_doc", "/_create", "/_update", "/_bulk", "/_
 
 // ReadOnlyGuard rejects document writes to a cold index. It has to be
 // registered before the routes it protects, so SetTierRoutes runs first.
-func ReadOnlyGuard(c *gin.Context) {
-	switch c.Request.Method {
+func ReadOnlyGuard(c zhttp.Context) {
+	switch c.Method() {
 	case http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch:
 	default:
 		c.Next()
@@ -44,7 +43,7 @@ func ReadOnlyGuard(c *gin.Context) {
 		return
 	}
 	if idx, ok := core.GetIndex(target); ok && idx.IsReadOnly() {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": core.ErrIndexReadOnly.Error()})
+		c.AbortWithStatusJSON(http.StatusForbidden, zhttp.H{"error": core.ErrIndexReadOnly.Error()})
 		return
 	}
 	c.Next()
@@ -61,7 +60,7 @@ func isDocumentWrite(path string) bool {
 
 // SetTierRoutes registers the data tier and index lifecycle endpoints together
 // with the read-only guard. Call it before SetRoutes.
-func SetTierRoutes(r *gin.Engine) {
+func SetTierRoutes(r *zhttp.Engine) {
 	r.Use(ReadOnlyGuard)
 
 	// data tier

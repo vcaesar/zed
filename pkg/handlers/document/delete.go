@@ -18,10 +18,9 @@ package document
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @Id DeleteDocument
@@ -35,7 +34,7 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/{index}/_doc/{id} [delete]
-func Delete(c *gin.Context) {
+func Delete(c zhttp.Context) {
 	docID := c.Param("id")
 	if docID == "" {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "id is empty"})

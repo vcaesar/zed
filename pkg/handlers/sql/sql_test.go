@@ -67,9 +67,9 @@ func prepareIndex(t *testing.T, name string, docs []map[string]interface{}) {
 
 func callSearch(t *testing.T, body string, params map[string]string) (int, string) {
 	t.Helper()
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, body)
-	utils.SetGinRequestURL(c, "/es/_sql", params)
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, body)
+	utils.SetRequestURL(c, "/es/_sql", params)
 	Search(c)
 	return w.Code, w.Body.String()
 }
@@ -332,9 +332,9 @@ func TestSearchFormats(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.body)
-			utils.SetGinRequestURL(c, "/es/_sql", tt.params)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.body)
+			utils.SetRequestURL(c, "/es/_sql", tt.params)
 			if tt.accept != "" {
 				c.Request.Header.Set("Accept", tt.accept)
 			}
@@ -351,8 +351,8 @@ func TestTranslate(t *testing.T) {
 	prepareIndex(t, indexName, testDocs[:1])
 
 	sql := `SELECT level FROM "` + indexName + `" WHERE message = 'disk' AND count > 1 LIMIT 2`
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, `{"query":`+strconv.Quote(sql)+`}`)
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, `{"query":`+strconv.Quote(sql)+`}`)
 	Translate(c)
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 
@@ -426,8 +426,8 @@ func TestSearchErrors(t *testing.T) {
 }
 
 func TestTranslateErrors(t *testing.T) {
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, `{"query":"SELECT * FROM logs WHERE count + 1 = 2"}`)
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, `{"query":"SELECT * FROM logs WHERE count + 1 = 2"}`)
 	Translate(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "unsupported WHERE expression")

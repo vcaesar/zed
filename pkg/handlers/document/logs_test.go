@@ -43,8 +43,8 @@ func TestLogsBulkErrors(t *testing.T) {
 {"index":{"_index":"` + name + `","_id":"good"}}
 {"_timestamp":1704067201123456,"message":"valid event"}
 `
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, body)
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, body)
 	ESBulk(c)
 	require.Equal(t, http.StatusOK, w.Code)
 	var result BulkResponse
@@ -75,8 +75,8 @@ func TestLogsBulkErrors(t *testing.T) {
 }
 
 func TestESBulkMalformedMetadataResponse(t *testing.T) {
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, `{"index":"not an object"}`+"\n")
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, `{"index":"not an object"}`+"\n")
 	ESBulk(c)
 	assert.Equal(t, http.StatusOK, w.Code)
 	var result BulkResponse

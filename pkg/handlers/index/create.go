@@ -20,13 +20,12 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
 	"github.com/vcaesar/zedsearch/pkg/uquery/mappings"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -40,21 +39,21 @@ import (
 // @Success 200 {object} meta.HTTPResponseIndex
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/index [post]
-func Create(c *gin.Context) {
+func Create(c zhttp.Context) {
 	var newIndex meta.IndexSimple
-	if err := zutils.GinBindJSON(c, &newIndex); err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+	if err := zutils.BindJSON(c, &newIndex); err != nil {
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
 	indexName := c.Param("target")
 	err := CreateIndexWorker(&newIndex, indexName)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, meta.HTTPResponseIndex{
+	zutils.RenderJSON(c, http.StatusOK, meta.HTTPResponseIndex{
 		Message:     "ok",
 		Index:       newIndex.Name,
 		StorageType: newIndex.StorageType,
@@ -71,12 +70,12 @@ func Create(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponse
 // @Router /es/{index} [put]
-func CreateES(c *gin.Context) {
+func CreateES(c zhttp.Context) {
 	indexName := c.Param("target")
 
 	var newIndex meta.IndexSimple
-	if err := zutils.GinBindJSON(c, &newIndex); err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+	if err := zutils.BindJSON(c, &newIndex); err != nil {
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -85,11 +84,11 @@ func CreateES(c *gin.Context) {
 
 	err := CreateIndexWorker(&newIndex, indexName)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{
 		"acknowledged":        true,
 		"shards_acknowledged": true,
 		"index":               newIndex.Name,

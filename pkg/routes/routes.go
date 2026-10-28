@@ -20,10 +20,7 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch"
@@ -35,19 +32,13 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/handlers/search"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
-// SetRoutes sets up all gin HTTP API endpoints that can be called by front end
-func SetRoutes(r *gin.Engine) {
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "DELETE", "PUT", "HEAD", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "authorization", "content-type"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+// SetRoutes sets up all HTTP API endpoints that can be called by front end
+func SetRoutes(r *zhttp.Engine) {
+	r.Use(CORS)
 
 	r.GET("/version", meta.GetVersion)
 	r.GET("/healthz", meta.GetHealthz)
@@ -68,21 +59,15 @@ func SetRoutes(r *gin.Engine) {
 		if err != nil {
 			log.Error().Err(err).Msg("swagger ui assets")
 		} else {
-			r.GET("/swagger", func(c *gin.Context) {
-				c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-			})
+			// the catch-all goes first: fiber's lenient routing would send /swagger/ to /swagger
 			r.GET("/swagger/*any", swagger)
+			r.GET("/swagger", swagger)
 		}
 	}
 
-	// UI
-	if front != nil {
-		HTTPCacheForUI(r)
-		r.StaticFS("/ui/", http.FS(front))
-	}
-	r.NoRoute(func(c *gin.Context) {
-		if front != nil && c.Request.Method == http.MethodGet && strings.HasPrefix(c.Request.URL.Path, "/ui/") &&
-			!strings.HasPrefix(c.Request.URL.Path, "/ui/assets/") {
+	noRoute := func(c zhttp.Context) {
+		if front != nil && c.Method() == http.MethodGet && strings.HasPrefix(c.Path(), "/ui/") &&
+			!strings.HasPrefix(c.Path(), "/ui/assets/") {
 			index, err := fs.ReadFile(front, "index.html")
 			if err != nil {
 				log.Error().Err(err).Msg("read frontend index")
@@ -94,11 +79,21 @@ func SetRoutes(r *gin.Engine) {
 		}
 
 		log.Error().
-			Str("method", c.Request.Method).
+			Str("method", c.Method()).
 			Int("code", 404).
 			Int("took", 0).
-			Msg(c.Request.RequestURI)
-	})
+			Msg(c.RequestURI())
+		c.Data(http.StatusNotFound, "text/plain; charset=utf-8", []byte("404 page not found"))
+	}
+
+	// UI
+	if front != nil {
+		HTTPCacheForUI(r)
+		ui := serveUI(front, noRoute)
+		r.GET("/ui/*filepath", ui)
+		r.HEAD("/ui/*filepath", ui)
+	}
+	r.NoRoute(noRoute)
 
 	// auth
 	r.POST("/api/login", auth.Login)
@@ -160,17 +155,17 @@ func SetRoutes(r *gin.Engine) {
 	 * elastic compatible APIs
 	 */
 
-	r.GET("/es/", ESMiddleware, func(c *gin.Context) {
-		zutils.GinRenderJSON(c, http.StatusOK, elastic.NewESInfo(c))
+	r.GET("/es/", ESMiddleware, func(c zhttp.Context) {
+		zutils.RenderJSON(c, http.StatusOK, elastic.NewESInfo(c))
 	})
-	r.HEAD("/es/", ESMiddleware, func(c *gin.Context) {
-		zutils.GinRenderJSON(c, http.StatusOK, elastic.NewESInfo(c))
+	r.HEAD("/es/", ESMiddleware, func(c zhttp.Context) {
+		zutils.RenderJSON(c, http.StatusOK, elastic.NewESInfo(c))
 	})
-	r.GET("/es/_license", ESMiddleware, func(c *gin.Context) {
-		zutils.GinRenderJSON(c, http.StatusOK, elastic.NewESLicense(c))
+	r.GET("/es/_license", ESMiddleware, func(c zhttp.Context) {
+		zutils.RenderJSON(c, http.StatusOK, elastic.NewESLicense(c))
 	})
-	r.GET("/es/_xpack", ESMiddleware, func(c *gin.Context) {
-		zutils.GinRenderJSON(c, http.StatusOK, elastic.NewESXPack(c))
+	r.GET("/es/_xpack", ESMiddleware, func(c zhttp.Context) {
+		zutils.RenderJSON(c, http.StatusOK, elastic.NewESXPack(c))
 	})
 
 	r.POST("/es/_search", AuthMiddleware("search.SearchDSL"), ESMiddleware, IndexAliasMiddleware, search.SearchDSL)

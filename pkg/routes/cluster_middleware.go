@@ -27,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
@@ -35,6 +34,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -44,7 +44,7 @@ const (
 	// carrying it must be served locally or fail, never proxied again.
 	ForwardedByHeader = "X-Zed-Forwarded-By"
 	// ClusterEpochKey holds the ownership epoch the request was admitted
-	// with, handlers may read it from the gin context.
+	// with, handlers may read it from the request context.
 	ClusterEpochKey = "cluster_epoch"
 	// InternalSearchPath is the node to node search endpoint.
 	InternalSearchPath = "/api/_internal/search"
@@ -66,8 +66,8 @@ var clusterClient = &http.Client{Timeout: scatterTimeout}
 //     the response into 409 so the client retries against the new owner
 //   - several indexes or a glob on an Elasticsearch search path: the
 //     request is split per owner and the responses are merged
-func ClusterRoute() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func ClusterRoute() zhttp.HandlerFunc {
+	return func(c zhttp.Context) {
 		if !cluster.Enabled() {
 			c.Next()
 			return
@@ -89,7 +89,7 @@ func ClusterRoute() gin.HandlerFunc {
 			return
 		}
 		if owner != localNodeID() {
-			read := !isMutating(c.Request.Method, c.Request.URL.Path)
+			read := !isMutating(c.Method(), c.Path())
 			if read && cluster.IsLocalReplica(target) && replicaReadable(target) {
 				c.Next() // warm replica of a read-only object-storage index
 				return
@@ -103,7 +103,7 @@ func ClusterRoute() gin.HandlerFunc {
 		}
 
 		c.Set(ClusterEpochKey, epoch)
-		if !isMutating(c.Request.Method, c.Request.URL.Path) {
+		if !isMutating(c.Method(), c.Path()) {
 			c.Next()
 			return
 		}
@@ -114,15 +114,12 @@ func ClusterRoute() gin.HandlerFunc {
 // serveFenced runs the handler with its output buffered, so a handoff that
 // happened while the write was in flight can still be reported to the
 // client instead of a misleading success.
-func serveFenced(c *gin.Context, target string, epoch int64) {
-	buffer := &bufferedWriter{ResponseWriter: c.Writer}
-	c.Writer = buffer
-	c.Next()
-	c.Writer = buffer.ResponseWriter
+func serveFenced(c zhttp.Context, target string, epoch int64) {
+	flush := c.NextBuffered()
 
 	err := cluster.CheckEpoch(target, epoch)
 	if err == nil {
-		if flushErr := buffer.flush(); flushErr != nil {
+		if flushErr := flush(); flushErr != nil {
 			log.Error().Err(flushErr).Msg("cluster: flush buffered response")
 		}
 		return
@@ -136,19 +133,19 @@ func serveFenced(c *gin.Context, target string, epoch int64) {
 	log.Warn().Err(err).Str("index", target).Str("owner", owner).
 		Msg("cluster: rejecting write, partition moved")
 	c.Abort()
-	zutils.GinRenderJSON(c, http.StatusConflict, gin.H{"error": "partition moved", "owner": owner})
+	zutils.RenderJSON(c, http.StatusConflict, zhttp.H{"error": "partition moved", "owner": owner})
 }
 
 // forward proxies the request to the node that owns the index. When the
 // owner cannot be resolved (it died, the partition is not reassigned yet)
 // the first resolvable fallback, a read replica, gets the request instead.
-func forward(c *gin.Context, owner string, fallbacks []string) {
+func forward(c zhttp.Context, owner string, fallbacks []string) {
 	if c.GetHeader(ForwardedByHeader) != "" {
 		// the sender thought we owned the index and we think somebody else
 		// does: bouncing it again would loop
 		c.Abort()
-		zutils.GinRenderJSON(c, http.StatusLoopDetected,
-			gin.H{"error": "request already forwarded", "owner": owner})
+		zutils.RenderJSON(c, http.StatusLoopDetected,
+			zhttp.H{"error": "request already forwarded", "owner": owner})
 		return
 	}
 
@@ -164,16 +161,16 @@ func forward(c *gin.Context, owner string, fallbacks []string) {
 	}
 	if !ok || addr == "" {
 		c.Abort()
-		zutils.GinRenderJSON(c, http.StatusServiceUnavailable,
-			gin.H{"error": "owner node is unreachable", "owner": owner})
+		zutils.RenderJSON(c, http.StatusServiceUnavailable,
+			zhttp.H{"error": "owner node is unreachable", "owner": owner})
 		return
 	}
 	target, err := url.Parse(addr)
 	if err != nil {
 		log.Error().Err(err).Str("addr", addr).Msg("cluster: bad advertise address")
 		c.Abort()
-		zutils.GinRenderJSON(c, http.StatusServiceUnavailable,
-			gin.H{"error": "owner node has an invalid address", "owner": owner})
+		zutils.RenderJSON(c, http.StatusServiceUnavailable,
+			zhttp.H{"error": "owner node has an invalid address", "owner": owner})
 		return
 	}
 
@@ -192,36 +189,25 @@ func forward(c *gin.Context, owner string, fallbacks []string) {
 			w.WriteHeader(http.StatusBadGateway)
 		},
 	}
-	proxy.ServeHTTP(proxyWriter{ResponseWriter: c.Writer, Flusher: c.Writer}, c.Request)
+	c.ServeHTTP(proxy)
 	c.Abort()
-}
-
-// proxyWriter hides the CloseNotifier of gin's writer from the reverse
-// proxy: it is the legacy cancellation signal, the request context covers
-// the same ground and not every writer (httptest's) implements it.
-type proxyWriter struct {
-	http.ResponseWriter
-	http.Flusher
 }
 
 // scatterSearch splits a multi index search by owner, runs the parts in
 // parallel against `/api/_internal/search` and merges the responses.
-func scatterSearch(c *gin.Context, target string) {
-	body, err := io.ReadAll(c.Request.Body)
+func scatterSearch(c zhttp.Context, target string) {
+	body, err := io.ReadAll(c.Body())
 	if err != nil {
 		c.Abort()
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
-	}
-	if err := c.Request.Body.Close(); err != nil {
-		log.Warn().Err(err).Msg("cluster: close request body")
 	}
 
 	query := &meta.ZedQuery{Size: 10}
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, query); err != nil {
 			c.Abort()
-			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 			return
 		}
 	}
@@ -229,7 +215,7 @@ func scatterSearch(c *gin.Context, target string) {
 	groups := groupByOwner(resolveIndexes(target))
 	if _, local := groups[localNodeID()]; len(groups) <= 1 && (local || len(groups) == 0) {
 		// everything we would ask for is ours: let the normal handler do it
-		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		c.SetBody(body)
 		c.Next()
 		return
 	}
@@ -248,7 +234,7 @@ func scatterSearch(c *gin.Context, target string) {
 		owners = append(owners, owner)
 	}
 
-	group, ctx := errgroup.WithContext(c.Request.Context())
+	group, ctx := errgroup.WithContext(c.Context())
 	group.SetLimit(scatterParallelism)
 	var mu sync.Mutex
 	for i, owner := range owners {
@@ -267,12 +253,12 @@ func scatterSearch(c *gin.Context, target string) {
 	if err := group.Wait(); err != nil {
 		log.Error().Err(err).Str("target", target).Msg("cluster: scatter search failed")
 		c.Abort()
-		zutils.GinRenderJSON(c, http.StatusBadGateway, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadGateway, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
 	c.Abort()
-	zutils.GinRenderJSON(c, http.StatusOK, cluster.MergeSearch(responses, query))
+	zutils.RenderJSON(c, http.StatusOK, cluster.MergeSearch(responses, query))
 }
 
 // internalSearch asks one node for its part of a scattered search.
@@ -363,12 +349,12 @@ func resolveIndexes(target string) []string {
 // isScatterTarget reports whether the request asks several indexes at once
 // on an Elasticsearch search path. `/api/:target/_search` speaks the v1
 // query format and is left alone.
-func isScatterTarget(c *gin.Context, target string) bool {
+func isScatterTarget(c zhttp.Context, target string) bool {
 	if c.GetHeader(ForwardedByHeader) != "" {
 		return false
 	}
-	if !strings.HasPrefix(c.Request.URL.Path, "/es/") ||
-		!strings.HasSuffix(c.Request.URL.Path, "/_search") {
+	if !strings.HasPrefix(c.Path(), "/es/") ||
+		!strings.HasSuffix(c.Path(), "/_search") {
 		return false
 	}
 	return target == "" || isMultiTarget(target)
@@ -403,52 +389,4 @@ func localNodeID() string {
 		return node.ID
 	}
 	return ""
-}
-
-// bufferedWriter keeps the handler output in memory until the fencing
-// check passed, so a rejected write never leaks a success body.
-type bufferedWriter struct {
-	gin.ResponseWriter
-	status int
-	body   bytes.Buffer
-}
-
-func (w *bufferedWriter) Write(data []byte) (int, error) {
-	return w.body.Write(data)
-}
-
-func (w *bufferedWriter) WriteString(s string) (int, error) {
-	return w.body.WriteString(s)
-}
-
-func (w *bufferedWriter) WriteHeader(status int) {
-	w.status = status
-}
-
-func (w *bufferedWriter) WriteHeaderNow() {}
-
-func (w *bufferedWriter) Written() bool {
-	return false
-}
-
-func (w *bufferedWriter) Status() int {
-	if w.status == 0 {
-		return http.StatusOK
-	}
-	return w.status
-}
-
-func (w *bufferedWriter) Size() int {
-	return w.body.Len()
-}
-
-func (w *bufferedWriter) flush() error {
-	if w.status != 0 {
-		w.ResponseWriter.WriteHeader(w.status)
-	}
-	if w.body.Len() == 0 {
-		return nil
-	}
-	_, err := w.ResponseWriter.Write(w.body.Bytes())
-	return err
 }

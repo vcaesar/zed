@@ -16,13 +16,14 @@
 
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
+)
 
-func Setup(app *gin.Engine) {
-	// Recovery middleware recovers from any panics and writes a 500 if there was one.
-	app.Use(gin.Recovery())
-	// Debug for gin
-	if gin.Mode() == gin.DebugMode {
+func Setup(app *zhttp.Engine) {
+	// Debug mode unless gin_mode = "release". The engine recovers panics itself.
+	if config.Global.GinMode != "release" {
 		AccessLog(app)
 		SetPProf(app)
 	}

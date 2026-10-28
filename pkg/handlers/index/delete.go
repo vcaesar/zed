@@ -20,10 +20,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // Delete deletes a zed index and its associated data.
@@ -39,7 +38,7 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/index/{index} [delete]
-func Delete(c *gin.Context) {
+func Delete(c zhttp.Context) {
 	indexNames := c.Param("target")
 	if indexNames == "" {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "index name cannot be empty"})

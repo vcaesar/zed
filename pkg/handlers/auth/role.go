@@ -18,9 +18,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/vcaesar/zedsearch/pkg/auth"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -35,9 +35,9 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/role [post]
-func CreateUpdateRole(c *gin.Context) {
+func CreateUpdateRole(c zhttp.Context) {
 	var role meta.Role
-	if err := zutils.GinBindJSON(c, &role); err != nil {
+	if err := zutils.BindJSON(c, &role); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
@@ -63,7 +63,7 @@ func CreateUpdateRole(c *gin.Context) {
 // @Success 200 {object} []meta.Role
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/role [get]
-func ListRole(c *gin.Context) {
+func ListRole(c zhttp.Context) {
 	roles, err := auth.GetRoles()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
@@ -82,7 +82,7 @@ func ListRole(c *gin.Context) {
 // @Success 200 {object} meta.HTTPResponseID
 // @Success 500 {object} meta.HTTPResponseError
 // @Router /api/role/{id} [delete]
-func DeleteRole(c *gin.Context) {
+func DeleteRole(c zhttp.Context) {
 	id := c.Param("id")
 	err := auth.DeleteRole(id)
 	if err != nil {

@@ -180,9 +180,9 @@ func TestAddOrRemoveESAlias(t *testing.T) {
 				tt.nFn(index)
 			}
 
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
-			utils.SetGinRequestParams(c, tt.args.params)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
+			utils.SetRequestParams(c, tt.args.params)
 			AddOrRemoveESAlias(c)
 
 			require.Equal(t, tt.wantCode, w.Code)
@@ -263,8 +263,8 @@ func TestGetESAliases(t *testing.T) {
 				tt.nFn(index)
 			}
 
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestParams(c, tt.params)
+			c, w := utils.NewContext()
+			utils.SetRequestParams(c, tt.params)
 			GetESAliases(c)
 
 			require.Equal(t, tt.wantCode, w.Code)

@@ -90,9 +90,9 @@ func TestUpdate(t *testing.T) {
 	}
 
 	t.Run("prepare", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"_id":"1","name":"user","role":"create"}`)
-		utils.SetGinRequestParams(c, map[string]string{"target": "TestDocumentUpdate.index_1"})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, `{"_id":"1","name":"user","role":"create"}`)
+		utils.SetRequestParams(c, map[string]string{"target": "TestDocumentUpdate.index_1"})
 		CreateUpdate(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), "")
@@ -103,15 +103,15 @@ func TestUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
+			c, w := utils.NewContext()
 			if tt.args.data != nil {
-				utils.SetGinRequestData(c, tt.args.data)
+				utils.SetRequestData(c, tt.args.data)
 			}
 			if tt.args.rawData != "" {
-				utils.SetGinRequestData(c, tt.args.rawData)
+				utils.SetRequestData(c, tt.args.rawData)
 			}
 			if tt.args.params != nil {
-				utils.SetGinRequestParams(c, tt.args.params)
+				utils.SetRequestParams(c, tt.args.params)
 			}
 			Update(c)
 			assert.Equal(t, tt.args.code, w.Code)

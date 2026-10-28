@@ -70,8 +70,8 @@ func TestLogin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
 			Login(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)

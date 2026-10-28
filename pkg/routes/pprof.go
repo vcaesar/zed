@@ -16,10 +16,22 @@
 package routes
 
 import (
-	"github.com/gin-contrib/pprof"
-	"github.com/gin-gonic/gin"
+	"net/http"
+	"net/http/pprof"
+
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func SetPProf(app *gin.Engine) {
-	pprof.Register(app)
+// SetPProf serves the net/http/pprof endpoints under /debug/pprof/.
+func SetPProf(app *zhttp.Engine) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	handler := func(c zhttp.Context) { c.ServeHTTP(mux) }
+	app.GET("/debug/pprof/*any", handler)
+	app.POST("/debug/pprof/*any", handler)
 }

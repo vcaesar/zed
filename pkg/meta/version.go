@@ -19,7 +19,7 @@ package meta
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // export VERSION=`git describe --tags --always`
@@ -47,7 +47,7 @@ var (
 // @Produce json
 // @Success 200 {object} VersionResponse
 // @Router /version [get]
-func GetVersion(c *gin.Context) {
+func GetVersion(c zhttp.Context) {
 	c.JSON(http.StatusOK, VersionResponse{
 		Version:    Version,
 		Build:      Build,

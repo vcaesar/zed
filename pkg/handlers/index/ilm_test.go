@@ -36,21 +36,21 @@ func TestILMPolicyCRUD(t *testing.T) {
 	t.Cleanup(func() { _ = metadata.ILM.Delete(name) })
 
 	t.Run("put", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, policyBody(map[string]interface{}{
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, policyBody(map[string]interface{}{
 			"warm":   map[string]interface{}{"min_age": "7d"},
 			"cold":   map[string]interface{}{"min_age": "30d"},
 			"delete": map[string]interface{}{"min_age": "90d"},
 		}))
-		utils.SetGinRequestParams(c, map[string]string{"name": name})
+		utils.SetRequestParams(c, map[string]string{"name": name})
 		PutILMPolicy(c)
 		assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 		assert.Equal(t, `{"message":"ok"}`, w.Body.String())
 	})
 
 	t.Run("get", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"name": name})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"name": name})
 		GetILMPolicy(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"min_age":"7d"`)
@@ -58,11 +58,11 @@ func TestILMPolicyCRUD(t *testing.T) {
 	})
 
 	t.Run("put again bumps the version", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, policyBody(map[string]interface{}{
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, policyBody(map[string]interface{}{
 			"cold": map[string]interface{}{"min_age": "10d"},
 		}))
-		utils.SetGinRequestParams(c, map[string]string{"name": name})
+		utils.SetRequestParams(c, map[string]string{"name": name})
 		PutILMPolicy(c)
 		require.Equal(t, http.StatusOK, w.Code)
 
@@ -73,22 +73,22 @@ func TestILMPolicyCRUD(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		c, w := utils.NewGinContext()
+		c, w := utils.NewContext()
 		ListILMPolicy(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), name)
 	})
 
 	t.Run("get a missing policy", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"name": "TestILMPolicyCRUD.missing"})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"name": "TestILMPolicyCRUD.missing"})
 		GetILMPolicy(c)
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"name": name})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"name": name})
 		DeleteILMPolicy(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		_, err := metadata.ILM.Get(name)
@@ -142,9 +142,9 @@ func TestILMPolicyValidation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.body)
-			utils.SetGinRequestParams(c, map[string]string{"name": tt.key})
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.body)
+			utils.SetRequestParams(c, map[string]string{"name": tt.key})
 			PutILMPolicy(c)
 			assert.Equal(t, tt.code, w.Code, w.Body.String())
 			if tt.code == http.StatusOK {
@@ -172,8 +172,8 @@ func TestExplainILM(t *testing.T) {
 	t.Cleanup(func() { _ = metadata.ILM.Delete(policy) })
 
 	t.Run("unmanaged", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		ExplainILM(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"managed":false`)
@@ -181,16 +181,16 @@ func TestExplainILM(t *testing.T) {
 	})
 
 	t.Run("managed", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{
 			"lifecycle": map[string]interface{}{"policy": policy},
 		})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetSettings(c)
 		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 
-		c, w = utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w = utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		ExplainILM(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"managed":true`)
@@ -200,8 +200,8 @@ func TestExplainILM(t *testing.T) {
 	})
 
 	t.Run("missing index", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": "TestExplainILM.index_missing"})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": "TestExplainILM.index_missing"})
 		ExplainILM(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})

@@ -18,10 +18,9 @@ package document
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -38,7 +37,7 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/{index}/_update/{id} [post]
-func Update(c *gin.Context) {
+func Update(c zhttp.Context) {
 	indexName := c.Param("target")
 	docID := c.Param("id")
 	insert := c.Query("insert") // true or false
@@ -46,8 +45,8 @@ func Update(c *gin.Context) {
 
 	var err error
 	var doc map[string]interface{}
-	if err = zutils.GinBindJSON(c, &doc); err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+	if err = zutils.BindJSON(c, &doc); err != nil {
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -56,21 +55,21 @@ func Update(c *gin.Context) {
 		docID = id.(string)
 	}
 	if docID == "" {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "id is empty"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "id is empty"})
 		return
 	}
 
 	// If the index does not exist, then create it
 	index, _, err := core.GetOrCreateIndex(indexName, "", 0)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
 	err = index.UpdateDocument(docID, doc, insertBool)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
-	zutils.GinRenderJSON(c, http.StatusOK, meta.HTTPResponseID{Message: "ok", ID: docID})
+	zutils.RenderJSON(c, http.StatusOK, meta.HTTPResponseID{Message: "ok", ID: docID})
 }

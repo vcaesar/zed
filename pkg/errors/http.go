@@ -18,18 +18,18 @@ package errors
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func HandleError(c *gin.Context, err error) {
+func HandleError(c zhttp.Context, err error) {
 	if err != nil {
 		switch v := err.(type) {
 		case *Error:
-			c.JSON(http.StatusBadRequest, gin.H{"error": v})
+			c.JSON(http.StatusBadRequest, zhttp.H{"error": v})
 		default:
-			c.JSON(http.StatusBadRequest, gin.H{"error": v.Error()})
+			c.JSON(http.StatusBadRequest, zhttp.H{"error": v.Error()})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+	c.JSON(http.StatusOK, zhttp.H{"message": "ok"})
 }

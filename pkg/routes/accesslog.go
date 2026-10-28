@@ -18,24 +18,24 @@ package routes
 import (
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func AccessLog(app *gin.Engine) {
-	app.Use(func(c *gin.Context) {
+func AccessLog(app *zhttp.Engine) {
+	app.Use(func(c zhttp.Context) {
 		timeStart := time.Now()
-		c.Writer.Header().Set("Zed", meta.Version)
+		c.Header("Zed", meta.Version)
 
 		c.Next()
 
 		took := time.Since(timeStart) / time.Millisecond
 		log.Info().
-			Str("method", c.Request.Method).
-			Int("code", c.Writer.Status()).
+			Str("method", c.Method()).
+			Int("code", c.ResponseStatus()).
 			Int("took", int(took)).
-			Msg(c.Request.RequestURI)
+			Msg(c.RequestURI())
 	})
 }

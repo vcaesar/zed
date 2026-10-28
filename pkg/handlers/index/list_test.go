@@ -43,7 +43,7 @@ func TestList(t *testing.T) {
 		for _, s := range sortBy {
 			for _, d := range descArr {
 
-				c, w := utils.NewGinContext()
+				c, w := utils.NewContext()
 				params := map[string]string{
 					"page_num":  "1",
 					"page_size": "20",
@@ -51,7 +51,7 @@ func TestList(t *testing.T) {
 					"desc":      d,
 					"name":      "TestIndexList.index_1",
 				}
-				utils.SetGinRequestURL(c, "/api/index", params)
+				utils.SetRequestURL(c, "/api/index", params)
 				List(c)
 				assert.Equal(t, http.StatusOK, w.Code)
 				assert.NotNil(t, w.Body)
@@ -91,11 +91,11 @@ func TestIndexNameList(t *testing.T) {
 	})
 
 	t.Run("indexNameList", func(t *testing.T) {
-		c, w := utils.NewGinContext()
+		c, w := utils.NewContext()
 		params := map[string]string{
 			"name": "TestIndexNameList.index_1",
 		}
-		utils.SetGinRequestURL(c, "/api/index_name", params)
+		utils.SetRequestURL(c, "/api/index_name", params)
 		IndexNameList(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.NotNil(t, w.Body)

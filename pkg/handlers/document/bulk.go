@@ -24,13 +24,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/ider"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -47,18 +47,16 @@ import (
 // @Success 200 {object} meta.HTTPResponseRecordCount
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/_bulk [post]
-func Bulk(c *gin.Context) {
+func Bulk(c zhttp.Context) {
 	target := c.Param("target")
 
-	defer c.Request.Body.Close()
-
-	ret, err := BulkWorker(target, c.Request.Body)
+	ret, err := BulkWorker(target, c.Body())
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, meta.HTTPResponseRecordCount{Message: "bulk data inserted", RecordCount: ret.Count})
+	zutils.RenderJSON(c, http.StatusOK, meta.HTTPResponseRecordCount{Message: "bulk data inserted", RecordCount: ret.Count})
 }
 
 // ESBulk accept multiple documents, first line index metadata, second line document
@@ -73,12 +71,10 @@ func Bulk(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /es/_bulk [post]
-func ESBulk(c *gin.Context) {
+func ESBulk(c zhttp.Context) {
 	target := c.Param("target")
 
-	defer c.Request.Body.Close()
-
-	ret, err := BulkWorker(target, c.Request.Body)
+	ret, err := BulkWorker(target, c.Body())
 	if err != nil {
 		ret.Errors = true
 		ret.Error = err.Error()
@@ -89,7 +85,7 @@ func ESBulk(c *gin.Context) {
 	// update seqNo
 	atomic.AddInt64(&globalSeqNo, int64(ret.Count))
 
-	zutils.GinRenderJSON(c, http.StatusOK, ret)
+	zutils.RenderJSON(c, http.StatusOK, ret)
 }
 
 func BulkWorker(target string, body io.Reader) (*BulkResponse, error) {

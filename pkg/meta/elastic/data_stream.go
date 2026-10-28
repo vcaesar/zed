@@ -18,18 +18,17 @@ package elastic
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
-func GetDataStream(c *gin.Context) {
+func GetDataStream(c zhttp.Context) {
 	target := c.Param("target")
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{
-		"data_streams": []gin.H{
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{
+		"data_streams": []zhttp.H{
 			{
 				"name": target,
-				"timestamp_field": gin.H{
+				"timestamp_field": zhttp.H{
 					"name": "@timestamp",
 				},
 			},
@@ -37,9 +36,9 @@ func GetDataStream(c *gin.Context) {
 	})
 }
 
-func PutDataStream(c *gin.Context) {
+func PutDataStream(c zhttp.Context) {
 	target := c.Param("target")
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{
 		"name":    target,
 		"message": "ok",
 	})

@@ -119,15 +119,15 @@ func TestCreateUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
+			c, w := utils.NewContext()
 			if tt.args.data != nil {
-				utils.SetGinRequestData(c, tt.args.data)
+				utils.SetRequestData(c, tt.args.data)
 			}
 			if tt.args.rawData != "" {
-				utils.SetGinRequestData(c, tt.args.rawData)
+				utils.SetRequestData(c, tt.args.rawData)
 			}
 			if tt.args.params != nil {
-				utils.SetGinRequestParams(c, tt.args.params)
+				utils.SetRequestParams(c, tt.args.params)
 			}
 			CreateUpdate(c)
 			assert.Equal(t, tt.args.code, w.Code)

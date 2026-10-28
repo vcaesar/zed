@@ -93,9 +93,9 @@ func TestGet(t *testing.T) {
 			"target": indexName,
 		}
 
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, data)
-		utils.SetGinRequestParams(c, params)
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, data)
+		utils.SetRequestParams(c, params)
 		CreateUpdate(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"id":"1"`)
@@ -106,8 +106,8 @@ func TestGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestParams(c, tt.args.params)
+			c, w := utils.NewContext()
+			utils.SetRequestParams(c, tt.args.params)
 			Get(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)

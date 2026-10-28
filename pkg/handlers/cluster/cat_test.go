@@ -38,9 +38,9 @@ func TestCatIndices(t *testing.T) {
 	})
 
 	t.Run("json format", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
-		utils.SetGinRequestURL(c, "/es/_cat/indices", map[string]string{"format": "json"})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
+		utils.SetRequestURL(c, "/es/_cat/indices", map[string]string{"format": "json"})
 		CatIndices(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -57,9 +57,9 @@ func TestCatIndices(t *testing.T) {
 	})
 
 	t.Run("text format with header", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
-		utils.SetGinRequestURL(c, "/es/_cat/indices", map[string]string{"v": ""})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
+		utils.SetRequestURL(c, "/es/_cat/indices", map[string]string{"v": ""})
 		CatIndices(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
@@ -73,8 +73,8 @@ func TestCatIndices(t *testing.T) {
 	})
 
 	t.Run("text format without header", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
 		CatIndices(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -85,9 +85,9 @@ func TestCatIndices(t *testing.T) {
 	})
 
 	t.Run("no index matched", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": "NotExist" + indexName})
-		utils.SetGinRequestURL(c, "/es/_cat/indices", map[string]string{"format": "json"})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": "NotExist" + indexName})
+		utils.SetRequestURL(c, "/es/_cat/indices", map[string]string{"format": "json"})
 		CatIndices(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "[]", w.Body.String())
@@ -100,8 +100,8 @@ func TestCatIndices(t *testing.T) {
 
 func TestCatHealth(t *testing.T) {
 	t.Run("json format", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestURL(c, "/es/_cat/health", map[string]string{"format": "json"})
+		c, w := utils.NewContext()
+		utils.SetRequestURL(c, "/es/_cat/health", map[string]string{"format": "json"})
 		CatHealth(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -116,8 +116,8 @@ func TestCatHealth(t *testing.T) {
 	})
 
 	t.Run("text format with header", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestURL(c, "/es/_cat/health", map[string]string{"v": ""})
+		c, w := utils.NewContext()
+		utils.SetRequestURL(c, "/es/_cat/health", map[string]string{"v": ""})
 		CatHealth(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 

@@ -20,11 +20,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -52,11 +52,11 @@ type base struct {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/_aliases [post]
-func AddOrRemoveESAlias(c *gin.Context) {
+func AddOrRemoveESAlias(c zhttp.Context) {
 	var alias Alias
-	err := zutils.GinBindJSON(c, &alias)
+	err := zutils.BindJSON(c, &alias)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -101,7 +101,7 @@ func AddOrRemoveESAlias(c *gin.Context) {
 		_ = core.ZED_INDEX_ALIAS_LIST.RemoveIndexesFromAlias(alias, indexes)
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{"acknowledged": true})
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{"acknowledged": true})
 }
 
 // @Id GetESAliases
@@ -114,7 +114,7 @@ func AddOrRemoveESAlias(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{target}/_alias/{target_alias} [get]
-func GetESAliases(c *gin.Context) {
+func GetESAliases(c zhttp.Context) {
 	targetIndex := c.Param("target")
 
 	var targetIndexes []string
@@ -131,7 +131,7 @@ func GetESAliases(c *gin.Context) {
 
 	m := core.ZED_INDEX_ALIAS_LIST.GetAliasMap(targetIndexes, targetAliases)
 
-	zutils.GinRenderJSON(c, http.StatusOK, m)
+	zutils.RenderJSON(c, http.StatusOK, m)
 }
 
 func indexNameMatches(name, indexName string) bool {

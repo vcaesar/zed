@@ -24,12 +24,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/cluster"
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -63,7 +62,7 @@ var catHealthHeaders = []string{
 // @Param   v      query  string  false  "Show the column header"
 // @Success 200 {object} []elastic.CatIndexResponse
 // @Router /es/_cat/indices [get]
-func CatIndices(c *gin.Context) {
+func CatIndices(c zhttp.Context) {
 	patterns := elastic.SplitPatterns(c.Param("target"))
 
 	indexes := make([]*core.Index, 0, core.ZED_INDEX_LIST.Len())
@@ -99,7 +98,7 @@ func CatIndices(c *gin.Context) {
 	}
 
 	if isJSONFormat(c) {
-		zutils.GinRenderJSON(c, http.StatusOK, items)
+		zutils.RenderJSON(c, http.StatusOK, items)
 		return
 	}
 
@@ -124,7 +123,7 @@ func CatIndices(c *gin.Context) {
 // @Param   v      query  string  false  "Show the column header"
 // @Success 200 {object} []elastic.CatHealthResponse
 // @Router /es/_cat/health [get]
-func CatHealth(c *gin.Context) {
+func CatHealth(c zhttp.Context) {
 	now := time.Now()
 	shards := activeShards("")
 	nodes := strconv.Itoa(len(cluster.Nodes()))
@@ -146,7 +145,7 @@ func CatHealth(c *gin.Context) {
 	}
 
 	if isJSONFormat(c) {
-		zutils.GinRenderJSON(c, http.StatusOK, []elastic.CatHealthResponse{item})
+		zutils.RenderJSON(c, http.StatusOK, []elastic.CatHealthResponse{item})
 		return
 	}
 
@@ -157,7 +156,7 @@ func CatHealth(c *gin.Context) {
 	}})
 }
 
-func isJSONFormat(c *gin.Context) bool {
+func isJSONFormat(c zhttp.Context) bool {
 	return strings.EqualFold(c.Query("format"), "json")
 }
 
@@ -172,7 +171,7 @@ func clusterName() string {
 
 // renderCatText renders whitespace aligned columns, the header is only
 // written when the request carries the `v` query parameter, like ES does.
-func renderCatText(c *gin.Context, headers []string, rows [][]string) {
+func renderCatText(c zhttp.Context, headers []string, rows [][]string) {
 	widths := make([]int, len(headers))
 	_, withHeader := c.GetQuery("v")
 	if withHeader {

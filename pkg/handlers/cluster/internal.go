@@ -21,12 +21,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/cluster"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -68,10 +68,10 @@ type InternalIndexesResponse struct {
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/_internal/search [post]
-func InternalSearch(c *gin.Context) {
+func InternalSearch(c zhttp.Context) {
 	req := new(InternalSearchRequest)
-	if err := zutils.GinBindJSON(c, req); err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+	if err := zutils.BindJSON(c, req); err != nil {
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 	if req.Query == nil {
@@ -81,12 +81,12 @@ func InternalSearch(c *gin.Context) {
 	resp, err := searchLocal(req.Indexes, req.Query)
 	if err != nil {
 		log.Error().Err(err).Strs("indexes", req.Indexes).Msg("cluster: internal search")
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 	addPartialAggregations(resp, req.Query)
 
-	zutils.GinRenderJSON(c, http.StatusOK, resp)
+	zutils.RenderJSON(c, http.StatusOK, resp)
 }
 
 // InternalIndexes lists the indexes known to this node
@@ -100,7 +100,7 @@ func InternalSearch(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} InternalIndexesResponse
 // @Router /api/_internal/indexes [get]
-func InternalIndexes(c *gin.Context) {
+func InternalIndexes(c zhttp.Context) {
 	out := InternalIndexesResponse{}
 	if node := cluster.Local(); node != nil {
 		out.Node = node.ID
@@ -119,7 +119,7 @@ func InternalIndexes(c *gin.Context) {
 	}
 	sort.Slice(out.Indexes, func(i, j int) bool { return out.Indexes[i].Name < out.Indexes[j].Name })
 
-	zutils.GinRenderJSON(c, http.StatusOK, out)
+	zutils.RenderJSON(c, http.StatusOK, out)
 }
 
 // searchLocal runs the query against local indexes, the same way the user

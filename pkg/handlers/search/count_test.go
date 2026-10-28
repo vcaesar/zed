@@ -101,9 +101,9 @@ func TestCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
-			utils.SetGinRequestParams(c, tt.args.params)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
+			utils.SetRequestParams(c, tt.args.params)
 			Count(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)
@@ -111,8 +111,8 @@ func TestCount(t *testing.T) {
 	}
 
 	t.Run("count with nil body", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
 		Count(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `{"count":3,`)

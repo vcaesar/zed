@@ -61,9 +61,9 @@ func TestGetRenderer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestURL(c, "/", tt.args.qparams)
-			GinRenderJSON(c, http.StatusOK, Response{Name: "zed"})
+			c, w := utils.NewContext()
+			utils.SetRequestURL(c, "/", tt.args.qparams)
+			RenderJSON(c, http.StatusOK, Response{Name: "zed"})
 			if tt.want.pretty {
 				assert.Contains(t, w.Body.String(), "\n")
 			} else {

@@ -69,8 +69,8 @@ func TestInternalSearch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.body)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.body)
 			InternalSearch(c)
 			require.Equal(t, tt.wantCode, w.Code, w.Body.String())
 
@@ -91,7 +91,7 @@ func TestInternalIndexes(t *testing.T) {
 	require.NoError(t, core.StoreIndex(index))
 	t.Cleanup(func() { assert.NoError(t, core.DeleteIndex(indexName)) })
 
-	c, w := utils.NewGinContext()
+	c, w := utils.NewContext()
 	InternalIndexes(c)
 	require.Equal(t, http.StatusOK, w.Code)
 

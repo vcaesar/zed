@@ -48,8 +48,8 @@ func TestReindex(t *testing.T) {
 	})
 
 	t.Run("reindex all documents", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"source":{"index":"`+sourceName+`"},"dest":{"index":"`+destName+`"}}`)
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, `{"source":{"index":"`+sourceName+`"},"dest":{"index":"`+destName+`"}}`)
 		Reindex(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -81,8 +81,8 @@ func TestReindex(t *testing.T) {
 	})
 
 	t.Run("reindex with query and max_docs", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"source":{"index":"`+sourceName+`","query":{"match":{"name":"zed"}}},"dest":{"index":"`+limitedName+`"},"max_docs":1}`)
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, `{"source":{"index":"`+sourceName+`","query":{"match":{"name":"zed"}}},"dest":{"index":"`+limitedName+`"},"max_docs":1}`)
 		Reindex(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -144,8 +144,8 @@ func TestReindex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
 			Reindex(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)
@@ -153,7 +153,7 @@ func TestReindex(t *testing.T) {
 	}
 
 	t.Run("nil body", func(t *testing.T) {
-		c, w := utils.NewGinContext()
+		c, w := utils.NewContext()
 		Reindex(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "source.index and dest.index are required")

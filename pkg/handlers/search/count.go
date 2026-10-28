@@ -21,13 +21,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -45,14 +45,14 @@ import (
 // @Success 200 {object} elastic.CountResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_count [post]
-func Count(c *gin.Context) {
+func Count(c zhttp.Context) {
 	indexName := c.Param("target")
 
 	// the body is optional, an empty body counts all documents
 	body, err := readOptionalBody(c)
 	if err != nil {
 		log.Printf("handlers.search.Count: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -60,7 +60,7 @@ func Count(c *gin.Context) {
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, query); err != nil {
 			log.Printf("handlers.search.Count: %s", err.Error())
-			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 			return
 		}
 	}
@@ -85,7 +85,7 @@ func Count(c *gin.Context) {
 	}
 
 	shards := countShards(indexNames)
-	zutils.GinRenderJSON(c, http.StatusOK, elastic.CountResponse{
+	zutils.RenderJSON(c, http.StatusOK, elastic.CountResponse{
 		Count: int64(resp.Hits.Total.Value),
 		Shards: meta.Shards{
 			Total:      shards,
@@ -97,12 +97,8 @@ func Count(c *gin.Context) {
 }
 
 // readOptionalBody reads the request body, GET requests may not carry one at all.
-func readOptionalBody(c *gin.Context) ([]byte, error) {
-	if c.Request.Body == nil {
-		return nil, nil
-	}
-	defer c.Request.Body.Close()
-	return io.ReadAll(c.Request.Body)
+func readOptionalBody(c zhttp.Context) ([]byte, error) {
+	return io.ReadAll(c.Body())
 }
 
 // countShards sums the shards of every index matching indexNames, it never returns less than 1.

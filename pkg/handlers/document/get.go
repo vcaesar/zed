@@ -18,10 +18,9 @@ package document
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -37,26 +36,26 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/{index}/_doc/{id} [get]
-func Get(c *gin.Context) {
+func Get(c zhttp.Context) {
 	indexName := c.Param("target")
 	docID := c.Param("id")
 
 	if docID == "" {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "id is empty"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "id is empty"})
 		return
 	}
 
 	// If the index does not exist, then create it
 	index, _, err := core.GetOrCreateIndex(indexName, "", 0)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
 	source, err := index.GetDocument(docID)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
-	zutils.GinRenderJSON(c, http.StatusOK, source)
+	zutils.RenderJSON(c, http.StatusOK, source)
 }

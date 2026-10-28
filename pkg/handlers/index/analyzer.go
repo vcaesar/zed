@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/vcaesar/riot/analysis"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -40,9 +40,9 @@ import (
 // @Success 200 {object} AnalyzeResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/_analyze [post]
-func Analyze(c *gin.Context) {
+func Analyze(c zhttp.Context) {
 	var query AnalyzeRequest
-	if err := zutils.GinBindJSON(c, &query); err != nil {
+	if err := zutils.BindJSON(c, &query); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}

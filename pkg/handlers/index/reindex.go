@@ -20,13 +20,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -63,41 +63,41 @@ type ReindexDest struct {
 // @Success 200 {object} elastic.ReindexResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/_reindex [post]
-func Reindex(c *gin.Context) {
+func Reindex(c zhttp.Context) {
 	start := time.Now()
 
 	req := new(ReindexRequest)
 	body, err := readOptionalBody(c)
 	if err != nil {
 		log.Printf("handlers.index.Reindex: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, req); err != nil {
 			log.Printf("handlers.index.Reindex: %s", err.Error())
-			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 			return
 		}
 	}
 
 	if req.Source.Index == "" || req.Dest.Index == "" {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "source.index and dest.index are required"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "source.index and dest.index are required"})
 		return
 	}
 	if req.Source.Index == req.Dest.Index {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "source.index and dest.index must be different"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "source.index and dest.index must be different"})
 		return
 	}
 
 	source, exists := core.GetIndex(req.Source.Index)
 	if !exists {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + req.Source.Index + " does not exists"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + req.Source.Index + " does not exists"})
 		return
 	}
 	dest, _, err := core.GetOrCreateIndex(req.Dest.Index, "", 0)
 	if err != nil {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -152,7 +152,7 @@ func Reindex(c *gin.Context) {
 		}
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, elastic.ReindexResponse{
+	zutils.RenderJSON(c, http.StatusOK, elastic.ReindexResponse{
 		Took:                 time.Since(start).Milliseconds(),
 		TimedOut:             false,
 		Total:                total,

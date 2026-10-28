@@ -19,15 +19,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func NewESInfo(c *gin.Context) *ESInfo {
+func NewESInfo(c zhttp.Context) *ESInfo {
 	version := strings.TrimLeft(meta.Version, "v")
-	userAgent := c.Request.UserAgent()
+	userAgent := c.GetHeader("User-Agent")
 	// eg.1: User-Agent:[elastic-transport-ruby/8.0.1 (RUBY_VERSION: 3.1.2; linux x86_64; Faraday v1.10.0)]
 	if strings.Contains(strings.ToLower(userAgent), "elastic") {
 		reg := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+)`)
@@ -57,13 +56,13 @@ func NewESInfo(c *gin.Context) *ESInfo {
 	}
 }
 
-func NewESLicense(_ *gin.Context) *ESLicense {
+func NewESLicense(_ zhttp.Context) *ESLicense {
 	return &ESLicense{
 		Status: "active",
 	}
 }
 
-func NewESXPack(_ *gin.Context) *ESXPack {
+func NewESXPack(_ zhttp.Context) *ESXPack {
 	return &ESXPack{
 		Build:    make(map[string]bool),
 		Features: make(map[string]bool),

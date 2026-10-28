@@ -21,12 +21,12 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -49,7 +49,7 @@ type FieldCapsRequest struct {
 // @Success 200 {object} elastic.FieldCapsResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_field_caps [post]
-func FieldCaps(c *gin.Context) {
+func FieldCaps(c zhttp.Context) {
 	target := c.Param("target")
 
 	patterns := elastic.SplitPatterns(c.Query("fields"))
@@ -58,7 +58,7 @@ func FieldCaps(c *gin.Context) {
 	body, err := readOptionalBody(c)
 	if err != nil {
 		log.Printf("handlers.index.FieldCaps: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -66,7 +66,7 @@ func FieldCaps(c *gin.Context) {
 		req := new(FieldCapsRequest)
 		if err := json.Unmarshal(body, req); err != nil {
 			log.Printf("handlers.index.FieldCaps: %s", err.Error())
-			zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+			zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 			return
 		}
 		patterns = append(patterns, req.Fields...)
@@ -80,7 +80,7 @@ func FieldCaps(c *gin.Context) {
 		}
 	}
 	if len(indexes) == 0 && target != "" {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + target + " does not exists"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + target + " does not exists"})
 		return
 	}
 
@@ -114,16 +114,12 @@ func FieldCaps(c *gin.Context) {
 	}
 	sort.Strings(resp.Indices)
 
-	zutils.GinRenderJSON(c, http.StatusOK, resp)
+	zutils.RenderJSON(c, http.StatusOK, resp)
 }
 
 // readOptionalBody reads the request body, GET requests may not carry one at all.
-func readOptionalBody(c *gin.Context) ([]byte, error) {
-	if c.Request.Body == nil {
-		return nil, nil
-	}
-	defer c.Request.Body.Close()
-	return io.ReadAll(c.Request.Body)
+func readOptionalBody(c zhttp.Context) ([]byte, error) {
+	return io.ReadAll(c.Body())
 }
 
 // esFieldType maps a zed property type to the elasticsearch field type.

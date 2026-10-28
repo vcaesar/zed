@@ -59,8 +59,8 @@ func TestHealth(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestParams(c, tt.args.params)
+			c, w := utils.NewContext()
+			utils.SetRequestParams(c, tt.args.params)
 			Health(c)
 			assert.Equal(t, http.StatusOK, w.Code)
 
@@ -79,7 +79,7 @@ func TestHealth(t *testing.T) {
 	}
 
 	t.Run("all indexes", func(t *testing.T) {
-		c, w := utils.NewGinContext()
+		c, w := utils.NewContext()
 		Health(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 

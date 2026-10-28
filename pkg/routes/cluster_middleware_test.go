@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/cluster"
 	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
@@ -44,7 +44,7 @@ type clusterTestEnv struct {
 	store    *cluster.MemoryStore
 	assigner *cluster.Assigner
 	peer     *httptest.Server
-	engine   *gin.Engine
+	engine   *zhttp.Engine
 	requests chan *http.Request
 }
 
@@ -92,10 +92,10 @@ func setupClusterEnv(t *testing.T) *clusterTestEnv {
 	env.own(t, localIndex, "node-a")
 	env.own(t, remoteIndex, "node-b")
 
-	env.engine = gin.New()
+	env.engine = zhttp.New()
 	env.engine.Use(ClusterRoute())
-	handler := func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"served_by": "node-a", "index": c.Param("target")})
+	handler := func(c zhttp.Context) {
+		c.JSON(http.StatusOK, zhttp.H{"served_by": "node-a", "index": c.Param("target")})
 	}
 	env.engine.GET("/api/:target/_doc/:id", handler)
 	env.engine.POST("/api/:target/_doc", handler)
@@ -131,10 +131,10 @@ func (env *clusterTestEnv) do(req *http.Request) *httptest.ResponseRecorder {
 func TestClusterRouteDisabled(t *testing.T) {
 	require.False(t, cluster.Enabled())
 
-	engine := gin.New()
+	engine := zhttp.New()
 	engine.Use(ClusterRoute())
-	engine.GET("/api/:target/_doc/:id", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"served_by": "local"})
+	engine.GET("/api/:target/_doc/:id", func(c zhttp.Context) {
+		c.JSON(http.StatusOK, zhttp.H{"served_by": "local"})
 	})
 
 	w := httptest.NewRecorder()
@@ -191,9 +191,9 @@ func TestClusterRouteRejectsWriteAfterHandoff(t *testing.T) {
 	env := setupClusterEnv(t)
 
 	// the partition moves to node-b while the write is being handled
-	env.engine.POST("/api/:target/_move", func(c *gin.Context) {
+	env.engine.POST("/api/:target/_move", func(c zhttp.Context) {
 		env.own(t, localIndex, "node-b")
-		c.JSON(http.StatusOK, gin.H{"written": true})
+		c.JSON(http.StatusOK, zhttp.H{"written": true})
 	})
 
 	w := env.do(httptest.NewRequest(http.MethodPost, "/api/"+localIndex+"/_move", nil))
@@ -210,11 +210,11 @@ func TestClusterRouteWriteKeepsEpoch(t *testing.T) {
 	env := setupClusterEnv(t)
 
 	var seen int64
-	env.engine.POST("/api/:target/_write", func(c *gin.Context) {
+	env.engine.POST("/api/:target/_write", func(c zhttp.Context) {
 		epoch, ok := c.Get(ClusterEpochKey)
 		require.True(t, ok, "the handler must see the epoch it was admitted with")
 		seen = epoch.(int64)
-		c.JSON(http.StatusCreated, gin.H{"written": true})
+		c.JSON(http.StatusCreated, zhttp.H{"written": true})
 	})
 
 	w := env.do(httptest.NewRequest(http.MethodPost, "/api/"+localIndex+"/_write", nil))
@@ -372,14 +372,12 @@ func TestResolveIndexesPatterns(t *testing.T) {
 }
 
 func TestIsScatterTarget(t *testing.T) {
-	newContext := func(method, path, forwardedBy string) *gin.Context {
+	newContext := func(method, path, forwardedBy string) zhttp.Context {
 		req := httptest.NewRequest(method, path, strings.NewReader(""))
 		if forwardedBy != "" {
 			req.Header.Set(ForwardedByHeader, forwardedBy)
 		}
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = req
-		return c
+		return zhttp.NewHTTPContext(httptest.NewRecorder(), req)
 	}
 
 	tests := []struct {

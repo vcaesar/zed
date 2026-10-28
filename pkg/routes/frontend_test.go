@@ -20,12 +20,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch"
 	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 func TestFrontendRoutes(t *testing.T) {
@@ -34,7 +34,7 @@ func TestFrontendRoutes(t *testing.T) {
 	oldSwagger := config.Global.ZedSwaggerEnable
 	t.Cleanup(func() { config.Global.ZedSwaggerEnable = oldSwagger })
 	config.Global.ZedSwaggerEnable = true
-	r := gin.New()
+	r := zhttp.New()
 	SetRoutes(r)
 
 	tests := []struct {

@@ -19,54 +19,43 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/auth"
 	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func AuthMiddleware(permission string) func(c *gin.Context) {
+func AuthMiddleware(permission string) func(c zhttp.Context) {
 	auth.AddPermission(permission)
-	return func(c *gin.Context) {
+	return func(c zhttp.Context) {
 		// Get the Basic Authentication credentials
-		user, password, hasAuth := c.Request.BasicAuth()
+		user, password, hasAuth := c.BasicAuth()
 		if hasAuth {
 			if u, ok := auth.VerifyCredentials(user, password); ok {
 				if auth.VerifyRoleHasPermission(u.Role, permission) {
 					c.Next()
 				} else {
-					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "No permission:" + permission})
+					c.AbortWithStatusJSON(http.StatusForbidden, zhttp.H{"error": "No permission:" + permission})
 					return
 				}
 			} else {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"auth": "Invalid credentials"})
+				c.AbortWithStatusJSON(http.StatusUnauthorized, zhttp.H{"auth": "Invalid credentials"})
 				return
 			}
 		} else {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"auth": "Missing credentials"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, zhttp.H{"auth": "Missing credentials"})
 			return
 		}
 	}
 }
 
-func ESMiddleware(c *gin.Context) {
+func ESMiddleware(c zhttp.Context) {
 	// Some es clients will check header("X-elastic-product") == "Elasticsearch".
 	// If not, it will not work, and show "The client noticed that the server is not Elasticsearch and we do not support this unknown product."
 	c.Header("X-elastic-product", "Elasticsearch")
 }
 
-func IndexAliasMiddleware(c *gin.Context) {
-	target := ""
-	ix := 0
-
-	for i, entry := range c.Params {
-		if entry.Key == "target" {
-			target = entry.Value
-			ix = i
-			break
-		}
-	}
-
+func IndexAliasMiddleware(c zhttp.Context) {
+	target := c.Param("target")
 	if target == "" {
 		c.Next()
 		return
@@ -81,7 +70,7 @@ func IndexAliasMiddleware(c *gin.Context) {
 	newTarget := strings.Join(indexes, ",")
 
 	if newTarget != "" {
-		c.Params[ix].Value = newTarget // set target new value in the request context
+		c.SetParam("target", newTarget) // set target new value in the request context
 	}
 	c.Next()
 }
