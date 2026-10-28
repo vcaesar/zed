@@ -32,7 +32,7 @@ type Engine struct {
 	backend     backend
 }
 
-// backend is the server a build runs on: fiber, or gin with `-tags gin`.
+// backend is the server a build runs on: gin, or fiber with `-tags fiber`.
 type backend interface {
 	handle(method, path string, handlers []HandlerFunc)
 	handler() http.Handler

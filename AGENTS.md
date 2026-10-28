@@ -7,7 +7,7 @@ ZedSearch — lightweight Elasticsearch alternative. Go 1.25 server (`github.com
 - `cmd/zedsearch/main.go` — entrypoint (telemetry, HTTP server, shutdown); swag annotation root.
 - `embed.go` — `//go:embed frontend/dist` behind the `web` build tag; default builds are API-only. `pkg/webbuild` handles the source CLI's opt-in `web` rebuild.
 - `pkg/config` — `config.Global`: embedded `default.toml` → optional `./conf/zed.toml` → env vars. Field tag `toml:"zed_server_port"` is both the TOML key and, uppercased, the env var. Durations in ns, sizes in bytes. No `.env`, no `ZED_CONFIG_FILE`.
-- `pkg/zhttp` — HTTP layer: `zhttp.Context`/`Engine` with gin middleware semantics; fiber v3 by default (`fiber.go`), gin with `-tags gin` (`gin.go`). `NewHTTPContext` backs handler tests.
+- `pkg/zhttp` — HTTP layer: `zhttp.Context`/`Engine` with gin middleware semantics; gin by default (`gin.go`), fiber v3 with `-tags fiber` (`fiber.go`). `NewHTTPContext` backs handler tests.
 - `pkg/routes` — `/api/...` (native) and `/es/...` (Elasticsearch-compatible), auth middleware, pprof (debug only), swagger.
 - `pkg/handlers/{auth,index,document,search}` — `zhttp.Context` handlers.
 - `pkg/core` — indexes, shards, WAL-backed writes, search.
@@ -28,7 +28,7 @@ ZED_FIRST_ADMIN_USER=admin ZED_FIRST_ADMIN_PASSWORD=... go run cmd/zedsearch/mai
 go run cmd/zedsearch/main.go web                  # npm ci/build + tagged rebuild + start
 cd frontend && npm ci && npm run build && cd ..   # only needed for -tags web builds/tests
 go build -tags web -o zedsearch cmd/zedsearch/main.go
-go build -tags gin -o zedsearch cmd/zedsearch/main.go  # gin instead of fiber (combine: -tags web,gin)
+go build -tags fiber -o zedsearch cmd/zedsearch/main.go  # fiber instead of gin (combine: -tags web,fiber)
 cd frontend && npm run dev                        # UI dev server
 ./sh/develop.sh                                   # reflex live-reload
 ```
@@ -64,5 +64,5 @@ CI (GitHub Actions): `ci.yml` — lint, vet, build, test on ubuntu/macos/windows
 - First run needs `ZED_FIRST_ADMIN_USER`/`ZED_FIRST_ADMIN_PASSWORD`; never commit a `./conf/zed.toml` with real credentials.
 - `ZED_METADATA_STORAGE=etcd` tests need a running etcd with auth (`test/README.md`).
 - Behavior changes usually need both `/api` and `/es` routes updated.
-- Fiber caps request bodies at `zed_server_body_limit` (100 MB); gin builds are unlimited.
+- Only `-tags fiber` builds cap request bodies at `zed_server_body_limit` (100 MB); default gin builds are unlimited.
 - Coverage gate is 70% — add tests with behavior changes.

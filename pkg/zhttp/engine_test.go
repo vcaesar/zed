@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// These tests run against the backend of the build: fiber by default,
-// gin with `-tags gin`.
+// These tests run against the backend of the build: gin by default,
+// fiber with `-tags fiber`.
 
 func do(e *Engine, method, target string, body io.Reader) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()

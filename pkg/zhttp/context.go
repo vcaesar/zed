@@ -14,7 +14,7 @@
  */
 
 // Package zhttp is the HTTP layer the handlers are written against. The
-// server runs on fiber by default, `-tags gin` switches it to gin; both run
+// server runs on gin by default, `-tags fiber` switches it to fiber; both run
 // the same handler chains with gin's middleware semantics.
 package zhttp
 

@@ -1,4 +1,4 @@
-//go:build !gin
+//go:build fiber
 
 /* Copyright 2026 AtomAI
 *
