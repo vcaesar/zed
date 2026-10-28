@@ -141,7 +141,6 @@ export ZED_FIRST_ADMIN_USER=admin ZED_FIRST_ADMIN_PASSWORD=Complexpass#123
 export ZED_CLUSTER_ENABLE=true
 export ZED_CLUSTER_NAME=prod
 export ZED_ETCD_ENDPOINTS=http://10.0.0.10:2379
-export ZED_METADATA_STORAGE=etcd          # share index metadata, see limits
 export ZED_CLUSTER_NODE_ID=node-1
 export ZED_CLUSTER_ADVERTISE_ADDR=http://10.0.0.1:4080
 ./zedsearch
@@ -176,9 +175,8 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
   are unavailable until it comes back, even though the partition is
   reassigned. Use object storage for data that must survive a node. This is
   failover by reassignment, not full HA.
-* **index metadata must be shared** for pattern search and routing to see
-  every index: run with `ZED_METADATA_STORAGE=etcd`. With the default bolt
-  storage each node only knows its own indexes.
+* index metadata is shared through etcd: cluster mode always stores it there,
+  whatever `ZED_METADATA_STORAGE` says, so every node sees every index.
 * read replicas serve cold indexes only; hot/warm object-storage indexes
   still read through the owner (they need its writer)
 * replica fallback covers an owner missing from membership, not an owner

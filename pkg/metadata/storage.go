@@ -31,15 +31,27 @@ var ErrorKeyNotExists = errors.New("key not exists")
 var db storage.Storager
 
 func init() {
-	if strings.ToLower(config.Global.ServerMode) == "cluster" {
+	switch backend(config.Global.MetadataStorage, config.Global.ServerMode, config.Global.Cluster.Enable) {
+	case "etcd":
 		db = etcd.New(config.Global.Etcd.Prefix + "/metadata")
-	} else {
-		switch strings.ToLower(config.Global.MetadataStorage) {
-		case "badger":
-			db = badger.New("_metadata.db")
-		default:
-			db = bolt.New("_metadata.bolt")
-		}
+	case "badger":
+		db = badger.New("_metadata.db")
+	default:
+		db = bolt.New("_metadata.bolt")
+	}
+}
+
+// backend picks the metadata store. Cluster nodes must share index metadata,
+// so cluster mode always uses etcd whatever zed_metadata_storage says.
+func backend(metadataStorage, serverMode string, clusterEnable bool) string {
+	if clusterEnable || strings.EqualFold(serverMode, "cluster") {
+		return "etcd"
+	}
+	switch storage := strings.ToLower(metadataStorage); storage {
+	case "etcd", "badger":
+		return storage
+	default:
+		return "bolt"
 	}
 }
 
