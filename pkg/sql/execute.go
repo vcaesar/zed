@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
 )
 
 // Translate parses sql and returns the query DSL it maps to.

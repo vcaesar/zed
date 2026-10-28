@@ -19,7 +19,7 @@ package token
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
 )
 
 func NewUpperCaseTokenFilter() (analysis.TokenFilter, error) {

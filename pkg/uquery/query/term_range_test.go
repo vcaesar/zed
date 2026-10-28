@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vcaesar/riot"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // testMappings returns a mapping with one field per type used across the query tests.

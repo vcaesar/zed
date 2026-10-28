@@ -22,8 +22,8 @@ import (
 
 	"vitess.io/vitess/go/vt/sqlparser"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // DefaultFetchSize bounds a SELECT that carries no LIMIT.

@@ -23,8 +23,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // DefaultPartitions is used when the config leaves the count unset.

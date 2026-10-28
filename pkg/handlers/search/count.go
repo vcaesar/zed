@@ -24,12 +24,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // Count returns the number of documents matching a query

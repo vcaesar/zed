@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/directory"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/bluge/directory"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 // useObjectStore points the s3 backend at an in-memory store and makes it the

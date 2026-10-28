@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/core"
 )
 
 func TestSQLMappingsAPI(t *testing.T) {

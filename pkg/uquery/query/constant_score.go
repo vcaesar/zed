@@ -23,9 +23,9 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/search"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // ConstantScoreQuery wraps a filter query and gives every matching document

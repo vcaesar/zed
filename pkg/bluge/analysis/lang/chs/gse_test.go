@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 // Analyzer expectations below need the small dict plus two words only the big dict has.

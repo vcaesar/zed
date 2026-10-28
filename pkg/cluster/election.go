@@ -22,7 +22,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/errors"
 )
 
 // Election is a lease based leader election on `<prefix>leader`. The winner

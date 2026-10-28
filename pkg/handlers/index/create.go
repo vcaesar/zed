@@ -22,12 +22,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	"github.com/zincsearch/zincsearch/pkg/uquery/mappings"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/uquery/mappings"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // @Id CreateIndex

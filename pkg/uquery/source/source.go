@@ -18,9 +18,9 @@ package source
 import (
 	"strings"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 func Request(v interface{}) (*meta.Source, error) {

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 type Mappings struct {

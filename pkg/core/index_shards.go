@@ -28,11 +28,11 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery/source"
-	"github.com/zincsearch/zincsearch/pkg/wal"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery/source"
+	"github.com/vcaesar/zedsearch/pkg/wal"
 )
 
 const (
@@ -60,7 +60,7 @@ type IndexShard struct {
 
 // IndexSecondShard second layer shard by auto increate shards for index.
 // Under first layer shards, Documents will store in this layer shards.
-// Use a environment `config.ZINC_SHARD_MAX_SIZE` to control second layer shard max size.
+// Use a environment `config.ZED_SHARD_MAX_SIZE` to control second layer shard max size.
 // If the shard size over limit then will auto create a new shard for accept new documents.
 // And we will log time range for this layer shards, when query data we can use time range
 // filter which shards need to find data. We keep one shard size wouldn't over limit,

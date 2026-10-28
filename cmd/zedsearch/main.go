@@ -33,14 +33,14 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch"
-	"github.com/zincsearch/zincsearch/pkg/cluster"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
-	"github.com/zincsearch/zincsearch/pkg/routes"
-	"github.com/zincsearch/zincsearch/pkg/webbuild"
+	"github.com/vcaesar/zedsearch"
+	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/webbuild"
 )
 
 // @title           Zinc Search engine API
@@ -60,7 +60,7 @@ import (
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "web" {
 		os.Args = append(os.Args[:1], os.Args[2:]...)
-		front, err := zincsearch.GetFrontendAssets()
+		front, err := zedsearch.GetFrontendAssets()
 		if err != nil {
 			log.Fatal().Err(err).Msg("frontend assets")
 		}
@@ -218,7 +218,7 @@ func profiling() {
 	}
 
 	_, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: "zincsearch-" + ProfileID,
+		ApplicationName: "zedsearch-" + ProfileID,
 
 		// replace this with the address of pyroscope server
 		ServerAddress: config.Global.ProfilerServer,

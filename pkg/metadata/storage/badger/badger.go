@@ -23,9 +23,9 @@ import (
 	"github.com/dgraph-io/badger/v4/options"
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage"
 )
 
 type badgerStorage struct {

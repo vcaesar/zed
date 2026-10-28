@@ -16,7 +16,7 @@
 
 package meta
 
-import "github.com/zincsearch/zincsearch/pkg/bluge/aggregation"
+import "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
 
 // ZincQuery is the query object for the zinc index. compatible ES Query DSL
 type ZincQuery struct {

@@ -50,11 +50,11 @@ func mustLoad(t *testing.T) *config {
 
 func TestConfig(t *testing.T) {
 	isolate(t)
-	t.Setenv("ZINC_SERVER_MODE", "node")
-	t.Setenv("ZINC_NODE_ID", "8")
-	t.Setenv("ZINC_ETCD_ENDPOINTS", "localhost:2379")
-	t.Setenv("ZINC_MAX_DOCUMENT_SIZE", "1m")
-	t.Setenv("ZINC_WAL_SYNC_INTERVAL", "10s")
+	t.Setenv("ZED_SERVER_MODE", "node")
+	t.Setenv("ZED_NODE_ID", "8")
+	t.Setenv("ZED_ETCD_ENDPOINTS", "localhost:2379")
+	t.Setenv("ZED_MAX_DOCUMENT_SIZE", "1m")
+	t.Setenv("ZED_WAL_SYNC_INTERVAL", "10s")
 
 	t.Run("check", func(t *testing.T) {
 		c := mustLoad(t)
@@ -103,7 +103,7 @@ func TestConfig(t *testing.T) {
 			{value: "1GB", expect: 1000000000},
 		}
 		for _, v := range tests {
-			t.Setenv("ZINC_MAX_DOCUMENT_SIZE", v.value)
+			t.Setenv("ZED_MAX_DOCUMENT_SIZE", v.value)
 			assert.Equal(t, v.expect, mustLoad(t).MaxDocumentSize)
 		}
 
@@ -117,7 +117,7 @@ func TestConfig(t *testing.T) {
 			{value: "1m", expect: time.Minute},
 		}
 		for _, v := range dt {
-			t.Setenv("ZINC_WAL_SYNC_INTERVAL", v.value)
+			t.Setenv("ZED_WAL_SYNC_INTERVAL", v.value)
 			assert.Equal(t, v.expect, mustLoad(t).WalSyncInterval)
 		}
 	})
@@ -126,18 +126,18 @@ func TestConfig(t *testing.T) {
 func TestSentryDSNOverride(t *testing.T) {
 	isolate(t)
 	customDSN := "https://secretToken.my.sentry.com/1234"
-	t.Setenv("ZINC_SENTRY_DSN", customDSN)
+	t.Setenv("ZED_SENTRY_DSN", customDSN)
 	assert.Equal(t, customDSN, mustLoad(t).SentryDSN)
 }
 
 func TestS3Override(t *testing.T) {
 	isolate(t)
-	t.Setenv("ZINC_S3_ENDPOINT", "localhost:9000")
-	t.Setenv("ZINC_S3_BUCKET", "zinc")
-	t.Setenv("ZINC_S3_REGION", "us-east-1")
-	t.Setenv("ZINC_S3_ACCESS_KEY_ID", "minioadmin")
-	t.Setenv("ZINC_S3_SECRET_ACCESS_KEY", "minioadmin")
-	t.Setenv("ZINC_S3_USE_SSL", "false")
+	t.Setenv("ZED_S3_ENDPOINT", "localhost:9000")
+	t.Setenv("ZED_S3_BUCKET", "zinc")
+	t.Setenv("ZED_S3_REGION", "us-east-1")
+	t.Setenv("ZED_S3_ACCESS_KEY_ID", "minioadmin")
+	t.Setenv("ZED_S3_SECRET_ACCESS_KEY", "minioadmin")
+	t.Setenv("ZED_S3_USE_SSL", "false")
 	c := mustLoad(t)
 	assert.Equal(t, "localhost:9000", c.S3.Endpoint)
 	assert.Equal(t, "zinc", c.S3.Bucket)
@@ -199,15 +199,15 @@ func TestTOMLEnvironmentOverrides(t *testing.T) {
 	}{
 		{name: "unset", env: nil},
 		{name: "empty", env: map[string]string{
-			"ZINC_SERVER_PORT": "", "ZINC_WAL_SYNC_INTERVAL": "",
-			"ZINC_PLUGIN_GSE_ENABLE_STOP": "",
+			"ZED_SERVER_PORT": "", "ZED_WAL_SYNC_INTERVAL": "",
+			"ZED_PLUGIN_GSE_ENABLE_STOP": "",
 		}},
 		{name: "overridden", env: map[string]string{
-			"ZINC_SERVER_PORT": "9090", "ZINC_NODE_ID": "0",
-			"ZINC_SENTRY": "false", "ZINC_WAL_SYNC_INTERVAL": "25ms",
-			"ZINC_MAX_DOCUMENT_SIZE": "2mb", "ZINC_SHARD_MAX_SIZE": "2048",
-			"ZINC_ETCD_ENDPOINTS":         "one:2379,two:2379",
-			"ZINC_PLUGIN_GSE_ENABLE_STOP": "false",
+			"ZED_SERVER_PORT": "9090", "ZED_NODE_ID": "0",
+			"ZED_SENTRY": "false", "ZED_WAL_SYNC_INTERVAL": "25ms",
+			"ZED_MAX_DOCUMENT_SIZE": "2mb", "ZED_SHARD_MAX_SIZE": "2048",
+			"ZED_ETCD_ENDPOINTS":         "one:2379,two:2379",
+			"ZED_PLUGIN_GSE_ENABLE_STOP": "false",
 		}},
 	}
 	for _, tt := range tests {
@@ -251,12 +251,12 @@ func clearConfigEnv(t *testing.T, rt reflect.Type) {
 
 func TestLoadConfTOML(t *testing.T) {
 	isolate(t)
-	const contents = `zinc_first_admin_user = "toml-admin"
-zinc_first_admin_password = "test-only-password"
-zinc_server_port = "9080"
-zinc_enable_sql_mappings = false
+	const contents = `zed_first_admin_user = "toml-admin"
+zed_first_admin_password = "test-only-password"
+zed_server_port = "9080"
+zed_enable_sql_mappings = false
 [Shard]
-zinc_shard_num = 5
+zed_shard_num = 5
 `
 	if !assert.NoError(t, os.WriteFile(configFile, []byte(contents), 0o600)) {
 		return
@@ -271,8 +271,8 @@ zinc_shard_num = 5
 	assert.Equal(t, time.Second, c.WalSyncInterval)
 
 	// process environment wins over the TOML file
-	t.Setenv("ZINC_FIRST_ADMIN_PASSWORD", "env-test-password")
-	t.Setenv("ZINC_ENABLE_SQL_MAPPINGS", "true")
+	t.Setenv("ZED_FIRST_ADMIN_PASSWORD", "env-test-password")
+	t.Setenv("ZED_ENABLE_SQL_MAPPINGS", "true")
 	c = mustLoad(t)
 	assert.Equal(t, "env-test-password", c.FirstAdminPassword)
 	assert.True(t, c.EnableSQLMappings)
@@ -281,13 +281,15 @@ zinc_shard_num = 5
 
 func TestLoadIgnoresOtherSources(t *testing.T) {
 	isolate(t)
-	// Only ./conf/zinc.toml is read; ZINC_CONFIG_FILE, .env, ./zinc.toml and default.toml are not config sources.
-	assert.Equal(t, filepath.Join("conf", "zinc.toml"), filepath.Clean(configFile))
-	for _, name := range []string{"other.toml", "zinc.toml", "default.toml", "conf/default.toml"} {
-		assert.NoError(t, os.WriteFile(name, []byte(`zinc_server_port = "1"`+"\n"), 0o600))
+	// Only ./conf/zed.toml is read; ZED_CONFIG_FILE, .env, ./zed.toml, the legacy conf/zinc.toml and default.toml are not config sources.
+	assert.Equal(t, filepath.Join("conf", "zed.toml"), filepath.Clean(configFile))
+	for _, name := range []string{"other.toml", "zed.toml", "default.toml", "conf/default.toml", "conf/zinc.toml"} {
+		assert.NoError(t, os.WriteFile(name, []byte(`zed_server_port = "1"`+"\n"), 0o600))
 	}
-	assert.NoError(t, os.WriteFile(".env", []byte("ZINC_SERVER_PORT=2\n"), 0o600))
-	t.Setenv("ZINC_CONFIG_FILE", "other.toml")
+	assert.NoError(t, os.WriteFile(".env", []byte("ZED_SERVER_PORT=2\n"), 0o600))
+	t.Setenv("ZED_CONFIG_FILE", "other.toml")
+	// legacy ZINC_* environment variables are not read
+	t.Setenv("ZINC_SERVER_PORT", "3")
 	c := mustLoad(t)
 	assert.Equal(t, "4080", c.ServerPort)
 	// built-in defaults must never carry admin credentials
@@ -297,8 +299,8 @@ func TestLoadIgnoresOtherSources(t *testing.T) {
 
 func TestLoadInvalidTOML(t *testing.T) {
 	isolate(t)
-	// Go field names are not accepted as keys; only zinc_* names are (matched case-insensitively by go-toml).
-	for _, content := range []string{`zinc_server_port = [`, `UnknownSetting = true`, `ServerPort = "1"`, `zinc_first_admin_password = 123`} {
+	// Go field names and legacy zinc_* keys are not accepted; only zed_* names are (matched case-insensitively by go-toml).
+	for _, content := range []string{`zed_server_port = [`, `UnknownSetting = true`, `ServerPort = "1"`, `zed_first_admin_password = 123`, `zinc_server_port = "1"`} {
 		assert.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
 		err := load(new(config))
 		assert.ErrorContains(t, err, "invalid TOML configuration")

@@ -19,8 +19,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils/hash"
-	"github.com/zincsearch/zincsearch/pkg/zutils/hash/fnv64"
+	"github.com/vcaesar/zedsearch/pkg/zutils/hash"
+	"github.com/vcaesar/zedsearch/pkg/zutils/hash/fnv64"
 )
 
 type Rendezvous struct {

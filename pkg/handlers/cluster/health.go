@@ -20,15 +20,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/cluster"
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // Health returns the health of the cluster
 //
-// ZincSearch runs on a single node, there is no shard allocation, so the
+// ZedSearch runs on a single node, there is no shard allocation, so the
 // cluster is always green with one node and no relocating/unassigned shards.
 //
 // @Id ClusterHealth

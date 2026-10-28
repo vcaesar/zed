@@ -24,11 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincsql "github.com/zincsearch/zincsearch/pkg/sql"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
-	"github.com/zincsearch/zincsearch/test/utils"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincsql "github.com/vcaesar/zedsearch/pkg/sql"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 var testDocs = []map[string]interface{}{

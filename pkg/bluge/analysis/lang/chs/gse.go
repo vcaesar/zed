@@ -23,11 +23,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs/analyzer"
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs/token"
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs/tokenizer"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs/analyzer"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs/token"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs/tokenizer"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewGseStandardAnalyzer() *analysis.Analyzer {

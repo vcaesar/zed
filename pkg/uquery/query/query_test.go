@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vcaesar/riot"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 func termOn(field, value string) map[string]interface{} {

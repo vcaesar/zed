@@ -19,8 +19,8 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/zincsearch/zincsearch/pkg/bluge/analysis/tokenizer"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewPathHierarchyTokenizer(options interface{}) (analysis.Tokenizer, error) {

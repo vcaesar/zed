@@ -66,17 +66,17 @@ ZedSearch compte des centaines d'installations en production.
 ## Compilation
 
 Les compilations depuis les sources sont **API uniquement par défaut** : ni Node.js, ni npm, ni le répertoire `frontend/` ne sont nécessaires.
-Définissez les identifiants du premier démarrage via `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-(ou `conf/zinc.toml`), puis lancez depuis la racine du dépôt :
+Définissez les identifiants du premier démarrage via `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+(ou `conf/zed.toml`), puis lancez depuis la racine du dépôt :
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` nécessite une copie des sources, Go, Node.js 24+ et npm. Il exécute `npm ci`,
-`npm run build` et `go build -tags web`, produisant `test/zincsearch-web`
+`npm run build` et `go build -tags web`, produisant `test/zedsearch-web`
 (`.exe` sous Windows). Le binaire résultant intègre tous les fichiers de l'interface et peut être copié
 sur un autre hôte sans fichiers frontend ni Node.js. Le démarrage conserve le répertoire de travail,
 la configuration et l'environnement de l'appelant. Un binaire déjà compilé avec `-tags web`
@@ -85,9 +85,9 @@ démarre directement sans recompilation, avec ou sans l'argument `web`.
 Pour une compilation manuelle :
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 Les nœuds API uniquement renvoient le JSON de version sur `/` ; `/ui/` et l'interface Swagger sont désactivés.

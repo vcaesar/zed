@@ -20,8 +20,8 @@ import (
 	"github.com/go-ego/gse"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs/token"
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs/tokenizer"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs/token"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs/tokenizer"
 )
 
 func NewSearchAnalyzer(seg *gse.Segmenter) *analysis.Analyzer {

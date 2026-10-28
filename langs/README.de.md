@@ -66,17 +66,17 @@ ZedSearch hat Hunderte von Produktionsinstallationen.
 ## Build
 
 Builds aus dem Quellcode sind **standardmäßig nur API**: Node.js, npm oder das Verzeichnis `frontend/` werden nicht benötigt.
-Legen Sie die Zugangsdaten für den ersten Start über `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-(oder `conf/zinc.toml`) fest und starten Sie dann im Wurzelverzeichnis des Repositorys:
+Legen Sie die Zugangsdaten für den ersten Start über `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+(oder `conf/zed.toml`) fest und starten Sie dann im Wurzelverzeichnis des Repositorys:
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` erfordert einen Checkout des Quellcodes, Go, Node.js 24+ und npm. Es führt `npm ci`,
-`npm run build` und `go build -tags web` aus und erzeugt `test/zincsearch-web`
+`npm run build` und `go build -tags web` aus und erzeugt `test/zedsearch-web`
 (`.exe` unter Windows). Die resultierende Binärdatei bettet alle UI-Assets ein und kann
 auf einen anderen Host ohne Frontend-Dateien oder Node.js kopiert werden. Beim Start bleiben das
 Arbeitsverzeichnis, die Konfiguration und die Umgebung des Aufrufers erhalten. Eine bereits mit
@@ -85,9 +85,9 @@ Arbeitsverzeichnis, die Konfiguration und die Umgebung des Aufrufers erhalten. E
 Für manuelle Builds:
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 Reine API-Knoten liefern unter `/` Versions-JSON; `/ui/` und die Swagger-UI sind deaktiviert.

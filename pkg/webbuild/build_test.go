@@ -33,13 +33,13 @@ import (
 
 func TestSourceRoot(t *testing.T) {
 	root := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module github.com/zincsearch/zincsearch\n"), 0o600))
-	for _, path := range []string{".", "cmd/zincsearch", "distribution/cmd"} {
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module github.com/vcaesar/zedsearch\n"), 0o600))
+	for _, path := range []string{".", "cmd/zedsearch", "distribution/cmd"} {
 		t.Run(path, func(t *testing.T) {
 			dir := filepath.Join(root, path)
 			require.NoError(t, os.MkdirAll(dir, 0o755))
 			if path == "distribution/cmd" {
-				require.NoError(t, os.WriteFile(filepath.Join(root, "distribution/go.mod"), []byte("module github.com/zincsearch/zincsearch/dist\n"), 0o600))
+				require.NoError(t, os.WriteFile(filepath.Join(root, "distribution/go.mod"), []byte("module github.com/vcaesar/zedsearch/dist\n"), 0o600))
 			}
 			got, err := sourceRoot(dir)
 			require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestBuild(t *testing.T) {
 	for _, failAt := range []int{-1, 0, 1, 2} {
 		t.Run(fmt.Sprintf("failure_%d", failAt), func(t *testing.T) {
 			root := t.TempDir()
-			output := filepath.Join(root, "test/zincsearch-web")
+			output := filepath.Join(root, "test/zedsearch-web")
 			temp := fmt.Sprintf("%s-%d", output, os.Getpid())
 			if runtime.GOOS == "windows" {
 				output += ".exe"
@@ -92,7 +92,7 @@ func TestBuild(t *testing.T) {
 			want := [][]string{
 				{"npm", "ci"},
 				{"npm", "run", "build"},
-				{"go", "build", "-tags", "web", "-o", temp, "./cmd/zincsearch"},
+				{"go", "build", "-tags", "web", "-o", temp, "./cmd/zedsearch"},
 			}
 			if runtime.GOOS == "windows" {
 				want[0] = append([]string{"cmd", "/c"}, want[0]...)
@@ -125,7 +125,7 @@ func TestBuild(t *testing.T) {
 			t.Skip("windows falls back to the per-process binary")
 		}
 		root := t.TempDir()
-		require.NoError(t, os.MkdirAll(filepath.Join(root, "test/zincsearch-web/busy"), 0o755))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "test/zedsearch-web/busy"), 0o755))
 		binary, err := build(root, fakeGoBuild)
 		require.Error(t, err)
 		assert.Empty(t, binary)

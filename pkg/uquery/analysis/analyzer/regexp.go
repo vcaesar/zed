@@ -24,9 +24,9 @@ import (
 	"github.com/vcaesar/riot/analysis/token"
 	"github.com/vcaesar/riot/analysis/tokenizer"
 
-	zinctoken "github.com/zincsearch/zincsearch/pkg/bluge/analysis/token"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zinctoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewRegexpAnalyzer(options interface{}) (*analysis.Analyzer, error) {

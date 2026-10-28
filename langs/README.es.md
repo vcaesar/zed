@@ -66,17 +66,17 @@ ZedSearch tiene cientos de instalaciones en producción.
 ## Compilación
 
 Las compilaciones desde el código fuente son **solo API por defecto**: no se necesita Node.js, npm ni el directorio `frontend/`.
-Define las credenciales del primer arranque mediante `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-(o `conf/zinc.toml`) y luego ejecuta desde la raíz del repositorio:
+Define las credenciales del primer arranque mediante `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+(o `conf/zed.toml`) y luego ejecuta desde la raíz del repositorio:
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` requiere una copia del código fuente, Go, Node.js 24+ y npm. Ejecuta `npm ci`,
-`npm run build` y `go build -tags web`, generando `test/zincsearch-web`
+`npm run build` y `go build -tags web`, generando `test/zedsearch-web`
 (`.exe` en Windows). El binario resultante incluye todos los recursos de la interfaz y puede copiarse
 a otro host sin archivos de frontend ni Node.js. El arranque conserva el directorio de trabajo,
 la configuración y el entorno de quien lo invoca. Un binario ya compilado con `-tags web`
@@ -85,9 +85,9 @@ arranca directamente sin recompilar, con o sin el argumento `web`.
 Para compilaciones manuales:
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 Los nodos solo API devuelven el JSON de versión en `/`; `/ui/` y la interfaz de Swagger están deshabilitados.

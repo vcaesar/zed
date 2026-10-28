@@ -26,7 +26,7 @@ import (
 // export DATE=`date -u '+%Y-%m-%d_%I:%M:%S%p-GMT'`
 // export COMMIT_HASH=`git rev-parse HEAD`
 
-// go build -a -ldflags "-X github.com/zincsearch/zincsearch/pkg/meta.Version=$VERSION" -o zincsearch
+// go build -a -ldflags "-X github.com/vcaesar/zedsearch/pkg/meta.Version=$VERSION" -o zedsearch
 var (
 	// Version is the version of the program - Git tag - git describe --tags --always
 	Version = "v1.0.0"

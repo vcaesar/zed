@@ -23,11 +23,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // @Id Analyze

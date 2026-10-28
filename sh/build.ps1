@@ -1,6 +1,6 @@
 Set-Location (Join-Path $PSScriptRoot "..") -ErrorAction Stop
 
-if (Test-Path "zincsearch.exe") { Remove-Item -Force .\zincsearch.exe }
+if (Test-Path "zedsearch.exe") { Remove-Item -Force .\zedsearch.exe }
 
 Set-Location .\frontend -ErrorAction Stop
 try {
@@ -23,14 +23,14 @@ Write-Host "BuildDate: $buildDate"
 $commitHash = git rev-parse HEAD 2>$null
 Write-Host "CommitHash: $commitHash"
 if (-not $commitHash) { $commitHash = "unknown" }
-$ldFlags = "-w -s -X 'github.com/zincsearch/zincsearch/pkg/meta.Version=$version'" +
-"-X 'github.com/zincsearch/zincsearch/pkg/meta.BuildDate=$buildDate'" +
-"-X 'github.com/zincsearch/zincsearch/pkg/meta.CommitHash=$commitHash'"
+$ldFlags = "-w -s -X 'github.com/vcaesar/zedsearch/pkg/meta.Version=$version'" +
+"-X 'github.com/vcaesar/zedsearch/pkg/meta.BuildDate=$buildDate'" +
+"-X 'github.com/vcaesar/zedsearch/pkg/meta.CommitHash=$commitHash'"
 
 $output = & {
     $env:GOOS = "windows"
     $env:GOARCH = "amd64"
-    go build -ldflags $ldFlags -o zincsearch.exe cmd/zincsearch/main.go
+    go build -ldflags $ldFlags -o zedsearch.exe cmd/zedsearch/main.go
 } 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host $output -ForegroundColor Red

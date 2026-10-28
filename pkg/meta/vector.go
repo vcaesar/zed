@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // ParseVector accepts a vector field value as a numeric array and checks it

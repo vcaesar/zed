@@ -19,9 +19,9 @@ package tokenizer
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	zinctokenizer "github.com/zincsearch/zincsearch/pkg/bluge/analysis/tokenizer"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zinctokenizer "github.com/vcaesar/zedsearch/pkg/bluge/analysis/tokenizer"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewNgramTokenizer(options interface{}) (analysis.Tokenizer, error) {

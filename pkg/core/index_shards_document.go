@@ -24,13 +24,13 @@ import (
 	"time"
 
 	"github.com/vcaesar/riot"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/logs"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
-	"github.com/zincsearch/zincsearch/pkg/zutils/flatten"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/logs"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils/flatten"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // BuildBlugeDocumentFromJSON returns the bluge document for the json document. It also updates the mapping for the fields if not found.

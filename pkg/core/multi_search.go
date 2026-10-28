@@ -26,10 +26,10 @@ import (
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
 
-	zincsearch "github.com/zincsearch/zincsearch/pkg/bluge/search"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery"
-	"github.com/zincsearch/zincsearch/pkg/uquery/timerange"
+	zedsearch "github.com/vcaesar/zedsearch/pkg/bluge/search"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery"
+	"github.com/vcaesar/zedsearch/pkg/uquery/timerange"
 )
 
 func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchResponse, error) {
@@ -100,7 +100,7 @@ func MultiSearch(indexNames []string, query *meta.ZincQuery) (*meta.SearchRespon
 	}
 
 	// dmi, err := riot.MultiSearch(ctx, searchRequest, readers...)
-	dmi, err := zincsearch.MultiSearch(ctx, query, mappings, analyzers, readers...)
+	dmi, err := zedsearch.MultiSearch(ctx, query, mappings, analyzers, readers...)
 	if err != nil {
 		log.Printf("core.MultiSearchV2: error executing search: %s", err.Error())
 		if err == context.DeadlineExceeded {

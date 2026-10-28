@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 func TestUpdateAccount(t *testing.T) {

@@ -16,7 +16,7 @@
 package elastic
 
 import (
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // CountResponse is the response of the ES compatible _count API.
@@ -26,7 +26,7 @@ type CountResponse struct {
 }
 
 // ClusterHealthResponse is the response of the ES compatible _cluster/health API.
-// ZincSearch is single node, so the cluster is always green with one node.
+// ZedSearch is single node, so the cluster is always green with one node.
 type ClusterHealthResponse struct {
 	ClusterName                 string  `json:"cluster_name"`
 	Status                      string  `json:"status"`

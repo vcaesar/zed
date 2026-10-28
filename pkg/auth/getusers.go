@@ -16,8 +16,8 @@
 package auth
 
 import (
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 func GetUsers() ([]*meta.User, error) {

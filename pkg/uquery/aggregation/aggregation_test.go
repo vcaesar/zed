@@ -24,9 +24,9 @@ import (
 	"github.com/vcaesar/riot/numeric"
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/zincsearch/zincsearch/pkg/bluge/aggregation"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // testSearchAggregation collects what Request registers.

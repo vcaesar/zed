@@ -1,88 +1,88 @@
-# Built-in defaults. Overridden by ./conf/zinc.toml in the working directory, then by non-empty environment variables.
+# Built-in defaults. Overridden by ./conf/zed.toml in the working directory, then by non-empty environment variables.
 #
-# No built-in admin credentials: set both on first start via ./conf/zinc.toml or the environment.
-# zinc_first_admin_user = ""
-# zinc_first_admin_password = ""
-zinc_server_port = "4080"
-zinc_server_mode = "node"
-zinc_node_id = 1
-zinc_data_path = "./data"
-zinc_metadata_storage = "bolt"
-zinc_ice_compressor = "zstd"
+# No built-in admin credentials: set both on first start via ./conf/zed.toml or the environment.
+# zed_first_admin_user = ""
+# zed_first_admin_password = ""
+zed_server_port = "4080"
+zed_server_mode = "node"
+zed_node_id = 1
+zed_data_path = "./data"
+zed_metadata_storage = "bolt"
+zed_ice_compressor = "zstd"
 # 
-# zinc_sentry = true
-# zinc_sentry_dsn = ""
-# zinc_profiler = false
-# zinc_profiler_server = ""
-# zinc_profiler_api_key = ""
-# zinc_telemetry = true
+# zed_sentry = true
+# zed_sentry_dsn = ""
+# zed_profiler = false
+# zed_profiler_server = ""
+# zed_profiler_api_key = ""
+# zed_telemetry = true
 # 
-zinc_prometheus_enable = false
-zinc_enable_text_keyword_mapping = false
+zed_prometheus_enable = false
+zed_enable_text_keyword_mapping = false
 # Accept MySQL CREATE TABLE schemas in mappings.sql; JSON mappings are always supported.
-zinc_enable_sql_mappings = true
+zed_enable_sql_mappings = true
 # 
-zinc_batch_size = 1024
-zinc_max_results = 10000
-zinc_aggregation_terms_size = 1000
-zinc_max_document_size = 1000000
-# Local disk LRU cache for indexes on object storage (s3/minio/gcs/oss), kept under <zinc_data_path>/objcache. 0 disables.
-zinc_object_cache_size = 10737418240
-zinc_wal_sync_interval = 1000000000
-zinc_wal_redolog_no_sync = false
-zinc_swagger_enable = true
-zinc_log_level = "debug"
+zed_batch_size = 1024
+zed_max_results = 10000
+zed_aggregation_terms_size = 1000
+zed_max_document_size = 1000000
+# Local disk LRU cache for indexes on object storage (s3/minio/gcs/oss), kept under <zed_data_path>/objcache. 0 disables.
+zed_object_cache_size = 10737418240
+zed_wal_sync_interval = 1000000000
+zed_wal_redolog_no_sync = false
+zed_swagger_enable = true
+zed_log_level = "debug"
 
 [Cluster]
-zinc_cluster_name = "ZincCluster"
-zinc_cluster_enable = false
-zinc_cluster_node_id = ""
-zinc_cluster_advertise_addr = ""
-zinc_cluster_partitions = 256
-zinc_cluster_heartbeat_interval = 5000000000
-zinc_cluster_heartbeat_ttl = 15000000000
-zinc_cluster_replicas = 1
+zed_cluster_name = "ZincCluster"
+zed_cluster_enable = false
+zed_cluster_node_id = ""
+zed_cluster_advertise_addr = ""
+zed_cluster_partitions = 256
+zed_cluster_heartbeat_interval = 5000000000
+zed_cluster_heartbeat_ttl = 15000000000
+zed_cluster_replicas = 1
 
 [Tier]
-zinc_tier_enable = false
-zinc_tier_check_interval = 600000000000
-zinc_tier_cold_storage_type = "s3"
+zed_tier_enable = false
+zed_tier_check_interval = 600000000000
+zed_tier_cold_storage_type = "s3"
 
 [Shard]
-zinc_shard_goroutine_num = 3
-zinc_shard_num = 3
-zinc_shard_max_size = 1073741824
+zed_shard_goroutine_num = 3
+zed_shard_num = 3
+zed_shard_max_size = 1073741824
 
 [Etcd]
-zinc_etcd_prefix = "/zinc"
+zed_etcd_prefix = "/zinc"
 
 [S3]
 # Object store for indexes created with storage_type = "s3" (MinIO or any S3-compatible endpoint works).
-zinc_s3_endpoint = "s3.amazonaws.com"
-zinc_s3_bucket = ""
-zinc_s3_region = ""
-zinc_s3_access_key_id = ""
-zinc_s3_secret_access_key = ""
-zinc_s3_use_ssl = true
+zed_s3_endpoint = "s3.amazonaws.com"
+zed_s3_bucket = ""
+zed_s3_region = ""
+zed_s3_access_key_id = ""
+zed_s3_secret_access_key = ""
+zed_s3_use_ssl = true
 
 [GCS]
 # Google Cloud Storage for indexes created with storage_type = "gcs", via the S3-interoperable API (HMAC keys).
-zinc_gcs_endpoint = "storage.googleapis.com"
-zinc_gcs_bucket = ""
-zinc_gcs_access_key_id = ""
-zinc_gcs_secret_access_key = ""
+zed_gcs_endpoint = "storage.googleapis.com"
+zed_gcs_bucket = ""
+zed_gcs_access_key_id = ""
+zed_gcs_secret_access_key = ""
 
 [OSS]
 # Alibaba Cloud OSS for indexes created with storage_type = "oss", e.g. endpoint "oss-cn-hangzhou.aliyuncs.com".
-zinc_oss_endpoint = ""
-zinc_oss_bucket = ""
-zinc_oss_region = ""
-zinc_oss_access_key_id = ""
-zinc_oss_secret_access_key = ""
+zed_oss_endpoint = ""
+zed_oss_bucket = ""
+zed_oss_region = ""
+zed_oss_access_key_id = ""
+zed_oss_secret_access_key = ""
 
 [Plugin.GSE]
-zinc_plugin_gse_enable = false
-zinc_plugin_gse_enable_stop = true
-zinc_plugin_gse_enable_hmm = true
-zinc_plugin_gse_dict_embed = "small"
-zinc_plugin_gse_dict_path = "./plugins/gse/dict"
+zed_plugin_gse_enable = false
+zed_plugin_gse_enable_stop = true
+zed_plugin_gse_enable_hmm = true
+zed_plugin_gse_dict_embed = "small"
+zed_plugin_gse_dict_path = "./plugins/gse/dict"

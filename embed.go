@@ -16,7 +16,7 @@
 * limitations under the License.
  */
 
-package zincsearch
+package zedsearch
 
 import (
 	"embed"

@@ -19,9 +19,9 @@ package auth
 import (
 	"time"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 var ErrInvalidCredentials = errors.New(errors.ErrorTypeInvalidArgument, "invalid credentials")

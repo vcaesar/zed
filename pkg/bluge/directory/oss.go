@@ -20,7 +20,7 @@ import (
 
 	"github.com/vcaesar/riot"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 var ossBackend = &backend{newStore: func() (objectStore, error) { return newOSSStore(config.Global.OSS) }}
@@ -39,13 +39,13 @@ func RemoveOSSIndex(indexName string) error {
 // newOSSStore talks to OSS through its S3-compatible API.
 func newOSSStore(cfg config.OSSConfig) (*minioStore, error) {
 	if cfg.Bucket == "" {
-		return nil, fmt.Errorf("oss storage is not configured: ZINC_OSS_BUCKET is empty")
+		return nil, fmt.Errorf("oss storage is not configured: ZED_OSS_BUCKET is empty")
 	}
 	if cfg.Endpoint == "" {
-		return nil, fmt.Errorf("oss storage is not configured: ZINC_OSS_ENDPOINT is empty")
+		return nil, fmt.Errorf("oss storage is not configured: ZED_OSS_ENDPOINT is empty")
 	}
 	if cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" {
-		return nil, fmt.Errorf("oss storage requires ZINC_OSS_ACCESS_KEY_ID and ZINC_OSS_SECRET_ACCESS_KEY")
+		return nil, fmt.Errorf("oss storage requires ZED_OSS_ACCESS_KEY_ID and ZED_OSS_SECRET_ACCESS_KEY")
 	}
 	return newMinioStore(config.S3Config{
 		Endpoint:        cfg.Endpoint,

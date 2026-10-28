@@ -20,9 +20,10 @@ import (
 	"path"
 
 	"github.com/zincsearch/wal"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/wal/redo"
+
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/wal/redo"
 )
 
 type Log struct {

@@ -19,11 +19,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage/badger"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage/bolt"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage/etcd"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage/badger"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage/bolt"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage/etcd"
 )
 
 var ErrorKeyNotExists = errors.New("key not exists")

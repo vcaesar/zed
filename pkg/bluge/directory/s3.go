@@ -25,7 +25,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/vcaesar/riot"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 var s3Backend = &backend{newStore: func() (objectStore, error) { return newMinioStore(config.Global.S3) }}
@@ -50,7 +50,7 @@ type minioStore struct {
 
 func newMinioStore(cfg config.S3Config) (*minioStore, error) {
 	if cfg.Bucket == "" {
-		return nil, fmt.Errorf("s3 storage is not configured: ZINC_S3_BUCKET is empty")
+		return nil, fmt.Errorf("s3 storage is not configured: ZED_S3_BUCKET is empty")
 	}
 	var creds *credentials.Credentials
 	if cfg.AccessKeyID != "" || cfg.SecretAccessKey != "" {

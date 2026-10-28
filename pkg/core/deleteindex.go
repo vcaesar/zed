@@ -23,9 +23,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/directory"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/bluge/directory"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 func DeleteIndex(name string) error {

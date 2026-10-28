@@ -23,8 +23,8 @@ import (
 	segment "github.com/vcaesar/bluge_segment_api"
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/zincsearch/zincsearch/pkg/bluge/aggregation"
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // storedStubReader adds stored fields to the doc value stub, so [top_hits]

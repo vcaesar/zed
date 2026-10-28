@@ -23,11 +23,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
-// Node is one zincsearch process in the cluster.
+// Node is one zedsearch process in the cluster.
 type Node struct {
 	ID        string `json:"id"`
 	Addr      string `json:"addr"`

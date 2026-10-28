@@ -27,7 +27,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/routes"
 )
 
 var (

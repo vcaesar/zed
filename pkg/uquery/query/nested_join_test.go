@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vcaesar/riot"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // tagTerm returns term query of boolean clause on hidden field.

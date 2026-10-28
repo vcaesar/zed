@@ -23,9 +23,9 @@ import (
 
 	"golang.org/x/crypto/argon2"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/ider"
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/ider"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 func CreateUser(id, name, plaintextPassword, role string) (*meta.User, error) {

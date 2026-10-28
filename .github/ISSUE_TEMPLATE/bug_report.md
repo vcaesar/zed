@@ -35,7 +35,7 @@ If you think you’ve found a potential security issue, please do not post it in
 
 **How to reproduce the issue?**
 
-**What version of ZincSearch are you using?**
+**What version of ZedSearch are you using?**
 
 **Anything else that you can tell that will help us diagnose and resolve the issue efficiently?**
 

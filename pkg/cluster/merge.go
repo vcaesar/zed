@@ -23,8 +23,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // PartialAggName is the sub-aggregation a node attaches to an average so

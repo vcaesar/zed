@@ -20,7 +20,7 @@ import (
 	"github.com/go-ego/gse"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 type SearchTokenizer struct {

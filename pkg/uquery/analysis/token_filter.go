@@ -45,10 +45,10 @@ import (
 	"github.com/vcaesar/riot/analysis/lang/tr"
 	"github.com/vcaesar/riot/analysis/token"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	zinctoken "github.com/zincsearch/zincsearch/pkg/uquery/analysis/token"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	zinctoken "github.com/vcaesar/zedsearch/pkg/uquery/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func RequestTokenFilter(data map[string]interface{}) (map[string]analysis.TokenFilter, error) {

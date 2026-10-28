@@ -23,8 +23,8 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/char"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewRegexpCharFilter(options interface{}) (analysis.CharFilter, error) {

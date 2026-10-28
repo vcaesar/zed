@@ -23,15 +23,15 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/search"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery/aggregation"
-	"github.com/zincsearch/zincsearch/pkg/uquery/fields"
-	"github.com/zincsearch/zincsearch/pkg/uquery/highlight"
-	"github.com/zincsearch/zincsearch/pkg/uquery/query"
-	"github.com/zincsearch/zincsearch/pkg/uquery/sort"
-	"github.com/zincsearch/zincsearch/pkg/uquery/source"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery/aggregation"
+	"github.com/vcaesar/zedsearch/pkg/uquery/fields"
+	"github.com/vcaesar/zedsearch/pkg/uquery/highlight"
+	"github.com/vcaesar/zedsearch/pkg/uquery/query"
+	"github.com/vcaesar/zedsearch/pkg/uquery/sort"
+	"github.com/vcaesar/zedsearch/pkg/uquery/source"
 )
 
 // ParseQueryDSL parse query DSL and return searchRequest

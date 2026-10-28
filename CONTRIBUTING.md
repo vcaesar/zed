@@ -1,10 +1,10 @@
-# Contributing to ZincSearch
+# Contributing to ZedSearch
 
 ## Setting up development environment
 
 ### Prerequisite
 
-ZincSearch uses Go (For server) and React / TypeScript (For Web UI)
+ZedSearch uses Go (For server) and React / TypeScript (For Web UI)
 
 You must have following installed:
 
@@ -17,8 +17,8 @@ You must have following installed:
 ### Lets clone the repo and get started
 
 ```shell
-git clone https://github.com/zincsearch/zincsearch
-cd zincsearch
+git clone https://github.com/vcaesar/zedsearch
+cd zedsearch
 ```
 
 ### Now let's build the UI
@@ -30,7 +30,7 @@ npm run build
 cd ..
 ```
 
-Output will be stored in frontend/dist folder. frontend/dist will be embedded in ZincSearch binary when ZincSearch go application is built.
+Output will be stored in frontend/dist folder. frontend/dist will be embedded in ZedSearch binary when ZedSearch go application is built.
 
 The `web/` directory is preserved as legacy source; active builds use `frontend/`.
 
@@ -41,19 +41,19 @@ It is important that you build the web app every time you make any changes to ja
 Download the dependencies
 
 ```shell
-go mod tidy # this will download the go libraries used by zincsearch
+go mod tidy # this will download the go libraries used by zedsearch
 ```
 
 Simple:
 
 ```shell
-go build -o zincsearch cmd/zincsearch/main.go # will build the ZincSearch binary
+go build -o zedsearch cmd/zedsearch/main.go # will build the ZedSearch binary
 ```
 
 Advanced
 
 ```shell
-CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X github.com/zincsearch/zincsearch/pkg/meta.Version=${VERSION} -X github.com/zincsearch/zincsearch/pkg/meta.CommitHash=${COMMIT_HASH} -X github.com/zincsearch/zincsearch/pkg/meta.BuildDate=${BUILD_DATE}" -o zincsearch cmd/zincsearch/main.go
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X github.com/vcaesar/zedsearch/pkg/meta.Version=${VERSION} -X github.com/vcaesar/zedsearch/pkg/meta.CommitHash=${COMMIT_HASH} -X github.com/vcaesar/zedsearch/pkg/meta.BuildDate=${BUILD_DATE}" -o zedsearch cmd/zedsearch/main.go
 ```
 
 Setting GOOS and GOARCH appropriately allows for cross platform compilation. Check [Official docs](https://go.dev/doc/install/source#environment) for all possible values and combinations. This [gist](https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63) is also great.
@@ -75,12 +75,12 @@ There are 2 areas of development.
 
 ```shell
 go mod tidy
-ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=Complexpass#123 go run cmd/zincsearch/main.go
+ZED_FIRST_ADMIN_USER=admin ZED_FIRST_ADMIN_PASSWORD=Complexpass#123 go run cmd/zedsearch/main.go
 ```
 
-This will start the ZincSearch API server on port 4080
+This will start the ZedSearch API server on port 4080
 
-environment variables ZINC_FIRST_ADMIN_USER and ZINC_FIRST_ADMIN_PASSWORD are required only first time when ZincSearch is started.
+environment variables ZED_FIRST_ADMIN_USER and ZED_FIRST_ADMIN_PASSWORD are required only first time when ZedSearch is started.
 
 ### UI
 
@@ -92,7 +92,7 @@ npm run dev
 
 This will start the UI development server; see the Vite output for its address.
 
-In order for you to effectively use the UI you would want to have the ZincSearch API server running in a separate window that will accept requests from the UI.
+In order for you to effectively use the UI you would want to have the ZedSearch API server running in a separate window that will accept requests from the UI.
 
 ## Swagger
 
@@ -120,7 +120,7 @@ Make sure that you have [docker](https://docs.docker.com/get-docker/).
 Simple build:
 
 ```shell
-docker build --tag zincsearch:latest . -f docker/Dockerfile
+docker build --tag zedsearch:latest . -f docker/Dockerfile
 ````
 
 Multi-arch build
@@ -145,8 +145,8 @@ We check for following in CI pipeline for any pull requests.
 
 ## How to contribute code
 
-1. Fork the repository on github (e.g. awesomedev/zincsearch)
-1. Clone the repo from the forked repository ( e.g. awesomedev/zincsearch) to your machine.
+1. Fork the repository on github (e.g. awesomedev/zedsearch)
+1. Clone the repo from the forked repository ( e.g. awesomedev/zedsearch) to your machine.
 1. create a new branch locally.
 1. Make the changes to code.
 1. Push the code to your repo.

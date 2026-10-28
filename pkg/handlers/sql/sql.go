@@ -22,10 +22,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	zerrors "github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincsql "github.com/zincsearch/zincsearch/pkg/sql"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zerrors "github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincsql "github.com/vcaesar/zedsearch/pkg/sql"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // Request is the body of a SQL request.

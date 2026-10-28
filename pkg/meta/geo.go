@@ -22,7 +22,7 @@ import (
 
 	"github.com/vcaesar/riot/numeric/geo"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 const geoHashAlphabet = "0123456789bcdefghjkmnpqrstuvwxyz"

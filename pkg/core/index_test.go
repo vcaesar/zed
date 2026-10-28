@@ -29,8 +29,8 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/analyzer"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 func TestIndex_Index(t *testing.T) {

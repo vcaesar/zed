@@ -21,8 +21,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // Normalize returns a shallow copy with canonical UTC event time. The caller's

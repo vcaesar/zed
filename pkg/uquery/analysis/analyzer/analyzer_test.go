@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/uquery/analysis/internal/testutil"
+	"github.com/vcaesar/zedsearch/pkg/uquery/analysis/internal/testutil"
 )
 
 func TestNewRegexpAnalyzer(t *testing.T) {

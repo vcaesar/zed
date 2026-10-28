@@ -21,14 +21,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 func TestInitFirstUser(t *testing.T) {
 	original := *config.Global
 	t.Cleanup(func() { *config.Global = original })
-	t.Setenv("ZINC_FIRST_ADMIN_USER", "")
-	t.Setenv("ZINC_FIRST_ADMIN_PASSWORD", "")
+	t.Setenv("ZED_FIRST_ADMIN_USER", "")
+	t.Setenv("ZED_FIRST_ADMIN_PASSWORD", "")
 	config.Global.FirstAdminUser = "TestInitFirstUser"
 	config.Global.FirstAdminPassword = "test-only-password"
 

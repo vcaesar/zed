@@ -21,9 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
-	"github.com/zincsearch/zincsearch/test/utils"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestRefresh(t *testing.T) {

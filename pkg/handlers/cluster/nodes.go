@@ -21,9 +21,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/cluster"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // NodesResponse is the payload of GET /api/cluster/nodes.

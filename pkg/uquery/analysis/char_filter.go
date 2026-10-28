@@ -23,9 +23,9 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/char"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	zincchar "github.com/zincsearch/zincsearch/pkg/uquery/analysis/char"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	zincchar "github.com/vcaesar/zedsearch/pkg/uquery/analysis/char"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func RequestCharFilter(data map[string]interface{}) (map[string]analysis.CharFilter, error) {

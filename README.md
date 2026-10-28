@@ -66,17 +66,17 @@ ZedSearch has hundreds of production installations.
 ## Build
 
 Source builds are **API-only by default**: no Node.js, npm, or `frontend/` directory is needed.
-Set first-start credentials via `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-(or `conf/zinc.toml`), then run from the repository root:
+Set first-start credentials via `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+(or `conf/zed.toml`), then run from the repository root:
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` requires the source checkout, Go, Node.js 24+ and npm. It runs `npm ci`,
-`npm run build`, and `go build -tags web`, producing `test/zincsearch-web`
+`npm run build`, and `go build -tags web`, producing `test/zedsearch-web`
 (`.exe` on Windows). The resulting binary embeds all UI assets and can be copied
 to another host without frontend files or Node.js. Startup retains the caller's
 working directory, configuration, and environment. A binary already built with
@@ -85,9 +85,9 @@ working directory, configuration, and environment. A binary already built with
 For manual builds:
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 API-only nodes return version JSON at `/`; `/ui/` and the Swagger UI are disabled.

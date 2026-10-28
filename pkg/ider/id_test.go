@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils/base62"
+	"github.com/vcaesar/zedsearch/pkg/zutils/base62"
 )
 
 func TestGenerate(t *testing.T) {

@@ -25,8 +25,8 @@ import (
 	"github.com/vcaesar/riot/search"
 	"github.com/vcaesar/riot/search/aggregations"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 type AutoDateHistogramAggregation struct {

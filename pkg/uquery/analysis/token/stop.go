@@ -19,8 +19,8 @@ package token
 import (
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/token"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewStopTokenFilter(options interface{}) (analysis.TokenFilter, error) {

@@ -23,8 +23,8 @@ import (
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	client "go.etcd.io/etcd/client/v3"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
 )
 
 // EtcdStore is the production Store, it maps our small interface onto the

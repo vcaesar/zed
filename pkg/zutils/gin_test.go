@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/zincsearch/zincsearch/test/utils"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestGetRenderer(t *testing.T) {

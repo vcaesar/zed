@@ -23,11 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch"
+	"github.com/vcaesar/zedsearch"
 )
 
 func TestSwagger(t *testing.T) {
-	front, err := zincsearch.GetFrontendAssets()
+	front, err := zedsearch.GetFrontendAssets()
 	require.NoError(t, err)
 	if front == nil {
 		for _, path := range []string{"/swagger", "/swagger/", "/swagger/index.html", "/swagger/doc.json"} {

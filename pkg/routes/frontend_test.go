@@ -24,12 +24,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch"
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 func TestFrontendRoutes(t *testing.T) {
-	front, err := zincsearch.GetFrontendAssets()
+	front, err := zedsearch.GetFrontendAssets()
 	require.NoError(t, err)
 	oldSwagger := config.Global.ZincSwaggerEnable
 	t.Cleanup(func() { config.Global.ZincSwaggerEnable = oldSwagger })

@@ -18,7 +18,7 @@ package query
 
 import (
 	"github.com/vcaesar/riot"
-	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/errors"
 )
 
 func BoostingQuery(query map[string]interface{}) (riot.Query, error) {
