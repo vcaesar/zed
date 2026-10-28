@@ -42,7 +42,7 @@ import (
 const (
 	// ForwardedByHeader names the node that proxied a request, a request
 	// carrying it must be served locally or fail, never proxied again.
-	ForwardedByHeader = "X-Zinc-Forwarded-By"
+	ForwardedByHeader = "X-Zed-Forwarded-By"
 	// ClusterEpochKey holds the ownership epoch the request was admitted
 	// with, handlers may read it from the gin context.
 	ClusterEpochKey = "cluster_epoch"
@@ -89,7 +89,16 @@ func ClusterRoute() gin.HandlerFunc {
 			return
 		}
 		if owner != localNodeID() {
-			forward(c, owner)
+			read := !isMutating(c.Request.Method, c.Request.URL.Path)
+			if read && cluster.IsLocalReplica(target) && replicaReadable(target) {
+				c.Next() // warm replica of a read-only object-storage index
+				return
+			}
+			var fallbacks []string
+			if read && replicaReadable(target) {
+				fallbacks = cluster.Replicas(target)
+			}
+			forward(c, owner, fallbacks)
 			return
 		}
 
@@ -130,8 +139,10 @@ func serveFenced(c *gin.Context, target string, epoch int64) {
 	zutils.GinRenderJSON(c, http.StatusConflict, gin.H{"error": "partition moved", "owner": owner})
 }
 
-// forward proxies the request to the node that owns the index.
-func forward(c *gin.Context, owner string) {
+// forward proxies the request to the node that owns the index. When the
+// owner cannot be resolved (it died, the partition is not reassigned yet)
+// the first resolvable fallback, a read replica, gets the request instead.
+func forward(c *gin.Context, owner string, fallbacks []string) {
 	if c.GetHeader(ForwardedByHeader) != "" {
 		// the sender thought we owned the index and we think somebody else
 		// does: bouncing it again would loop
@@ -141,7 +152,16 @@ func forward(c *gin.Context, owner string) {
 		return
 	}
 
+	local := localNodeID()
 	addr, ok := cluster.NodeAddr(owner)
+	for _, replica := range fallbacks {
+		if ok && addr != "" {
+			break
+		}
+		if replica != local {
+			addr, ok = cluster.NodeAddr(replica)
+		}
+	}
 	if !ok || addr == "" {
 		c.Abort()
 		zutils.GinRenderJSON(c, http.StatusServiceUnavailable,
@@ -158,7 +178,6 @@ func forward(c *gin.Context, owner string) {
 	}
 
 	authorization := c.GetHeader("Authorization")
-	local := localNodeID()
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(target)
@@ -198,7 +217,7 @@ func scatterSearch(c *gin.Context, target string) {
 		log.Warn().Err(err).Msg("cluster: close request body")
 	}
 
-	query := &meta.ZincQuery{Size: 10}
+	query := &meta.ZedQuery{Size: 10}
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, query); err != nil {
 			c.Abort()
@@ -257,7 +276,7 @@ func scatterSearch(c *gin.Context, target string) {
 }
 
 // internalSearch asks one node for its part of a scattered search.
-func internalSearch(ctx context.Context, owner string, indexes []string, query *meta.ZincQuery, authorization string) (*meta.SearchResponse, error) {
+func internalSearch(ctx context.Context, owner string, indexes []string, query *meta.ZedQuery, authorization string) (*meta.SearchResponse, error) {
 	addr, ok := cluster.NodeAddr(owner)
 	if !ok || addr == "" {
 		return nil, errors.New("cluster: node " + owner + " is unreachable")
@@ -297,19 +316,30 @@ func internalSearch(ctx context.Context, owner string, indexes []string, query *
 	return cluster.DecodeSearchResponse(data)
 }
 
-// groupByOwner maps index names onto the node that owns them, indexes
-// nobody owns yet are served locally.
+// groupByOwner maps index names onto the node that serves them: the owner,
+// or this node when it is a read replica of a cold index. Indexes nobody
+// owns yet are served locally.
 func groupByOwner(indexes []string) map[string][]string {
 	local := localNodeID()
 	groups := make(map[string][]string)
 	for _, name := range indexes {
 		owner, _, ok := cluster.Owner(name)
-		if !ok {
+		if !ok || (owner != local && cluster.IsLocalReplica(name) && replicaReadable(name)) {
 			owner = local
 		}
 		groups[owner] = append(groups[owner], name)
 	}
 	return groups
+}
+
+// replicaReadable reports whether a node other than the owner may serve
+// reads of an index. Only cold indexes qualify: they are read-only, live on
+// object storage and are opened without a writer or WAL, so every node sees
+// the same data. Hot and warm indexes are read through the owner's writer
+// and local-disk indexes exist on the owner only. A variable for tests.
+var replicaReadable = func(name string) bool {
+	index, ok := core.GetIndex(name)
+	return ok && index.IsCold()
 }
 
 // resolveIndexes expands a target into concrete index names using the
@@ -320,8 +350,8 @@ func resolveIndexes(target string) []string {
 	if len(patterns) == 1 && (patterns[0] == "_all" || patterns[0] == "*") {
 		patterns = nil
 	}
-	names := make([]string, 0, core.ZINC_INDEX_LIST.Len())
-	for _, index := range core.ZINC_INDEX_LIST.List() {
+	names := make([]string, 0, core.ZED_INDEX_LIST.Len())
+	for _, index := range core.ZED_INDEX_LIST.List() {
 		name := index.GetName()
 		if elastic.MatchAnyPattern(name, patterns) {
 			names = append(names, name)

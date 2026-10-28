@@ -40,6 +40,8 @@ type PartitionOwner struct {
 	Epoch     int64  `json:"epoch"`
 	Local     bool   `json:"local"`
 	Index     string `json:"index,omitempty"`
+	// Replicas are the nodes holding a warm read replica, used for cold indexes.
+	Replicas []string `json:"replicas,omitempty"`
 }
 
 // PartitionsResponse is the payload of GET /api/cluster/partitions.
@@ -94,6 +96,7 @@ func Partitions(c *gin.Context) {
 			Partition: cluster.PartitionOf(indexName),
 			Index:     indexName,
 			Local:     cluster.IsLocalOwner(indexName),
+			Replicas:  cluster.Replicas(indexName),
 		}
 		if ok {
 			partition.Owner = owner
@@ -115,6 +118,7 @@ func Partitions(c *gin.Context) {
 			Owner:     assignment.Owner,
 			Epoch:     assignment.Epoch,
 			Local:     assignment.Owner == local,
+			Replicas:  assignment.Replicas,
 		})
 	}
 	sort.Slice(owners, func(i, j int) bool { return owners[i].Partition < owners[j].Partition })

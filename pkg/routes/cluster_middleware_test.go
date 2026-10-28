@@ -226,6 +226,109 @@ func TestClusterRouteWriteKeepsEpoch(t *testing.T) {
 	assert.Equal(t, epoch, seen)
 }
 
+// setReplicas makes nodes the read replicas of indexName and waits until the
+// local fence has seen it.
+func (env *clusterTestEnv) setReplicas(t *testing.T, indexName string, nodes ...string) {
+	t.Helper()
+	ctx := context.Background()
+	_, rev, err := env.assigner.ListReplicas(ctx)
+	require.NoError(t, err)
+	partition := cluster.PartitionOfN(indexName, testPartitions)
+	ok, err := env.assigner.SetReplicas(ctx, map[int][]string{partition: nodes}, rev)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Eventually(t, func() bool {
+		return assert.ObjectsAreEqual(nodes, cluster.Replicas(indexName))
+	}, 10*time.Second, 5*time.Millisecond)
+}
+
+func stubReplicaReadable(t *testing.T, readable bool) {
+	t.Helper()
+	previous := replicaReadable
+	replicaReadable = func(string) bool { return readable }
+	t.Cleanup(func() { replicaReadable = previous })
+}
+
+func TestClusterRouteLocalReplica(t *testing.T) {
+	env := setupClusterEnv(t)
+	env.setReplicas(t, remoteIndex, "node-a")
+
+	tests := []struct {
+		name      string
+		readable  bool
+		method    string
+		path      string
+		wantLocal bool
+	}{
+		{name: "cold index read is served by the replica", readable: true, method: http.MethodGet, path: "/api/" + remoteIndex + "/_doc/1", wantLocal: true},
+		{name: "write still goes to the owner", readable: true, method: http.MethodPost, path: "/api/" + remoteIndex + "/_doc", wantLocal: false},
+		{name: "non cold index read goes to the owner", readable: false, method: http.MethodGet, path: "/api/" + remoteIndex + "/_doc/1", wantLocal: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubReplicaReadable(t, tt.readable)
+			w := env.do(httptest.NewRequest(tt.method, tt.path, nil))
+			assert.Equal(t, http.StatusOK, w.Code)
+			if tt.wantLocal {
+				assert.Contains(t, w.Body.String(), "node-a")
+				assert.Empty(t, env.requests)
+				return
+			}
+			assert.Contains(t, w.Body.String(), "node-b")
+			select {
+			case <-env.requests:
+			case <-time.After(3 * time.Second):
+				t.Fatal("the owner never received the request")
+			}
+		})
+	}
+}
+
+func TestClusterRouteFallsBackToReplica(t *testing.T) {
+	env := setupClusterEnv(t)
+	// the owner left the cluster, the leader has not reassigned yet
+	env.own(t, remoteIndex, "node-gone")
+	env.setReplicas(t, remoteIndex, "node-gone-too", "node-b")
+
+	t.Run("cold read reaches a live replica", func(t *testing.T) {
+		stubReplicaReadable(t, true)
+		w := env.do(httptest.NewRequest(http.MethodGet, "/api/"+remoteIndex+"/_doc/1", nil))
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "node-b")
+		select {
+		case <-env.requests:
+		case <-time.After(3 * time.Second):
+			t.Fatal("the replica never received the request")
+		}
+	})
+
+	t.Run("write without the owner is unavailable", func(t *testing.T) {
+		stubReplicaReadable(t, true)
+		w := env.do(httptest.NewRequest(http.MethodPost, "/api/"+remoteIndex+"/_doc", nil))
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+		assert.Contains(t, w.Body.String(), "node-gone")
+	})
+
+	t.Run("non cold read without the owner is unavailable", func(t *testing.T) {
+		stubReplicaReadable(t, false)
+		w := env.do(httptest.NewRequest(http.MethodGet, "/api/"+remoteIndex+"/_doc/1", nil))
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	})
+}
+
+func TestGroupByOwnerUsesLocalReplica(t *testing.T) {
+	env := setupClusterEnv(t)
+	env.setReplicas(t, remoteIndex, "node-a")
+
+	stubReplicaReadable(t, false)
+	assert.Equal(t, map[string][]string{"node-a": {localIndex}, "node-b": {remoteIndex}},
+		groupByOwner([]string{localIndex, remoteIndex}))
+
+	stubReplicaReadable(t, true)
+	assert.Equal(t, map[string][]string{"node-a": {localIndex, remoteIndex}},
+		groupByOwner([]string{localIndex, remoteIndex}))
+}
+
 func TestIsMultiTarget(t *testing.T) {
 	tests := []struct {
 		target string

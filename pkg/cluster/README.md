@@ -24,6 +24,7 @@ The ownership map lives in etcd under
 | `nodes/<id>` | member record, written under a lease, disappears when the node dies |
 | `leader` | leader lock, created with a lease, whoever creates it rebalances |
 | `assign/<partition>` | `{"owner": "<node id>"}`, its etcd mod revision is the **epoch** |
+| `replicas` | `{"<partition>": ["<node id>", ...]}`, warm read replicas, a separate key so a replica change never bumps an epoch |
 
 The epoch is never written by us: it is the store revision of the assignment
 key, so it grows on every handoff and can be used as a fencing token.
@@ -62,6 +63,8 @@ every `:target` route:
 | already forwarded, still not ours | `508 Loop Detected` |
 | we own it, read | served locally |
 | we own it, write | served locally, then the epoch is re-checked (see above) |
+| we are a replica, read of a cold index | served locally, no hop |
+| owner not resolvable, read of a cold index | proxied to the first live replica |
 | `a,b`, `logs-*`, `_all` on `/es/.../_search` | split per owner, `POST /api/_internal/search` in parallel (at most 8 in flight), responses merged |
 
 `/api/:target/_search` speaks the v1 query format and is never scattered.
@@ -83,6 +86,27 @@ Merging (`MergeSearch`):
   pipelines) keeps the first node's value and logs a warning - those are
   approximations across nodes
 
+## Warm read replicas
+
+`zed_cluster_replicas` (default 1) is the number of extra nodes the leader
+assigns to each partition next to its owner. The start node rotates with
+the partition, so one owner's replicas spread over all the other nodes.
+
+Replicas only serve **cold** indexes: those are read-only, live on object
+storage and are opened without a writer or WAL, so every node sees the same
+data. Hot and warm indexes are read through the owner's writer, and disk
+indexes exist on the owner only, so they always go to the owner.
+
+* a read of a cold index on one of its replicas is served locally
+* a read whose owner cannot be resolved (died, not yet reassigned) is sent
+  to the first live replica instead of failing with 503
+* scatter-gather serves the cold indexes this node replicates locally
+* when an owner dies the rebalance hands its partitions to a live replica
+  first (within quota), so failover lands on a node already serving them
+
+Node addresses are cached from a membership watch (resynced every
+heartbeat interval), so forwarding a request no longer reads etcd.
+
 ## Configuration
 
 ```toml
@@ -93,9 +117,10 @@ zed_cluster_advertise_addr = "http://10.0.0.1:4080"
 zed_cluster_partitions = 256
 zed_cluster_heartbeat_interval = 5000000000   # 5s, in ns
 zed_cluster_heartbeat_ttl = 15000000000       # 15s, in ns
+zed_cluster_replicas = 1                      # warm read replicas per partition
 
 zed_etcd_endpoints = ["http://10.0.0.10:2379"]
-zed_etcd_prefix = "/zinc"
+zed_etcd_prefix = "/zed"
 ```
 
 Every setting is also an environment variable in upper case
@@ -149,12 +174,15 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
 
 * **disk indexes are not replicated**. When a node dies its `disk` indexes
   are unavailable until it comes back, even though the partition is
-  reassigned. Use object storage for data that must survive a node.
+  reassigned. Use object storage for data that must survive a node. This is
+  failover by reassignment, not full HA.
 * **index metadata must be shared** for pattern search and routing to see
   every index: run with `ZED_METADATA_STORAGE=etcd`. With the default bolt
   storage each node only knows its own indexes.
-* `zed_cluster_replicas` is accepted but read replicas are not implemented
-  yet, reads always go to the owner.
+* read replicas serve cold indexes only; hot/warm object-storage indexes
+  still read through the owner (they need its writer)
+* replica fallback covers an owner missing from membership, not an owner
+  that is listed but not answering (that still returns 502)
 * a 409 is not retried for the client, the caller has to repeat the request
 * `cardinality`, `percentiles`, `stats` and `top_hits` are approximated in a
   scatter-gather search, the first responding owner wins

@@ -36,9 +36,10 @@ const DefaultPartitions = 256
 // us, it is filled in from the revision the store reports, so it increases
 // on every handoff and can be used as a fencing token.
 type Assignment struct {
-	Partition int    `json:"partition"`
-	Owner     string `json:"owner"`
-	Epoch     int64  `json:"epoch"`
+	Partition int      `json:"partition"`
+	Owner     string   `json:"owner"`
+	Epoch     int64    `json:"epoch"`
+	Replicas  []string `json:"replicas,omitempty"`
 }
 
 // assignmentValue is what is actually stored, the epoch is the key revision.
@@ -163,6 +164,14 @@ func (a *Assigner) Apply(ctx context.Context, current map[int]Assignment, change
 // alone unless that node is over quota. Adding or removing a node therefore
 // moves roughly partitions/nodes buckets instead of reshuffling everything.
 func Rebalance(current map[int]string, nodes []string, partitions int) map[int]string {
+	return RebalanceWarm(current, nil, nodes, partitions)
+}
+
+// RebalanceWarm is Rebalance that hands a partition that must move to one of
+// its warm replicas first, as long as that replica is alive and under quota.
+// The replica already serves the partition's reads, so failover lands on a
+// node that is ready instead of a cold one.
+func RebalanceWarm(current map[int]string, replicas map[int][]string, nodes []string, partitions int) map[int]string {
 	if len(nodes) == 0 || partitions <= 0 {
 		return nil
 	}
@@ -207,17 +216,40 @@ func Rebalance(current map[int]string, nodes []string, partitions int) map[int]s
 	}
 	sort.Ints(pool)
 
-	changes := make(map[int]string)
+	need := make(map[string]int, len(nodes))
 	for i, node := range nodes {
-		need := quota(i) - len(owned[node])
-		for ; need > 0 && len(pool) > 0; need-- {
-			partition := pool[0]
-			pool = pool[1:]
+		need[node] = quota(i) - len(owned[node])
+	}
+
+	changes := make(map[int]string)
+	rest := make([]int, 0, len(pool))
+	for _, partition := range pool {
+		if node := warmCandidate(replicas[partition], need); node != "" {
 			changes[partition] = node
+			need[node]--
+			continue
+		}
+		rest = append(rest, partition)
+	}
+	for _, node := range nodes {
+		for ; need[node] > 0 && len(rest) > 0; need[node]-- {
+			changes[rest[0]] = node
+			rest = rest[1:]
 		}
 	}
 	if len(changes) == 0 {
 		return nil
 	}
 	return changes
+}
+
+// warmCandidate returns the first replica that is alive and still has room,
+// need only holds live nodes.
+func warmCandidate(replicas []string, need map[string]int) string {
+	for _, node := range replicas {
+		if need[node] > 0 {
+			return node
+		}
+	}
+	return ""
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -66,6 +67,7 @@ type Fence struct {
 
 	mu          sync.RWMutex
 	assignments map[int]Assignment
+	replicas    map[int][]string
 }
 
 // NewFence builds an empty fence, call Refresh or Run to fill it.
@@ -78,6 +80,7 @@ func NewFence(assigner *Assigner, nodeID string, partitions int) *Fence {
 		nodeID:      nodeID,
 		partitions:  partitions,
 		assignments: make(map[int]Assignment),
+		replicas:    make(map[int][]string),
 	}
 }
 
@@ -92,8 +95,13 @@ func (f *Fence) Refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	replicas, _, err := f.assigner.ListReplicas(ctx)
+	if err != nil {
+		return err
+	}
 	f.mu.Lock()
 	f.assignments = assignments
+	f.replicas = replicas
 	f.mu.Unlock()
 	return nil
 }
@@ -108,6 +116,11 @@ func (f *Fence) Run(ctx context.Context, resync time.Duration) {
 	if err != nil {
 		log.Error().Err(err).Msg("cluster: watch assignments")
 		events = nil
+	}
+	replicaEvents, err := f.assigner.store.Watch(ctx, f.assigner.ReplicasKey())
+	if err != nil {
+		log.Error().Err(err).Msg("cluster: watch replicas")
+		replicaEvents = nil
 	}
 	ticker := time.NewTicker(resync)
 	defer ticker.Stop()
@@ -126,8 +139,31 @@ func (f *Fence) Run(ctx context.Context, resync time.Duration) {
 				continue
 			}
 			f.apply(event)
+		case event, ok := <-replicaEvents:
+			if !ok {
+				replicaEvents = nil
+				continue
+			}
+			f.applyReplicas(event)
 		}
 	}
+}
+
+func (f *Fence) applyReplicas(event Event) {
+	if event.KV.Key != f.assigner.ReplicasKey() {
+		return
+	}
+	replicas := make(map[int][]string)
+	if event.Type == EventPut {
+		var err error
+		if replicas, err = decodeReplicas(event.KV.Value); err != nil {
+			log.Error().Err(err).Str("key", event.KV.Key).Msg("cluster: bad replica map")
+			return
+		}
+	}
+	f.mu.Lock()
+	f.replicas = replicas
+	f.mu.Unlock()
 }
 
 func (f *Fence) apply(event Event) {
@@ -176,6 +212,22 @@ func (f *Fence) IsLocalOwner(indexName string) bool {
 	return !ok || owner == f.nodeID
 }
 
+// Replicas returns the nodes holding a warm read replica of indexName.
+func (f *Fence) Replicas(indexName string) []string {
+	partition := PartitionOfN(indexName, f.partitions)
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return append([]string(nil), f.replicas[partition]...)
+}
+
+// IsLocalReplica reports whether this node is a read replica of indexName.
+func (f *Fence) IsLocalReplica(indexName string) bool {
+	partition := PartitionOfN(indexName, f.partitions)
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return slices.Contains(f.replicas[partition], f.nodeID)
+}
+
 // CheckEpoch fails when the ownership of indexName changed since epoch was
 // taken, or when this node is no longer the owner.
 func (f *Fence) CheckEpoch(indexName string, epoch int64) error {
@@ -192,12 +244,13 @@ func (f *Fence) CheckEpoch(indexName string, epoch int64) error {
 	return nil
 }
 
-// Assignments returns a copy of the ownership map.
+// Assignments returns a copy of the ownership map, replicas included.
 func (f *Fence) Assignments() map[int]Assignment {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	out := make(map[int]Assignment, len(f.assignments))
 	for partition, assignment := range f.assignments {
+		assignment.Replicas = append([]string(nil), f.replicas[partition]...)
 		out[partition] = assignment
 	}
 	return out
