@@ -26,16 +26,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/handlers/auth"
-	"github.com/zincsearch/zincsearch/pkg/handlers/cluster"
-	"github.com/zincsearch/zincsearch/pkg/handlers/document"
-	"github.com/zincsearch/zincsearch/pkg/handlers/index"
-	"github.com/zincsearch/zincsearch/pkg/handlers/search"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/handlers/auth"
+	"github.com/vcaesar/zedsearch/pkg/handlers/cluster"
+	"github.com/vcaesar/zedsearch/pkg/handlers/document"
+	"github.com/vcaesar/zedsearch/pkg/handlers/index"
+	"github.com/vcaesar/zedsearch/pkg/handlers/search"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // SetRoutes sets up all gin HTTP API endpoints that can be called by front end
@@ -52,7 +52,7 @@ func SetRoutes(r *gin.Engine) {
 	r.GET("/version", meta.GetVersion)
 	r.GET("/healthz", meta.GetHealthz)
 
-	front, err := zincsearch.GetFrontendAssets()
+	front, err := zedsearch.GetFrontendAssets()
 	if err != nil {
 		log.Error().Err(err).Msg("frontend assets")
 	}
@@ -191,7 +191,7 @@ func SetRoutes(r *gin.Engine) {
 
 	r.POST("/es/_reindex", AuthMiddleware("index.Reindex"), ESMiddleware, index.Reindex)
 
-	// cluster, zincsearch is single node so these are mostly static
+	// cluster, zedsearch is single node so these are mostly static
 	r.GET("/es/_cluster/health", AuthMiddleware("cluster.Health"), ESMiddleware, cluster.Health)
 	r.GET("/es/_cluster/health/:target", AuthMiddleware("cluster.Health"), ESMiddleware, cluster.Health)
 	r.GET("/es/_cat/health", AuthMiddleware("cluster.CatHealth"), ESMiddleware, cluster.CatHealth)

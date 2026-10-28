@@ -1,4 +1,4 @@
-module github.com/zincsearch/zincsearch
+module github.com/vcaesar/zedsearch
 
 go 1.26.7
 
@@ -30,7 +30,7 @@ require (
 	github.com/vcaesar/bluge_segment_api v1.2.1
 	github.com/vcaesar/ice v1.3.1
 	github.com/vcaesar/query_string v0.6.0
-	github.com/vcaesar/riot v1.31.1
+	github.com/vcaesar/riot v1.32.0
 	github.com/zincsearch/go-gin-prometheus v0.1.1
 	github.com/zincsearch/wal v1.2.6
 	go.etcd.io/bbolt v1.5.0

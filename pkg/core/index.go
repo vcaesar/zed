@@ -25,11 +25,11 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/zincsearch/zincsearch/pkg/logs"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	"github.com/zincsearch/zincsearch/pkg/zutils/hash/rendezvous"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/logs"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/zutils/hash/rendezvous"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 type Index struct {

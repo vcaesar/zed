@@ -1,12 +1,12 @@
 # pkg/cluster
 
-Multi-node ZincSearch: membership, index ownership, fenced handoff, request
+Multi-node ZedSearch: membership, index ownership, fenced handoff, request
 routing and scatter-gather search. Coordination state lives in etcd, index
 data does not.
 
 ## Model
 
-Every index hashes to one of `zinc_cluster_partitions` (256 by default)
+Every index hashes to one of `zed_cluster_partitions` (256 by default)
 partitions, and every partition is owned by exactly one node:
 
 ```
@@ -17,7 +17,7 @@ The owner is the only node that writes the index. Reads go to the owner too,
 so a read always sees the owner's WAL.
 
 The ownership map lives in etcd under
-`<zinc_etcd_prefix>/cluster/<zinc_cluster_name>/`:
+`<zed_etcd_prefix>/cluster/<zed_cluster_name>/`:
 
 | key | meaning |
 | --- | --- |
@@ -86,20 +86,20 @@ Merging (`MergeSearch`):
 ## Configuration
 
 ```toml
-zinc_cluster_enable = true
-zinc_cluster_name = "prod"
-zinc_cluster_node_id = ""                 # defaults to the hostname
-zinc_cluster_advertise_addr = "http://10.0.0.1:4080"
-zinc_cluster_partitions = 256
-zinc_cluster_heartbeat_interval = 5000000000   # 5s, in ns
-zinc_cluster_heartbeat_ttl = 15000000000       # 15s, in ns
+zed_cluster_enable = true
+zed_cluster_name = "prod"
+zed_cluster_node_id = ""                 # defaults to the hostname
+zed_cluster_advertise_addr = "http://10.0.0.1:4080"
+zed_cluster_partitions = 256
+zed_cluster_heartbeat_interval = 5000000000   # 5s, in ns
+zed_cluster_heartbeat_ttl = 15000000000       # 15s, in ns
 
-zinc_etcd_endpoints = ["http://10.0.0.10:2379"]
-zinc_etcd_prefix = "/zinc"
+zed_etcd_endpoints = ["http://10.0.0.10:2379"]
+zed_etcd_prefix = "/zinc"
 ```
 
 Every setting is also an environment variable in upper case
-(`ZINC_CLUSTER_ENABLE`, `ZINC_ETCD_ENDPOINTS`, ...).
+(`ZED_CLUSTER_ENABLE`, `ZED_ETCD_ENDPOINTS`, ...).
 
 ### Three nodes with a shared etcd
 
@@ -112,14 +112,14 @@ docker run -d --name etcd -p 2379:2379 \
   bitnami/etcd:latest
 
 # node 1..3, same on every host with its own id and address
-export ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=Complexpass#123
-export ZINC_CLUSTER_ENABLE=true
-export ZINC_CLUSTER_NAME=prod
-export ZINC_ETCD_ENDPOINTS=http://10.0.0.10:2379
-export ZINC_METADATA_STORAGE=etcd          # share index metadata, see limits
-export ZINC_CLUSTER_NODE_ID=node-1
-export ZINC_CLUSTER_ADVERTISE_ADDR=http://10.0.0.1:4080
-./zincsearch
+export ZED_FIRST_ADMIN_USER=admin ZED_FIRST_ADMIN_PASSWORD=Complexpass#123
+export ZED_CLUSTER_ENABLE=true
+export ZED_CLUSTER_NAME=prod
+export ZED_ETCD_ENDPOINTS=http://10.0.0.10:2379
+export ZED_METADATA_STORAGE=etcd          # share index metadata, see limits
+export ZED_CLUSTER_NODE_ID=node-1
+export ZED_CLUSTER_ADVERTISE_ADDR=http://10.0.0.1:4080
+./zedsearch
 ```
 
 Check the cluster:
@@ -141,7 +141,7 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
 * rebalancing is stable: adding or removing a node moves about
   `partitions / nodes` partitions, the rest stay where they are
 * a node that dies loses its lease, its partitions are reassigned within
-  `zinc_cluster_heartbeat_ttl`
+  `zed_cluster_heartbeat_ttl`
 * indexes on object storage (`s3`, `gcs`, `oss`) are readable by whichever
   node takes over, so they survive node loss
 
@@ -151,9 +151,9 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
   are unavailable until it comes back, even though the partition is
   reassigned. Use object storage for data that must survive a node.
 * **index metadata must be shared** for pattern search and routing to see
-  every index: run with `ZINC_METADATA_STORAGE=etcd`. With the default bolt
+  every index: run with `ZED_METADATA_STORAGE=etcd`. With the default bolt
   storage each node only knows its own indexes.
-* `zinc_cluster_replicas` is accepted but read replicas are not implemented
+* `zed_cluster_replicas` is accepted but read replicas are not implemented
   yet, reads always go to the owner.
 * a 409 is not retried for the client, the caller has to repeat the request
 * `cardinality`, `percentiles`, `stats` and `top_hits` are approximated in a
@@ -168,6 +168,6 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
 
 ```shell
 go test ./pkg/cluster/...                    # unit tests, in-memory store
-ZINC_ETCD_ENDPOINTS=http://127.0.0.1:2379 \
+ZED_ETCD_ENDPOINTS=http://127.0.0.1:2379 \
   go test ./pkg/cluster/ -run TestEtcdStoreIntegration   # against a real etcd
 ```

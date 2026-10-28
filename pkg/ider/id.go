@@ -23,8 +23,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sony/sonyflake/v2"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils/base62"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils/base62"
 )
 
 // epoch is the fixed start time of the ID clock; changing it changes the generated IDs.

@@ -1,4 +1,4 @@
-# Default values for ZincSearch.
+# Default values for ZedSearch.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -9,7 +9,7 @@ image:
   tag: "latest"
 
 imagePullSecrets: []
-fullnameOverride: "zincsearch"
+fullnameOverride: "zedsearch"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -26,11 +26,11 @@ auth:
   password: "Complexpass#123"
 
 persistence:
-  # Enable ZincSearch data persistence using PVC, otherwise empty-dir is used
+  # Enable ZedSearch data persistence using PVC, otherwise empty-dir is used
   enabled: true
-  # PVC Storage Class for ZincSearch data volume, if empty - default storage class is used
+  # PVC Storage Class for ZedSearch data volume, if empty - default storage class is used
   storageClass: ""
-  # PVC Storage Request for ZincSearch data volume
+  # PVC Storage Request for ZedSearch data volume
   size: "10Gi"
 
 securityContext:
@@ -50,7 +50,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: zincsearch.example.local
+    - host: zedsearch.example.local
       paths:
         - /
   tls: []

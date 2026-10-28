@@ -21,12 +21,12 @@ import (
 
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/logs"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	"github.com/zincsearch/zincsearch/pkg/uquery/mappings"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/logs"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/uquery/mappings"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 func Request(data map[string]interface{}) (*meta.Index, error) {

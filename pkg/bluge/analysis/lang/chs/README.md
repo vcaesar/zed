@@ -26,11 +26,11 @@ Go efficient multilingual NLP and text segmentation; support english, chinese, j
 
 you need pass environment to enable gse support:
 
-`ZINC_PLUGIN_GSE_ENABLE` true of false, default is `false`
+`ZED_PLUGIN_GSE_ENABLE` true of false, default is `false`
 
-`ZINC_PLUGIN_GSE_DICT_EMBED` small or big, default is `small`, which size dictionary will load when `gse` enabled.
+`ZED_PLUGIN_GSE_DICT_EMBED` small or big, default is `small`, which size dictionary will load when `gse` enabled.
 
-`ZINC_PLUGIN_GSE_DICT_PATH` custom dictionary path, default is `./plugins/gse/dict`
+`ZED_PLUGIN_GSE_DICT_PATH` custom dictionary path, default is `./plugins/gse/dict`
 
 ## API example
 
@@ -103,7 +103,7 @@ POST http://localhost:4080/es/my-index-chs/\_search
 
 ## custom user dictionary
 
-add your words append to the file `${ZINC_PLUGIN_GSE_DICT_PATH}/user.txt`
+add your words append to the file `${ZED_PLUGIN_GSE_DICT_PATH}/user.txt`
 
 format:
 
@@ -120,7 +120,7 @@ like:
 
 ## custom stop tokens
 
-add your words append to the file `${ZINC_PLUGIN_GSE_DICT_PATH}/stop.txt`
+add your words append to the file `${ZED_PLUGIN_GSE_DICT_PATH}/stop.txt`
 
 format:
 
@@ -137,6 +137,6 @@ like:
 
 ## Credit
 
-- https://github.com/zincsearch/zincsearch
+- https://github.com/vcaesar/zedsearch
 - https://github.com/vcaesar/riot
 - https://github.com/go-ego/gse

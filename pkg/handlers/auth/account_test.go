@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/auth"
-	"github.com/zincsearch/zincsearch/test/utils"
+	"github.com/vcaesar/zedsearch/pkg/auth"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestUpdateAccount(t *testing.T) {

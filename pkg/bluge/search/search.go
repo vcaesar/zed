@@ -27,9 +27,9 @@ import (
 	"github.com/vcaesar/riot/search/aggregations"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery"
 )
 
 func MultiSearch(

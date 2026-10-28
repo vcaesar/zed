@@ -22,10 +22,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	zcluster "github.com/zincsearch/zincsearch/pkg/cluster"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
-	"github.com/zincsearch/zincsearch/test/utils"
+	zcluster "github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestNodesSingleNode(t *testing.T) {

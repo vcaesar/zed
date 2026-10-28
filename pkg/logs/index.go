@@ -13,13 +13,13 @@
 * limitations under the License.
  */
 
-// Package logs supplies the logs profile for ZincSearch's WAL-backed indexes.
+// Package logs supplies the logs profile for ZedSearch's WAL-backed indexes.
 package logs
 
 import (
 	"fmt"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // aliasFieldName is the OpenObserve-style event time input alias.

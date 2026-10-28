@@ -18,7 +18,7 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/handlers/sql"
+	"github.com/vcaesar/zedsearch/pkg/handlers/sql"
 )
 
 // SetSQLRoutes sets up the SQL endpoints, native and Elasticsearch compatible.

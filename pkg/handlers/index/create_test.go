@@ -22,9 +22,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
-	"github.com/zincsearch/zincsearch/test/utils"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestCreate(t *testing.T) {
@@ -107,7 +107,7 @@ func TestCreate(t *testing.T) {
 				code:   http.StatusBadRequest,
 				data:   `{"name":"TestIndexCreate.index_7","storage_type":"s3"}`,
 				params: map[string]string{"target": ""},
-				result: "ZINC_S3_BUCKET",
+				result: "ZED_S3_BUCKET",
 			},
 			wantErr: true,
 		},

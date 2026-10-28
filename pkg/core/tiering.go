@@ -25,9 +25,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 // ILM phase names understood by the lifecycle mover.
@@ -38,7 +38,7 @@ const (
 )
 
 // StartTiering runs the hot/warm/cold lifecycle mover until ctx is done. It is
-// a no-op unless ZINC_TIER_ENABLE is set.
+// a no-op unless ZED_TIER_ENABLE is set.
 func StartTiering(ctx context.Context) {
 	if !config.Global.Tier.Enable {
 		return

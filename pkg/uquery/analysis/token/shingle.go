@@ -20,7 +20,7 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/token"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewShingleTokenFilter(options interface{}) (analysis.TokenFilter, error) {

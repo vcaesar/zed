@@ -23,10 +23,10 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/tokenizer"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	zinctokenizer "github.com/zincsearch/zincsearch/pkg/uquery/analysis/tokenizer"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	zinctokenizer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/tokenizer"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func RequestTokenizer(data map[string]interface{}) (map[string]analysis.Tokenizer, error) {

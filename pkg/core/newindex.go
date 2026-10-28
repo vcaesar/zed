@@ -24,12 +24,12 @@ import (
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/directory"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/ider"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
-	"github.com/zincsearch/zincsearch/pkg/zutils/hash/rendezvous"
+	"github.com/vcaesar/zedsearch/pkg/bluge/directory"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/ider"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/zutils/hash/rendezvous"
 )
 
 var indexNameRe = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
@@ -49,17 +49,17 @@ func CheckStorageType(storageType string) error {
 		return nil
 	case StorageTypeS3, StorageTypeMinIO:
 		if config.Global.S3.Bucket == "" {
-			return fmt.Errorf("storage_type [%s] requires ZINC_S3_BUCKET to be configured", storageType)
+			return fmt.Errorf("storage_type [%s] requires ZED_S3_BUCKET to be configured", storageType)
 		}
 		return nil
 	case StorageTypeGCS:
 		if config.Global.GCS.Bucket == "" {
-			return fmt.Errorf("storage_type [%s] requires ZINC_GCS_BUCKET to be configured", storageType)
+			return fmt.Errorf("storage_type [%s] requires ZED_GCS_BUCKET to be configured", storageType)
 		}
 		return nil
 	case StorageTypeOSS:
 		if config.Global.OSS.Bucket == "" {
-			return fmt.Errorf("storage_type [%s] requires ZINC_OSS_BUCKET to be configured", storageType)
+			return fmt.Errorf("storage_type [%s] requires ZED_OSS_BUCKET to be configured", storageType)
 		}
 		return nil
 	default:

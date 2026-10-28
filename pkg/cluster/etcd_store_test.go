@@ -26,22 +26,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
-// etcdTestStore dials the etcd in ZINC_ETCD_ENDPOINTS, or skips. Every run
+// etcdTestStore dials the etcd in ZED_ETCD_ENDPOINTS, or skips. Every run
 // works under its own prefix, so concurrent runs do not collide.
 func etcdTestStore(t *testing.T) (*EtcdStore, string) {
 	t.Helper()
-	endpoints := os.Getenv("ZINC_ETCD_ENDPOINTS")
+	endpoints := os.Getenv("ZED_ETCD_ENDPOINTS")
 	if endpoints == "" {
-		t.Skip("set ZINC_ETCD_ENDPOINTS to run the etcd integration test")
+		t.Skip("set ZED_ETCD_ENDPOINTS to run the etcd integration test")
 	}
 
 	previous := config.Global.Etcd
 	config.Global.Etcd.Endpoints = strings.Split(endpoints, ",")
-	config.Global.Etcd.Username = os.Getenv("ZINC_ETCD_USERNAME")
-	config.Global.Etcd.Password = os.Getenv("ZINC_ETCD_PASSWORD")
+	config.Global.Etcd.Username = os.Getenv("ZED_ETCD_USERNAME")
+	config.Global.Etcd.Password = os.Getenv("ZED_ETCD_PASSWORD")
 
 	store, err := NewEtcdStore()
 	require.NoError(t, err)

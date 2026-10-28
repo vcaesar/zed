@@ -22,11 +22,11 @@ import (
 
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalysis "github.com/zincsearch/zincsearch/pkg/uquery/analysis"
-	zincanalyzer "github.com/zincsearch/zincsearch/pkg/uquery/analysis/analyzer"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	zincanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func MatchQuery(query map[string]interface{}, mappings *meta.Mappings, analyzers map[string]*analysis.Analyzer) (riot.Query, error) {

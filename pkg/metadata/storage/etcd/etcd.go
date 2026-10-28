@@ -22,9 +22,9 @@ import (
 	"github.com/rs/zerolog/log"
 	client "go.etcd.io/etcd/client/v3"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/metadata/storage"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/metadata/storage"
 )
 
 var timeout = 30 * time.Second

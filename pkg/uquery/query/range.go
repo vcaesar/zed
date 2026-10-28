@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/vcaesar/riot"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func RangeQuery(query map[string]interface{}, mappings *meta.Mappings) (riot.Query, error) {

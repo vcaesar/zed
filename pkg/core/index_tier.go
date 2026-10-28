@@ -28,10 +28,10 @@ import (
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/directory"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/bluge/directory"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 // Data tiers. An index is hot on local disk, warm on object storage while still
@@ -73,7 +73,7 @@ func tierStorageType(tier string) (string, error) {
 		storageType = StorageTypeS3
 	}
 	if storageType == StorageTypeDisk {
-		return "", fmt.Errorf("tier [%s] requires an object storage, ZINC_TIER_COLD_STORAGE_TYPE is [disk]", tier)
+		return "", fmt.Errorf("tier [%s] requires an object storage, ZED_TIER_COLD_STORAGE_TYPE is [disk]", tier)
 	}
 	if err := CheckStorageType(storageType); err != nil {
 		return "", err

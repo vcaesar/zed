@@ -19,7 +19,7 @@ package auth
 import (
 	"strings"
 
-	"github.com/zincsearch/zincsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
 )
 
 func DeleteUser(id string) error {

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../docs/logo_2/icon.svg" alt="ZedSearch" width="128" height="128">
+</p>
+
 [![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
 [![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
 [![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
@@ -66,17 +70,17 @@ ZedSearch는 수백 개의 프로덕션 환경에 설치되어 있습니다.
 ## 빌드
 
 소스 빌드는 **기본적으로 API 전용**입니다: Node.js, npm, `frontend/` 디렉터리가 필요하지 않습니다.
-`ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`(또는 `conf/zinc.toml`)로
+`ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`(또는 `conf/zed.toml`)로
 최초 시작 자격 증명을 설정한 다음, 저장소 루트에서 실행하세요:
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web`에는 소스 체크아웃, Go, Node.js 24+, npm이 필요합니다. `npm ci`,
-`npm run build`, `go build -tags web`을 실행하여 `test/zincsearch-web`
+`npm run build`, `go build -tags web`을 실행하여 `test/zedsearch-web`
 (Windows에서는 `.exe`)을 생성합니다. 결과 바이너리는 모든 UI 에셋을 내장하고 있어
 프런트엔드 파일이나 Node.js가 없는 다른 호스트로 복사해 사용할 수 있습니다. 시작 시 호출자의
 작업 디렉터리, 설정, 환경 변수가 유지됩니다. 이미 `-tags web`으로 빌드된 바이너리는
@@ -85,9 +89,9 @@ go run cmd/zincsearch/main.go web  # build and embed the console, then start
 수동 빌드:
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 API 전용 노드는 `/`에서 버전 JSON을 반환하며, `/ui/`와 Swagger UI는 비활성화됩니다.

@@ -27,12 +27,12 @@ import (
 	"github.com/vcaesar/riot/search"
 	"github.com/vcaesar/riot/search/aggregations"
 
-	zincaggregation "github.com/zincsearch/zincsearch/pkg/bluge/aggregation"
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery/source"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery/source"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func Request(req zincaggregation.SearchAggregation, aggs map[string]meta.Aggregations, mappings *meta.Mappings) error {

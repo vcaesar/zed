@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/vcaesar/riot"
-	"github.com/zincsearch/zincsearch/pkg/wal"
+	"github.com/vcaesar/zedsearch/pkg/wal"
 )
 
 // IndexV026 compatible for v0.2.6 index

@@ -21,8 +21,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/auth"
-	"github.com/zincsearch/zincsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/auth"
+	"github.com/vcaesar/zedsearch/pkg/core"
 )
 
 func AuthMiddleware(permission string) func(c *gin.Context) {

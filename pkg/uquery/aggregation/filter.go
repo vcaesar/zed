@@ -23,10 +23,10 @@ import (
 
 	"github.com/vcaesar/riot/search"
 
-	zincaggregation "github.com/zincsearch/zincsearch/pkg/bluge/aggregation"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	zincaggregation "github.com/vcaesar/zedsearch/pkg/bluge/aggregation"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // FilterPredicate compiles the query of a [filter] / [filters] / [nested]

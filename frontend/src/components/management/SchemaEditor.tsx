@@ -9,10 +9,10 @@ import { validateMappings } from './mappings';
 export type Schema = { settings?: Record<string, unknown>; mappings?: Record<string, unknown> };
 export const STORAGE_TYPES = ['disk', 's3', 'minio', 'gcs', 'oss'];
 const STORAGE_HINTS: Record<string, string> = {
-  s3: 'Requires the server [S3] settings (ZINC_S3_BUCKET, ZINC_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
-  minio: 'Requires the server [S3] settings (ZINC_S3_BUCKET, ZINC_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
-  gcs: 'Requires the server [GCS] settings (ZINC_GCS_BUCKET and HMAC keys ZINC_GCS_ACCESS_KEY_ID / ZINC_GCS_SECRET_ACCESS_KEY).',
-  oss: 'Requires the server [OSS] settings (ZINC_OSS_BUCKET, ZINC_OSS_ENDPOINT, credentials).',
+  s3: 'Requires the server [S3] settings (ZED_S3_BUCKET, ZED_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
+  minio: 'Requires the server [S3] settings (ZED_S3_BUCKET, ZED_S3_ENDPOINT, credentials). MinIO and S3 share the same backend.',
+  gcs: 'Requires the server [GCS] settings (ZED_GCS_BUCKET and HMAC keys ZED_GCS_ACCESS_KEY_ID / ZED_GCS_SECRET_ACCESS_KEY).',
+  oss: 'Requires the server [OSS] settings (ZED_OSS_BUCKET, ZED_OSS_ENDPOINT, credentials).',
 };
 export type TemplateRecord = {
   name: string;

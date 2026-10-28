@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // supported response formats.

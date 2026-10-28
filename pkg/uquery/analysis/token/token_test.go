@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vcaesar/riot/analysis"
 
-	"github.com/zincsearch/zincsearch/pkg/uquery/analysis/internal/testutil"
+	"github.com/vcaesar/zedsearch/pkg/uquery/analysis/internal/testutil"
 )
 
 func TestNewDictTokenFilter(t *testing.T) {

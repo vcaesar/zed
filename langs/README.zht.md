@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../docs/logo_2/icon.svg" alt="ZedSearch" width="128" height="128">
+</p>
+
 [![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
 [![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
 [![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
@@ -66,17 +70,17 @@ ZedSearch 已有數百個正式環境部署。
 ## 建置
 
 原始碼建置**預設僅包含 API**：不需要 Node.js、npm 或 `frontend/` 目錄。
-透過 `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`（或 `conf/zinc.toml`）
+透過 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`（或 `conf/zed.toml`）
 設定首次啟動的憑證，然後在儲存庫根目錄執行：
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` 需要原始碼檢出、Go、Node.js 24+ 與 npm。它會執行 `npm ci`、
-`npm run build` 與 `go build -tags web`，產生 `test/zincsearch-web`
+`npm run build` 與 `go build -tags web`，產生 `test/zedsearch-web`
 （Windows 上為 `.exe`）。產生的執行檔內嵌所有 UI 資源，可以複製到
 沒有前端檔案或 Node.js 的其他主機上執行。啟動時會保留呼叫者的工作目錄、
 設定與環境變數。已使用 `-tags web` 建置的執行檔會直接啟動而不會重新建置，
@@ -85,9 +89,9 @@ go run cmd/zincsearch/main.go web  # build and embed the console, then start
 手動建置：
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 僅 API 的節點在 `/` 回傳版本 JSON；`/ui/` 與 Swagger UI 會被停用。

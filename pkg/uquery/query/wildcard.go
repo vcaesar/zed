@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/vcaesar/riot"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 func WildcardQuery(query map[string]interface{}) (riot.Query, error) {

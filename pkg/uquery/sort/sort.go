@@ -21,7 +21,7 @@ import (
 
 	"github.com/vcaesar/riot/search"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/errors"
 )
 
 func Request(v interface{}) (search.SortOrder, error) {

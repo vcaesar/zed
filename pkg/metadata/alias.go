@@ -15,7 +15,7 @@
 
 package metadata
 
-import "github.com/zincsearch/zincsearch/pkg/zutils/json"
+import "github.com/vcaesar/zedsearch/pkg/zutils/json"
 
 type alias struct{}
 

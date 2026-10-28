@@ -26,13 +26,13 @@ import (
 	"github.com/vcaesar/riot/search"
 	"github.com/vcaesar/riot/search/highlight"
 
-	zincsearch "github.com/zincsearch/zincsearch/pkg/bluge/search"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/uquery"
-	"github.com/zincsearch/zincsearch/pkg/uquery/fields"
-	uquerydsl "github.com/zincsearch/zincsearch/pkg/uquery/query"
-	"github.com/zincsearch/zincsearch/pkg/uquery/source"
-	"github.com/zincsearch/zincsearch/pkg/uquery/timerange"
+	zedsearch "github.com/vcaesar/zedsearch/pkg/bluge/search"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/uquery"
+	"github.com/vcaesar/zedsearch/pkg/uquery/fields"
+	uquerydsl "github.com/vcaesar/zedsearch/pkg/uquery/query"
+	"github.com/vcaesar/zedsearch/pkg/uquery/source"
+	"github.com/vcaesar/zedsearch/pkg/uquery/timerange"
 )
 
 func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) {
@@ -69,7 +69,7 @@ func (index *Index) Search(query *meta.ZincQuery) (*meta.SearchResponse, error) 
 	}
 
 	// dmi, err := riot.MultiSearch(ctx, searchRequest, readers...)
-	dmi, err := zincsearch.MultiSearch(ctx, query, mappings, analyzers, readers...)
+	dmi, err := zedsearch.MultiSearch(ctx, query, mappings, analyzers, readers...)
 	if err != nil {
 		log.Printf("index.SearchV2: error executing search: %s", err.Error())
 		if err == context.DeadlineExceeded {

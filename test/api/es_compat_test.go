@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 func TestApiESCompat(t *testing.T) {
@@ -110,7 +110,7 @@ func TestApiESCompat(t *testing.T) {
 		items := make([]elastic.CatHealthResponse, 0)
 		assert.NoError(t, json.Unmarshal(resp.Body.Bytes(), &items))
 		assert.Len(t, items, 1)
-		assert.Equal(t, "zincsearch", items[0].Cluster)
+		assert.Equal(t, "zedsearch", items[0].Cluster)
 		assert.Equal(t, "green", items[0].Status)
 
 		resp = request("GET", "/es/_cat/health", nil)
@@ -124,7 +124,7 @@ func TestApiESCompat(t *testing.T) {
 
 		data := new(elastic.ClusterHealthResponse)
 		assert.NoError(t, json.Unmarshal(resp.Body.Bytes(), data))
-		assert.Equal(t, "zincsearch", data.ClusterName)
+		assert.Equal(t, "zedsearch", data.ClusterName)
 		assert.Equal(t, "green", data.Status)
 		assert.Equal(t, 1, data.NumberOfNodes)
 		assert.Equal(t, 100.0, data.ActiveShardsPercentAsNumber)

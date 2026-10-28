@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/errors"
 )
 
 // MemoryStore is an in-process Store used by tests. Lease expiry is driven

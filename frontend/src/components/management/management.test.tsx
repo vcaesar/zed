@@ -251,7 +251,7 @@ describe('index management', () => {
     fireEvent.click(select);
     expect(screen.getAllByRole('option').map((o) => o.dataset.value)).toEqual(['disk', 's3', 'minio', 'gcs', 'oss']);
     fireEvent.click(select);
-    expect(screen.queryByText(/ZINC_S3_BUCKET/)).toBeNull();
+    expect(screen.queryByText(/ZED_S3_BUCKET/)).toBeNull();
     change('Index Name', 'events');
     // the hint renders inside the label, so later picks go through the captured select
     const pick = (value: string) => {
@@ -259,11 +259,11 @@ describe('index management', () => {
       fireEvent.click(screen.getAllByRole('option').find((o) => o.dataset.value === value)!);
     };
     pick('gcs');
-    expect(screen.getByText(/ZINC_GCS_BUCKET/)).toBeTruthy();
+    expect(screen.getByText(/ZED_GCS_BUCKET/)).toBeTruthy();
     pick('oss');
-    expect(screen.getByText(/ZINC_OSS_BUCKET/)).toBeTruthy();
+    expect(screen.getByText(/ZED_OSS_BUCKET/)).toBeTruthy();
     pick('minio');
-    expect(screen.getByText(/ZINC_S3_BUCKET/)).toBeTruthy();
+    expect(screen.getByText(/ZED_S3_BUCKET/)).toBeTruthy();
     click('Continue');
     click('Continue');
     click('Continue');

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../docs/logo_2/icon.svg" alt="ZedSearch" width="128" height="128">
+</p>
+
 [![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
 [![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
 [![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
@@ -66,17 +70,17 @@ ZedSearch 已有数百个生产环境部署。
 ## 构建
 
 源码构建**默认仅包含 API**：不需要 Node.js、npm 或 `frontend/` 目录。
-通过 `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`（或 `conf/zinc.toml`）
+通过 `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`（或 `conf/zed.toml`）
 设置首次启动的凭据，然后在仓库根目录运行：
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` 需要源码检出、Go、Node.js 24+ 和 npm。它会运行 `npm ci`、
-`npm run build` 和 `go build -tags web`，生成 `test/zincsearch-web`
+`npm run build` 和 `go build -tags web`，生成 `test/zedsearch-web`
 （Windows 上为 `.exe`）。生成的二进制文件内嵌了所有 UI 资源，可以复制到
 没有前端文件或 Node.js 的其他主机上运行。启动时会保留调用者的工作目录、
 配置和环境变量。已使用 `-tags web` 构建的二进制文件会直接启动而不会重新构建，
@@ -85,9 +89,9 @@ go run cmd/zincsearch/main.go web  # build and embed the console, then start
 手动构建：
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 仅 API 的节点在 `/` 返回版本 JSON；`/ui/` 和 Swagger UI 被禁用。

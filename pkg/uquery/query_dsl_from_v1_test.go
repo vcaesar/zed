@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	v1 "github.com/zincsearch/zincsearch/pkg/meta/v1"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	v1 "github.com/vcaesar/zedsearch/pkg/meta/v1"
 )
 
 func mustClause(t *testing.T, q *meta.ZincQuery) []interface{} {

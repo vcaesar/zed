@@ -19,8 +19,8 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog/log"
-	"github.com/zincsearch/zincsearch/pkg/metadata"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/metadata"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 var ZINC_INDEX_ALIAS_LIST AliasList

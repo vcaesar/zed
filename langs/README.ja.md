@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../docs/logo_2/icon.svg" alt="ZedSearch" width="128" height="128">
+</p>
+
 [![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
 [![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
 [![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
@@ -66,17 +70,17 @@ ZedSearch は数百の本番環境で導入されています。
 ## ビルド
 
 ソースビルドは**デフォルトで API のみ**です：Node.js、npm、`frontend/` ディレクトリは不要です。
-初回起動時の認証情報を `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-（または `conf/zinc.toml`）で設定し、リポジトリのルートから実行します：
+初回起動時の認証情報を `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+（または `conf/zed.toml`）で設定し、リポジトリのルートから実行します：
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 `web` にはソースのチェックアウト、Go、Node.js 24+、npm が必要です。`npm ci`、
-`npm run build`、`go build -tags web` を実行し、`test/zincsearch-web`
+`npm run build`、`go build -tags web` を実行し、`test/zedsearch-web`
 （Windows では `.exe`）を生成します。生成されたバイナリはすべての UI アセットを埋め込んでおり、
 フロントエンドファイルや Node.js のない別のホストにコピーして使えます。起動時には呼び出し元の
 作業ディレクトリ、設定、環境変数が維持されます。すでに `-tags web` でビルドされたバイナリは、
@@ -85,9 +89,9 @@ go run cmd/zincsearch/main.go web  # build and embed the console, then start
 手動ビルドの場合：
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 API のみのノードは `/` でバージョン JSON を返し、`/ui/` と Swagger UI は無効です。

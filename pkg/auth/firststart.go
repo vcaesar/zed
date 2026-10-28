@@ -21,7 +21,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 func init() {
@@ -74,7 +74,7 @@ func initFirstUser() error {
 	adminUser := config.Global.FirstAdminUser
 	adminPassword := config.Global.FirstAdminPassword
 	if adminUser == "" || adminPassword == "" {
-		return errors.New("set ZINC_FIRST_ADMIN_USER and ZINC_FIRST_ADMIN_PASSWORD in ./conf/zinc.toml (lowercase keys) or in the environment on first start. Change the credentials after first login")
+		return errors.New("set ZED_FIRST_ADMIN_USER and ZED_FIRST_ADMIN_PASSWORD in ./conf/zed.toml (lowercase keys) or in the environment on first start. Change the credentials after first login")
 	}
 
 	_, err := CreateUser(adminUser, adminUser, adminPassword, "admin")

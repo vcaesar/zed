@@ -24,7 +24,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 // NodeStatus is one row of `GET /api/cluster/nodes`.

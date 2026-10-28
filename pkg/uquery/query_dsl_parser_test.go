@@ -23,8 +23,8 @@ import (
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/search"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 func dslMappings() *meta.Mappings {

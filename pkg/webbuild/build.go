@@ -47,12 +47,12 @@ func sourceRoot(dir string) (string, error) {
 			return "", err
 		}
 		fields := strings.Fields(string(data))
-		if len(fields) >= 2 && fields[0] == "module" && fields[1] == "github.com/zincsearch/zincsearch" {
+		if len(fields) >= 2 && fields[0] == "module" && fields[1] == "github.com/vcaesar/zedsearch" {
 			return dir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", errors.New("web mode requires a ZincSearch source checkout; run from its root or cmd/zincsearch")
+			return "", errors.New("web mode requires a ZedSearch source checkout; run from its root or cmd/zedsearch")
 		}
 		dir = parent
 	}
@@ -65,13 +65,13 @@ func build(root string, run func(*exec.Cmd) error) (_ string, err error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	lock := flock.New(filepath.Join(dir, "zincsearch-web.lock"))
+	lock := flock.New(filepath.Join(dir, "zedsearch-web.lock"))
 	if err := lock.Lock(); err != nil {
 		return "", err
 	}
 	defer func() { err = errors.Join(err, lock.Unlock()) }()
 
-	output := filepath.Join(dir, "zincsearch-web")
+	output := filepath.Join(dir, "zedsearch-web")
 	temp := fmt.Sprintf("%s-%d", output, os.Getpid())
 	if runtime.GOOS == "windows" {
 		output += ".exe"
@@ -80,7 +80,7 @@ func build(root string, run func(*exec.Cmd) error) (_ string, err error) {
 	commands := []*exec.Cmd{
 		npmCommand("ci"),
 		npmCommand("run", "build"),
-		exec.Command("go", "build", "-tags", "web", "-o", temp, "./cmd/zincsearch"),
+		exec.Command("go", "build", "-tags", "web", "-o", temp, "./cmd/zedsearch"),
 	}
 	commands[0].Dir = filepath.Join(root, "frontend")
 	commands[1].Dir = commands[0].Dir

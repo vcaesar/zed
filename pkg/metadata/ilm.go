@@ -16,7 +16,7 @@
 package metadata
 
 import (
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 // ILMPhase is one phase of a lifecycle policy. Only min_age is interpreted;

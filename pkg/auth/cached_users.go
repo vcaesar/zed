@@ -18,7 +18,7 @@ package auth
 import (
 	"sync"
 
-	"github.com/zincsearch/zincsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta"
 )
 
 var ZINC_CACHED_USERS = cachedUsers{users: map[string]*meta.User{}}

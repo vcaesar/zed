@@ -20,8 +20,8 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/analyzer"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/token"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewStopAnalyzer(options interface{}) (*analysis.Analyzer, error) {

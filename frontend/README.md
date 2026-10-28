@@ -1,4 +1,4 @@
-# ZincSearch React console
+# ZedSearch React console
 
 React 19, React Router, Tailwind CSS 4 and Vite. This replaces the active Vue/Quasar console; `../web/` remains as legacy source for reference.
 
@@ -21,7 +21,7 @@ npm run coverage
 npm run build     # frontend/dist, embedded by Go
 ```
 
-Plain Go builds/tests are API-only and do not require the frontend. Run `go run cmd/zincsearch/main.go web` from the repository root to build and embed the console automatically, or build these assets first and use `go build -tags web ./cmd/zincsearch` / `go test -tags web`. Web-enabled servers serve the console at `/ui/`, including direct route navigation. For reverse proxies, set `VITE_BASE_PATH=/prefix/ui/` at build time and strip `/prefix` before forwarding to ZincSearch. The API base defaults to the same prefix without `/ui/`; `VITE_API_ENDPOINT` explicitly overrides it. A separately hosted API must permit the frontend origin via CORS.
+Plain Go builds/tests are API-only and do not require the frontend. Run `go run cmd/zedsearch/main.go web` from the repository root to build and embed the console automatically, or build these assets first and use `go build -tags web ./cmd/zedsearch` / `go test -tags web`. Web-enabled servers serve the console at `/ui/`, including direct route navigation. For reverse proxies, set `VITE_BASE_PATH=/prefix/ui/` at build time and strip `/prefix` before forwarding to ZedSearch. The API base defaults to the same prefix without `/ui/`; `VITE_API_ENDPOINT` explicitly overrides it. A separately hosted API must permit the frontend origin via CORS.
 
 ## Migration
 

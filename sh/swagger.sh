@@ -10,4 +10,4 @@ then
 fi
 
 echo "Running swag command"
-swag init -g cmd/zincsearch/main.go
+swag init -g cmd/zedsearch/main.go

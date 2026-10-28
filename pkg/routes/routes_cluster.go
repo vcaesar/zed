@@ -18,7 +18,7 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/zincsearch/zincsearch/pkg/handlers/cluster"
+	"github.com/vcaesar/zedsearch/pkg/handlers/cluster"
 )
 
 // SetClusterRoutes installs the cluster endpoints and the ownership

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../docs/logo_2/icon.svg" alt="ZedSearch" width="128" height="128">
+</p>
+
 [![CI](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/ci.yml)
 [![Nightly](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/vcaesar/zedsearch/actions/workflows/nightly.yml)
 [![Release](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml/badge.svg)](https://github.com/vcaesar/zedsearch/actions/workflows/release.yml)
@@ -66,17 +70,17 @@ ZedSearch используется в сотнях производственн�
 ## Сборка
 
 Сборки из исходного кода по умолчанию **только API**: Node.js, npm и каталог `frontend/` не нужны.
-Задайте учётные данные для первого запуска через `ZINC_FIRST_ADMIN_USER` / `ZINC_FIRST_ADMIN_PASSWORD`
-(или `conf/zinc.toml`), затем запустите из корня репозитория:
+Задайте учётные данные для первого запуска через `ZED_FIRST_ADMIN_USER` / `ZED_FIRST_ADMIN_PASSWORD`
+(или `conf/zed.toml`), затем запустите из корня репозитория:
 
 ```sh
-go run cmd/zincsearch/main.go      # API-only, :4080
-go run cmd/zincsearch/main.go web  # build and embed the console, then start
-# Equivalently, from cmd/zincsearch/: go run main.go [web]
+go run cmd/zedsearch/main.go      # API-only, :4080
+go run cmd/zedsearch/main.go web  # build and embed the console, then start
+# Equivalently, from cmd/zedsearch/: go run main.go [web]
 ```
 
 Для `web` нужны исходный код, Go, Node.js 24+ и npm. Команда выполняет `npm ci`,
-`npm run build` и `go build -tags web`, создавая `test/zincsearch-web`
+`npm run build` и `go build -tags web`, создавая `test/zedsearch-web`
 (`.exe` в Windows). Полученный бинарный файл содержит все ресурсы интерфейса и может быть скопирован
 на другой хост без файлов фронтенда и Node.js. При запуске сохраняются рабочий каталог,
 конфигурация и окружение вызывающего процесса. Бинарный файл, уже собранный с `-tags web`,
@@ -85,9 +89,9 @@ go run cmd/zincsearch/main.go web  # build and embed the console, then start
 Для ручной сборки:
 
 ```sh
-go build -o zedsearch ./cmd/zincsearch  # API-only
+go build -o zedsearch ./cmd/zedsearch  # API-only
 (cd frontend && npm ci && npm run build)
-go build -tags web -o zedsearch ./cmd/zincsearch
+go build -tags web -o zedsearch ./cmd/zedsearch
 ```
 
 Узлы только с API возвращают JSON с версией по адресу `/`; `/ui/` и Swagger UI отключены.

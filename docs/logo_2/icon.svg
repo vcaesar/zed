@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="zedsearch-icon-2-title zedsearch-icon-2-desc">
+  <title id="zedsearch-icon-2-title">ZedSearch icon</title>
+  <desc id="zedsearch-icon-2-desc">An open teal search lens surrounds a Z whose lower stroke extends into the lens handle.</desc>
+  <g fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#008B83" d="M58.185 77.742 A34 34 0 1 1 77.742 58.185"/>
+    <path stroke="#102F38" d="M32 34 H60 L32 58 H58 L84 84"/>
+  </g>
+</svg>

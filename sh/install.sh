@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Installs ZincSearch the quick way, for adventurers that want to spend more time
+# Installs ZedSearch the quick way, for adventurers that want to spend more time
 # grooming their cats.
 #
 # Requires curl, grep, cut, tar, uname, chmod, mv, rm.
@@ -9,11 +9,11 @@
 
 header() {
     cat 1>&2 <<EOF
-ZincSearch Installer
+ZedSearch Installer
 
 Website: https://zinc.dev
 Docs: https://zincsearch-docs.zinc.dev
-Repo: https://github.com/zincsearch/zincsearch
+Repo: https://github.com/vcaesar/zedsearch
 
 EOF
 }
@@ -33,7 +33,7 @@ check_tools() {
 	done
 }
 
-install_zincsearch()
+install_zedsearch()
 {
 	trap 'echo -e "Aborted, error $? in command: $BASH_COMMAND"; trap ERR; exit 1' ERR
 	install_path="/usr/local/bin"
@@ -60,7 +60,7 @@ install_zincsearch()
 	# Which OS and version? #
 	#########################
 
-	zinc_bin="zincsearch"
+	zinc_bin="zedsearch"
 	zinc_dl_ext=".tar.gz"
 
 	# NOTE: `uname -m` is more accurate and universal than `arch`
@@ -107,12 +107,12 @@ install_zincsearch()
 	# Download and extract #
 	########################
 
-	echo "Downloading ZincSearch for ${zinc_os}/${zinc_arch}${zinc_arm}..."
-	zinc_file="zincsearch_${zinc_os}_${zinc_arch}${zinc_arm}${zinc_dl_ext}"
+	echo "Downloading ZedSearch for ${zinc_os}/${zinc_arch}${zinc_arm}..."
+	zinc_file="zedsearch_${zinc_os}_${zinc_arch}${zinc_arm}${zinc_dl_ext}"
 
 	if [[ "$#" -eq 0 ]]; then
 		# get latest release
-		zinc_tag=$(curl -s https://api.github.com/repos/zincsearch/zincsearch/releases/latest | grep 'tag_name' | cut -d\" -f4)
+		zinc_tag=$(curl -s https://api.github.com/repos/vcaesar/zedsearch/releases/latest | grep 'tag_name' | cut -d\" -f4)
 		zinc_version=$(echo ${zinc_tag} | cut -c2-)
 	elif [[ "$#" -gt 1 ]]; then
 		echo "Too many arguments."
@@ -123,7 +123,7 @@ install_zincsearch()
 		zinc_version=$1
 	fi
 
-	zinc_url="https://github.com/zincsearch/zincsearch/releases/download/${zinc_tag}/zincsearch_${zinc_version}_${zinc_os}_${zinc_arch}${zinc_arm}.tar.gz"
+	zinc_url="https://github.com/vcaesar/zedsearch/releases/download/${zinc_tag}/zedsearch_${zinc_version}_${zinc_os}_${zinc_arch}${zinc_arm}.tar.gz"
 
 	dl="/tmp/$zinc_file"
 	rm -rf -- "$dl"
@@ -138,16 +138,16 @@ install_zincsearch()
 	esac
 	chmod +x "$PREFIX/tmp/$zinc_bin"
 
-	echo "Putting ZincSearch in $install_path (may require password)"
+	echo "Putting ZedSearch in $install_path (may require password)"
 	$sudo_cmd mv "$PREFIX/tmp/$zinc_bin" "$install_path/$zinc_bin"
 	$sudo_cmd rm -- "$dl"
 
 	# check installation
 	# $zinc_bin -version
 
-	echo "Successfully installed ZincSearch"
+	echo "Successfully installed ZedSearch"
 	trap ERR
 	return 0
 }
 
-install_zincsearch $@
+install_zedsearch $@

@@ -33,7 +33,7 @@ import (
 	"github.com/rs/zerolog/log"
 	segment "github.com/vcaesar/bluge_segment_api"
 
-	"github.com/zincsearch/zincsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 const cacheTempExt = ".tmp"
@@ -63,7 +63,7 @@ var (
 	cacheErr  error
 )
 
-// defaultFileCache returns the shared cache, or nil when ZINC_OBJECT_CACHE_SIZE is 0.
+// defaultFileCache returns the shared cache, or nil when ZED_OBJECT_CACHE_SIZE is 0.
 func defaultFileCache() (*fileCache, error) {
 	cacheOnce.Do(func() {
 		if config.Global.ObjectCacheSize <= 0 {

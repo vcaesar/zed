@@ -31,12 +31,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/zincsearch/zincsearch/pkg/cluster"
-	"github.com/zincsearch/zincsearch/pkg/core"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/meta/elastic"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch/pkg/cluster"
+	"github.com/vcaesar/zedsearch/pkg/core"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 const (
@@ -314,7 +314,7 @@ func groupByOwner(indexes []string) map[string][]string {
 
 // resolveIndexes expands a target into concrete index names using the
 // index list of this node. It is complete only when the nodes share their
-// index metadata (ZINC_METADATA_STORAGE=etcd).
+// index metadata (ZED_METADATA_STORAGE=etcd).
 func resolveIndexes(target string) []string {
 	patterns := elastic.SplitPatterns(target)
 	if len(patterns) == 1 && (patterns[0] == "_all" || patterns[0] == "*") {

@@ -2,8 +2,8 @@
 set -e
 cd "$(dirname "$0")/.."
 
-BUILD_OUTPUT="zincsearch"
-MAIN_PACKAGE="cmd/zincsearch/main.go"
+BUILD_OUTPUT="zedsearch"
+MAIN_PACKAGE="cmd/zedsearch/main.go"
 FRONTEND_DIR="frontend"
 
 echo "Cleaning previous builds..."
@@ -52,9 +52,9 @@ echo "Commit: $COMMIT_HASH"
 # Build command with common flags
 BUILD_FLAGS=(
     -ldflags="-w -s \
-        -X github.com/zincsearch/zincsearch/pkg/meta.Version=${VERSION} \
-        -X github.com/zincsearch/zincsearch/pkg/meta.BuildDate=${BUILD_DATE} \
-        -X github.com/zincsearch/zincsearch/pkg/meta.CommitHash=${COMMIT_HASH}"
+        -X github.com/vcaesar/zedsearch/pkg/meta.Version=${VERSION} \
+        -X github.com/vcaesar/zedsearch/pkg/meta.BuildDate=${BUILD_DATE} \
+        -X github.com/vcaesar/zedsearch/pkg/meta.CommitHash=${COMMIT_HASH}"
     -trimpath
     -tags ne,web  # embed the UI, drop gse dictionaries; same as .goreleaser.yml
     -o "$BUILD_OUTPUT"

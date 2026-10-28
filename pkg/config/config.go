@@ -36,37 +36,37 @@ import (
 )
 
 type config struct {
-	FirstAdminUser            string        `toml:"zinc_first_admin_user"`
-	FirstAdminPassword        string        `toml:"zinc_first_admin_password"`
+	FirstAdminUser            string        `toml:"zed_first_admin_user"`
+	FirstAdminPassword        string        `toml:"zed_first_admin_password"`
 	GinMode                   string        `toml:"gin_mode"`
-	ServerPort                string        `toml:"zinc_server_port"`
-	ServerAddress             string        `toml:"zinc_server_address"`
-	ServerTLSCertificateFile  string        `toml:"zinc_server_tls_certificate_file"`
-	ServerTLSKeyFile          string        `toml:"zinc_server_tls_key_file"`
-	ServerMode                string        `toml:"zinc_server_mode"`
-	NodeID                    int           `toml:"zinc_node_id"`
-	DataPath                  string        `toml:"zinc_data_path"`
-	MetadataStorage           string        `toml:"zinc_metadata_storage"`
-	IceCompressor             string        `toml:"zinc_ice_compressor"`
-	SentryEnable              bool          `toml:"zinc_sentry"`
-	SentryDSN                 string        `toml:"zinc_sentry_dsn"`
-	ProfilerEnable            bool          `toml:"zinc_profiler"`
-	ProfilerServer            string        `toml:"zinc_profiler_server"`
-	ProfilerAPIKey            string        `toml:"zinc_profiler_api_key"`
-	ProfilerFriendlyProfileID string        `toml:"zinc_profiler_friendly_profile_id"`
-	TelemetryEnable           bool          `toml:"zinc_telemetry"`
-	PrometheusEnable          bool          `toml:"zinc_prometheus_enable"`
-	EnableTextKeywordMapping  bool          `toml:"zinc_enable_text_keyword_mapping"`
-	EnableSQLMappings         bool          `toml:"zinc_enable_sql_mappings"`
-	BatchSize                 int           `toml:"zinc_batch_size"`
-	MaxResults                int           `toml:"zinc_max_results"`
-	AggregationTermsSize      int           `toml:"zinc_aggregation_terms_size"`
-	MaxDocumentSize           int           `toml:"zinc_max_document_size"`   // Max size for a single document . Default = 1 MB = 1024 * 1024
-	ObjectCacheSize           int64         `toml:"zinc_object_cache_size"`   // local disk LRU cache for object storage indexes, bytes, 0 disables
-	WalSyncInterval           time.Duration `toml:"zinc_wal_sync_interval"`   // sync wal to disk, 1s, 10ms
-	WalRedoLogNoSync          bool          `toml:"zinc_wal_redolog_no_sync"` // control sync after every write
-	ZincSwaggerEnable         bool          `toml:"zinc_swagger_enable"`
-	LogLevel                  string        `toml:"zinc_log_level"`
+	ServerPort                string        `toml:"zed_server_port"`
+	ServerAddress             string        `toml:"zed_server_address"`
+	ServerTLSCertificateFile  string        `toml:"zed_server_tls_certificate_file"`
+	ServerTLSKeyFile          string        `toml:"zed_server_tls_key_file"`
+	ServerMode                string        `toml:"zed_server_mode"`
+	NodeID                    int           `toml:"zed_node_id"`
+	DataPath                  string        `toml:"zed_data_path"`
+	MetadataStorage           string        `toml:"zed_metadata_storage"`
+	IceCompressor             string        `toml:"zed_ice_compressor"`
+	SentryEnable              bool          `toml:"zed_sentry"`
+	SentryDSN                 string        `toml:"zed_sentry_dsn"`
+	ProfilerEnable            bool          `toml:"zed_profiler"`
+	ProfilerServer            string        `toml:"zed_profiler_server"`
+	ProfilerAPIKey            string        `toml:"zed_profiler_api_key"`
+	ProfilerFriendlyProfileID string        `toml:"zed_profiler_friendly_profile_id"`
+	TelemetryEnable           bool          `toml:"zed_telemetry"`
+	PrometheusEnable          bool          `toml:"zed_prometheus_enable"`
+	EnableTextKeywordMapping  bool          `toml:"zed_enable_text_keyword_mapping"`
+	EnableSQLMappings         bool          `toml:"zed_enable_sql_mappings"`
+	BatchSize                 int           `toml:"zed_batch_size"`
+	MaxResults                int           `toml:"zed_max_results"`
+	AggregationTermsSize      int           `toml:"zed_aggregation_terms_size"`
+	MaxDocumentSize           int           `toml:"zed_max_document_size"`   // Max size for a single document . Default = 1 MB = 1024 * 1024
+	ObjectCacheSize           int64         `toml:"zed_object_cache_size"`   // local disk LRU cache for object storage indexes, bytes, 0 disables
+	WalSyncInterval           time.Duration `toml:"zed_wal_sync_interval"`   // sync wal to disk, 1s, 10ms
+	WalRedoLogNoSync          bool          `toml:"zed_wal_redolog_no_sync"` // control sync after every write
+	ZincSwaggerEnable         bool          `toml:"zed_swagger_enable"`
+	LogLevel                  string        `toml:"zed_log_level"`
 	Cluster                   cluster
 	Tier                      tier
 	Shard                     shard
@@ -78,75 +78,75 @@ type config struct {
 }
 
 type cluster struct {
-	Name string `toml:"zinc_cluster_name"`
+	Name string `toml:"zed_cluster_name"`
 	// Enable turns on multi-node mode: membership, index ownership and
 	// request routing are coordinated through etcd ([Etcd] section).
-	Enable bool `toml:"zinc_cluster_enable"`
+	Enable bool `toml:"zed_cluster_enable"`
 	// NodeID must be unique and stable per node; defaults to hostname.
-	NodeID string `toml:"zinc_cluster_node_id"`
+	NodeID string `toml:"zed_cluster_node_id"`
 	// AdvertiseAddr is the http(s)://host:port other nodes use to reach this node.
-	AdvertiseAddr string `toml:"zinc_cluster_advertise_addr"`
+	AdvertiseAddr string `toml:"zed_cluster_advertise_addr"`
 	// Partitions is the fixed number of ownership buckets indexes hash into.
-	Partitions        int           `toml:"zinc_cluster_partitions"`
-	HeartbeatInterval time.Duration `toml:"zinc_cluster_heartbeat_interval"`
-	HeartbeatTTL      time.Duration `toml:"zinc_cluster_heartbeat_ttl"`
+	Partitions        int           `toml:"zed_cluster_partitions"`
+	HeartbeatInterval time.Duration `toml:"zed_cluster_heartbeat_interval"`
+	HeartbeatTTL      time.Duration `toml:"zed_cluster_heartbeat_ttl"`
 	// Replicas is the number of extra nodes that keep a warm read-only copy of
 	// each partition's object-storage indexes for failover reads.
-	Replicas int `toml:"zinc_cluster_replicas"`
+	Replicas int `toml:"zed_cluster_replicas"`
 }
 
 type tier struct {
 	// Enable runs the background hot/warm/cold lifecycle mover.
-	Enable        bool          `toml:"zinc_tier_enable"`
-	CheckInterval time.Duration `toml:"zinc_tier_check_interval"`
+	Enable        bool          `toml:"zed_tier_enable"`
+	CheckInterval time.Duration `toml:"zed_tier_check_interval"`
 	// ColdStorageType is where cold indexes are moved: s3, gcs or oss.
-	ColdStorageType string `toml:"zinc_tier_cold_storage_type"`
+	ColdStorageType string `toml:"zed_tier_cold_storage_type"`
 }
 
 type shard struct {
 	// control goroutine number for read
-	GoroutineNum int `toml:"zinc_shard_goroutine_num"`
+	GoroutineNum int `toml:"zed_shard_goroutine_num"`
 	// DefaultNum is the default number of shards.
-	Num int64 `toml:"zinc_shard_num"`
+	Num int64 `toml:"zed_shard_num"`
 	// MaxSize is the maximum size limit for one shard, or will create a new shard.
-	MaxSize uint64 `toml:"zinc_shard_max_size"`
+	MaxSize uint64 `toml:"zed_shard_max_size"`
 }
 
 type etcd struct {
-	Endpoints []string `toml:"zinc_etcd_endpoints"`
-	Prefix    string   `toml:"zinc_etcd_prefix"`
-	Username  string   `toml:"zinc_etcd_username"`
-	Password  string   `toml:"zinc_etcd_password"`
+	Endpoints []string `toml:"zed_etcd_endpoints"`
+	Prefix    string   `toml:"zed_etcd_prefix"`
+	Username  string   `toml:"zed_etcd_username"`
+	Password  string   `toml:"zed_etcd_password"`
 }
 
 // S3Config configures the object store used by indexes created with storage_type "s3".
 // Works with AWS S3, MinIO and any S3-compatible endpoint.
 type S3Config struct {
-	Endpoint        string `toml:"zinc_s3_endpoint"`
-	Bucket          string `toml:"zinc_s3_bucket"`
-	Region          string `toml:"zinc_s3_region"`
-	AccessKeyID     string `toml:"zinc_s3_access_key_id"`
-	SecretAccessKey string `toml:"zinc_s3_secret_access_key"`
-	UseSSL          bool   `toml:"zinc_s3_use_ssl"`
+	Endpoint        string `toml:"zed_s3_endpoint"`
+	Bucket          string `toml:"zed_s3_bucket"`
+	Region          string `toml:"zed_s3_region"`
+	AccessKeyID     string `toml:"zed_s3_access_key_id"`
+	SecretAccessKey string `toml:"zed_s3_secret_access_key"`
+	UseSSL          bool   `toml:"zed_s3_use_ssl"`
 }
 
 // GCSConfig configures Google Cloud Storage used by indexes created with storage_type "gcs".
 // Access goes through the S3-interoperable XML API of GCS, so HMAC keys are required.
 type GCSConfig struct {
-	Endpoint        string `toml:"zinc_gcs_endpoint"`
-	Bucket          string `toml:"zinc_gcs_bucket"`
-	AccessKeyID     string `toml:"zinc_gcs_access_key_id"`
-	SecretAccessKey string `toml:"zinc_gcs_secret_access_key"`
+	Endpoint        string `toml:"zed_gcs_endpoint"`
+	Bucket          string `toml:"zed_gcs_bucket"`
+	AccessKeyID     string `toml:"zed_gcs_access_key_id"`
+	SecretAccessKey string `toml:"zed_gcs_secret_access_key"`
 }
 
 // OSSConfig configures Alibaba Cloud OSS used by indexes created with storage_type "oss", via its S3-
 // compatible API.
 type OSSConfig struct {
-	Endpoint        string `toml:"zinc_oss_endpoint"`
-	Bucket          string `toml:"zinc_oss_bucket"`
-	Region          string `toml:"zinc_oss_region"`
-	AccessKeyID     string `toml:"zinc_oss_access_key_id"`
-	SecretAccessKey string `toml:"zinc_oss_secret_access_key"`
+	Endpoint        string `toml:"zed_oss_endpoint"`
+	Bucket          string `toml:"zed_oss_bucket"`
+	Region          string `toml:"zed_oss_region"`
+	AccessKeyID     string `toml:"zed_oss_access_key_id"`
+	SecretAccessKey string `toml:"zed_oss_secret_access_key"`
 }
 
 type plugin struct {
@@ -155,19 +155,19 @@ type plugin struct {
 }
 
 type elasticsearch struct {
-	Version string `toml:"zinc_plugin_es_version"`
+	Version string `toml:"zed_plugin_es_version"`
 }
 
 type gse struct {
-	Enable     bool   `toml:"zinc_plugin_gse_enable"`
-	EnableStop bool   `toml:"zinc_plugin_gse_enable_stop"`
-	EnableHMM  bool   `toml:"zinc_plugin_gse_enable_hmm"`
-	DictEmbed  string `toml:"zinc_plugin_gse_dict_embed"`
-	DictPath   string `toml:"zinc_plugin_gse_dict_path"`
+	Enable     bool   `toml:"zed_plugin_gse_enable"`
+	EnableStop bool   `toml:"zed_plugin_gse_enable_stop"`
+	EnableHMM  bool   `toml:"zed_plugin_gse_enable_hmm"`
+	DictEmbed  string `toml:"zed_plugin_gse_dict_embed"`
+	DictPath   string `toml:"zed_plugin_gse_dict_path"`
 }
 
 // configFile is the only config file read at startup, resolved against the working directory.
-const configFile = "conf/zinc.toml"
+const configFile = "conf/zed.toml"
 
 //go:embed default.toml
 var defaultConfig []byte
@@ -182,7 +182,7 @@ func init() {
 	// set the log level
 	logLevel, logLevelErr := zerolog.ParseLevel(Global.LogLevel)
 	if logLevelErr != nil {
-		log.Error().Err(logLevelErr).Msg("ZINC_LOG_LEVEL is not valid")
+		log.Error().Err(logLevelErr).Msg("ZED_LOG_LEVEL is not valid")
 	}
 	zerolog.SetGlobalLevel(logLevel)
 
@@ -194,10 +194,10 @@ func init() {
 	// check data path
 	testPath := path.Join(Global.DataPath, "_test_")
 	if err := os.MkdirAll(testPath, 0o755); err != nil {
-		log.Fatal().Err(err).Msg("ZINC_DATA_PATH is not writable")
+		log.Fatal().Err(err).Msg("ZED_DATA_PATH is not writable")
 	}
 	if err := os.Remove(testPath); err != nil {
-		log.Fatal().Err(err).Msg("ZINC_DATA_PATH is not writable")
+		log.Fatal().Err(err).Msg("ZED_DATA_PATH is not writable")
 	}
 
 	// configure ice compress algorithm
@@ -211,7 +211,7 @@ func init() {
 	}
 }
 
-// load fills c from the embedded defaults, then ./conf/zinc.toml when present,
+// load fills c from the embedded defaults, then ./conf/zed.toml when present,
 // then non-empty process environment variables. TOML keys are lowercase and
 // map to the same names uppercased in the environment.
 func load(c *config) error {

@@ -1,14 +1,14 @@
-module github.com/zincsearch/zincsearch/dist
+module github.com/vcaesar/zedsearch/dist
 
 go 1.26.7
 
-replace github.com/zincsearch/zincsearch => ../..
+replace github.com/vcaesar/zedsearch => ../..
 
 require (
 	github.com/hashicorp/raft v1.8.0
 	github.com/hashicorp/raft-boltdb/v2 v2.4.2
 	github.com/stretchr/testify v1.12.1
-	github.com/zincsearch/zincsearch v0.0.0-00010101000000-000000000000
+	github.com/vcaesar/zedsearch v0.0.0-00010101000000-000000000000
 	go.etcd.io/bbolt v1.5.0
 	go.yaml.in/yaml/v3 v3.0.5
 	google.golang.org/grpc v1.84.0

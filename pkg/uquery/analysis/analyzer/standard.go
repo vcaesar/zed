@@ -20,8 +20,8 @@ import (
 	"github.com/vcaesar/riot/analysis"
 	"github.com/vcaesar/riot/analysis/analyzer"
 
-	zinctoken "github.com/zincsearch/zincsearch/pkg/bluge/analysis/token"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	zinctoken "github.com/vcaesar/zedsearch/pkg/bluge/analysis/token"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 func NewStandardAnalyzer(options interface{}) (*analysis.Analyzer, error) {

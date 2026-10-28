@@ -43,10 +43,10 @@ import (
 	"github.com/vcaesar/riot/analysis/lang/sv"
 	"github.com/vcaesar/riot/analysis/lang/tr"
 
-	"github.com/zincsearch/zincsearch/pkg/bluge/analysis/lang/chs"
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	zincanalyzer "github.com/zincsearch/zincsearch/pkg/uquery/analysis/analyzer"
+	"github.com/vcaesar/zedsearch/pkg/bluge/analysis/lang/chs"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	zincanalyzer "github.com/vcaesar/zedsearch/pkg/uquery/analysis/analyzer"
 )
 
 func RequestAnalyzer(data *meta.IndexAnalysis) (map[string]*analysis.Analyzer, error) {

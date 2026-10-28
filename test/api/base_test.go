@@ -27,12 +27,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/zincsearch/zincsearch"
-	"github.com/zincsearch/zincsearch/pkg/zutils/json"
+	"github.com/vcaesar/zedsearch"
+	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 func TestApiBase(t *testing.T) {
-	front, err := zincsearch.GetFrontendAssets()
+	front, err := zedsearch.GetFrontendAssets()
 	require.NoError(t, err)
 	t.Run("test base api", func(t *testing.T) {
 		r := server()

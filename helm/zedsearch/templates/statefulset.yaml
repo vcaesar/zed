@@ -1,39 +1,39 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "zincsearch.fullname" . }}
+  name: {{ include "zedsearch.fullname" . }}
   labels:
-    {{- include "zincsearch.labels" . | nindent 4 }}
+    {{- include "zedsearch.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "zincsearch.fullname" . }}-headless
-  # Until zincsearch is not HA
+  serviceName: {{ include "zedsearch.fullname" . }}-headless
+  # Until zedsearch is not HA
   replicas: 1
   selector:
     matchLabels:
-      {{- include "zincsearch.selectorLabels" . | nindent 6 }}
+      {{- include "zedsearch.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "zincsearch.selectorLabels" . | nindent 8 }}
+        {{- include "zedsearch.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
       containers:
-        - name: zincsearch
+        - name: zedsearch
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: ZINC_FIRST_ADMIN_USER
+            - name: ZED_FIRST_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   key: "username"
-                  name: {{ include "zincsearch.fullname" . }}
-            - name: ZINC_FIRST_ADMIN_PASSWORD
+                  name: {{ include "zedsearch.fullname" . }}
+            - name: ZED_FIRST_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: "password"
-                  name: {{ include "zincsearch.fullname" . }}
-            - name: ZINC_DATA_PATH
+                  name: {{ include "zedsearch.fullname" . }}
+            - name: ZED_DATA_PATH
               value: /go/bin/data
           # command: ["/bin/bash", "-c", "while true; do sleep 1; done"]
           resources:

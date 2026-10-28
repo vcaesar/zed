@@ -23,9 +23,9 @@ import (
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/numeric/geo"
 
-	"github.com/zincsearch/zincsearch/pkg/errors"
-	"github.com/zincsearch/zincsearch/pkg/meta"
-	"github.com/zincsearch/zincsearch/pkg/zutils"
+	"github.com/vcaesar/zedsearch/pkg/errors"
+	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
 // geoQueryOptions are the Elasticsearch option keys shared by geo queries;
