@@ -18,10 +18,9 @@ package index
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -39,14 +38,14 @@ type TierRequest struct {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/index/{index}/_tier [get]
-func GetTier(c *gin.Context) {
+func GetTier(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + indexName + " does not exists"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, zhttp.H{
 		"index":        index.GetName(),
 		"tier":         index.GetTier(),
 		"storage_type": index.GetStorageType(),
@@ -66,10 +65,10 @@ func GetTier(c *gin.Context) {
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/index/{index}/_tier [put]
-func SetTier(c *gin.Context) {
+func SetTier(c zhttp.Context) {
 	indexName := c.Param("target")
 	var req TierRequest
-	if err := zutils.GinBindJSON(c, &req); err != nil {
+	if err := zutils.BindJSON(c, &req); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
@@ -85,5 +84,5 @@ func SetTier(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "ok", "index": indexName, "tier": req.Tier})
+	c.JSON(http.StatusOK, zhttp.H{"message": "ok", "index": indexName, "tier": req.Tier})
 }

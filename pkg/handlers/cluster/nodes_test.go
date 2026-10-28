@@ -31,7 +31,7 @@ import (
 func TestNodesSingleNode(t *testing.T) {
 	require.False(t, zcluster.Enabled(), "the test binary runs without clustering")
 
-	c, w := utils.NewGinContext()
+	c, w := utils.NewContext()
 	Nodes(c)
 	require.Equal(t, http.StatusOK, w.Code)
 
@@ -50,8 +50,8 @@ func TestPartitions(t *testing.T) {
 	t.Cleanup(func() { config.Global.Cluster.Partitions = previous })
 
 	t.Run("single index", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestURL(c, "/api/cluster/partitions", map[string]string{"index": "logs-2024"})
+		c, w := utils.NewContext()
+		utils.SetRequestURL(c, "/api/cluster/partitions", map[string]string{"index": "logs-2024"})
 		Partitions(c)
 		require.Equal(t, http.StatusOK, w.Code)
 
@@ -67,8 +67,8 @@ func TestPartitions(t *testing.T) {
 	})
 
 	t.Run("whole map", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestURL(c, "/api/cluster/partitions", nil)
+		c, w := utils.NewContext()
+		utils.SetRequestURL(c, "/api/cluster/partitions", nil)
 		Partitions(c)
 		require.Equal(t, http.StatusOK, w.Code)
 

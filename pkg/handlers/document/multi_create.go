@@ -20,13 +20,13 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/ider"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
@@ -45,15 +45,13 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/{index}/_multi [post]
-func Multi(c *gin.Context) {
+func Multi(c zhttp.Context) {
 	target := c.Param("target")
 	if target == "" {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "target is empty"})
 		return
 	}
-
-	defer c.Request.Body.Close()
-	count, err := MultiWorker(target, c.Request.Body)
+	count, err := MultiWorker(target, c.Body())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
 		return

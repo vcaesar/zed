@@ -48,6 +48,7 @@
   .password-toggle svg { width: 22px; height: 22px; }
   .ui-select { position: relative; min-width: 0; max-width: 100%; min-height: 40px; padding: 9px 32px 9px 12px; border-color: light-dark(#d9e2ef, #37465d); color: light-dark(#273449, #dbe6f5); font-size: 14px; text-align: left; }
   .ui-select-value { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ui-select-placeholder { color: light-dark(#8797b0, #93a4bd); }
   .ui-select-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: light-dark(#71839e, #a1b2cb); }
   .ui-select[aria-expanded=true] { border-color: #438cf6; background: light-dark(#edf4ff, #233c60); }
   .ui-select-list { z-index: 100; box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; border-radius: 10px; background: light-dark(white, #1b2638); box-shadow: 0 0 0 1px light-dark(#d9e2ef, #37465d), 0 12px 32px light-dark(#182b4a26, #00000066); }
@@ -56,6 +57,10 @@
   .ui-select-option[aria-selected=true] { color: light-dark(#2563c5, #8bbaff); font-weight: 600; }
   .ui-select-option[data-active=true] { background: light-dark(#edf4ff, #233c60); }
   .ui-select-option[aria-disabled=true] { opacity: .45; cursor: not-allowed; }
+  .ui-select-search { display: flex; flex-direction: column; overflow: hidden; }
+  .ui-select-search > input { flex: none; margin: 8px; }
+  .ui-select-options { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .ui-select-empty { margin: 0; padding: 10px 12px; color: light-dark(#71839e, #a1b2cb); font-size: 13px; }
   .card { min-width: 0; border: 1px solid light-dark(#dfe6f1, #37465d); border-radius: 16px; background: light-dark(white, #1b2638); padding: 24px; }
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
   .toolbar > h1 { margin-right: auto; font-size: 18px; letter-spacing: -.25px; }
@@ -131,6 +136,8 @@
   .search-fields > p { margin: 14px 0; color: light-dark(#71839e, #a1b2cb); font-size: 13px; }
   .search-fields > div { margin-top: 16px; }
   .search-results > h2 { margin-bottom: 12px; }
+  .search-results { transition: opacity 150ms; }
+  .search-results[aria-busy=true] { opacity: .6; }
   .result-controls { margin-bottom: 12px; }
   .result-controls-empty { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
   .result-controls-empty p { margin: 0; font-size: 13px; color: light-dark(#71839e, #a1b2cb); }

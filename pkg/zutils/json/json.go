@@ -23,8 +23,9 @@ import (
 )
 
 var (
-	Marshal   = json.Marshal
-	Unmarshal = json.Unmarshal
+	Marshal       = json.Marshal
+	MarshalIndent = json.MarshalIndent
+	Unmarshal     = json.Unmarshal
 	// Valid uses the standard library scanner: it allocates nothing, whereas goccy's builds a value tree.
 	Valid = stdjson.Valid
 )

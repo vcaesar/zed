@@ -23,28 +23,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/bluge/directory"
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 var (
-	tierEngine *gin.Engine
+	tierEngine *zhttp.Engine
 	tierOnce   sync.Once
 )
 
 // tierServer is a full engine with the tier routes and the read-only guard in
 // front of the regular routes, the order SetTierRoutes requires.
-func tierServer() *gin.Engine {
+func tierServer() *zhttp.Engine {
 	tierOnce.Do(func() {
-		gin.SetMode(gin.ReleaseMode)
-		tierEngine = gin.New()
-		tierEngine.Use(gin.Recovery())
+		tierEngine = zhttp.New()
 		routes.SetTierRoutes(tierEngine)
 		routes.SetRoutes(tierEngine)
 	})

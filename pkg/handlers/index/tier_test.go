@@ -60,8 +60,8 @@ func TestTier(t *testing.T) {
 	t.Cleanup(func() { _ = core.DeleteIndex(name) })
 
 	t.Run("get tier of a hot index", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		GetTier(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"tier":"hot"`)
@@ -69,54 +69,54 @@ func TestTier(t *testing.T) {
 	})
 
 	t.Run("get tier of a missing index", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": "TestTier.index_missing"})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": "TestTier.index_missing"})
 		GetTier(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("set an invalid tier", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{"tier": "frozen"})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{"tier": "frozen"})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetTier(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("set a tier on a missing index", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{"tier": "cold"})
-		utils.SetGinRequestParams(c, map[string]string{"target": "TestTier.index_missing"})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{"tier": "cold"})
+		utils.SetRequestParams(c, map[string]string{"target": "TestTier.index_missing"})
 		SetTier(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("bad json", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"tier":}`)
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, `{"tier":}`)
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetTier(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("move to cold and back", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{"tier": "cold"})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{"tier": "cold"})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetTier(c)
 		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 
-		c, w = utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w = utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		GetTier(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"tier":"cold"`)
 		assert.Contains(t, w.Body.String(), `"read_only":true`)
 		assert.Contains(t, w.Body.String(), `"storage_type":"s3"`)
 
-		c, w = utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{"tier": "hot"})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w = utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{"tier": "hot"})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetTier(c)
 		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 
@@ -137,11 +137,11 @@ func TestSetSettingsLifecycleAndTier(t *testing.T) {
 	t.Cleanup(func() { _ = core.DeleteIndex(name) })
 
 	t.Run("attach lifecycle", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{
 			"lifecycle": map[string]interface{}{"policy": "TestSetSettings.policy", "warm_after": "7d"},
 		})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetSettings(c)
 		assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 
@@ -152,9 +152,9 @@ func TestSetSettingsLifecycleAndTier(t *testing.T) {
 	})
 
 	t.Run("move tier through settings", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, map[string]interface{}{"tier": "warm"})
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, map[string]interface{}{"tier": "warm"})
+		utils.SetRequestParams(c, map[string]string{"target": name})
 		SetSettings(c)
 		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 		assert.Equal(t, core.TierWarm, index.GetTier())
@@ -170,9 +170,9 @@ func TestSetSettingsInvalidTier(t *testing.T) {
 	require.NoError(t, core.StoreIndex(index))
 	t.Cleanup(func() { _ = core.DeleteIndex(name) })
 
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestData(c, map[string]interface{}{"tier": "frozen"})
-	utils.SetGinRequestParams(c, map[string]string{"target": name})
+	c, w := utils.NewContext()
+	utils.SetRequestData(c, map[string]interface{}{"tier": "frozen"})
+	utils.SetRequestParams(c, map[string]string{"target": name})
 	SetSettings(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
 	assert.Equal(t, core.TierHot, index.GetTier())

@@ -18,10 +18,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/auth"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -36,9 +35,9 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/user [post]
-func CreateUpdateUser(c *gin.Context) {
+func CreateUpdateUser(c zhttp.Context) {
 	var user meta.User
-	if err := zutils.GinBindJSON(c, &user); err != nil {
+	if err := zutils.BindJSON(c, &user); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
@@ -77,7 +76,7 @@ func UpdateForSDK() {}
 // @Success 200 {object} []meta.User
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/user [get]
-func ListUser(c *gin.Context) {
+func ListUser(c zhttp.Context) {
 	users, err := auth.GetUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})
@@ -102,7 +101,7 @@ func ListUser(c *gin.Context) {
 // @Success 200 {object} meta.HTTPResponseID
 // @Success 500 {object} meta.HTTPResponseError
 // @Router /api/user/{id} [delete]
-func DeleteUser(c *gin.Context) {
+func DeleteUser(c zhttp.Context) {
 	id := c.Param("id")
 	err := auth.DeleteUser(id)
 	if err != nil {

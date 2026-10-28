@@ -103,10 +103,10 @@ func TestFieldCaps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
-			utils.SetGinRequestParams(c, tt.args.params)
-			utils.SetGinRequestURL(c, "/es/_field_caps", tt.args.query)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
+			utils.SetRequestParams(c, tt.args.params)
+			utils.SetRequestURL(c, "/es/_field_caps", tt.args.query)
 			FieldCaps(c)
 			assert.Equal(t, tt.args.code, w.Code)
 
@@ -131,26 +131,26 @@ func TestFieldCaps(t *testing.T) {
 	}
 
 	t.Run("index not found", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, "")
-		utils.SetGinRequestParams(c, map[string]string{"target": "NotExist" + indexName})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, "")
+		utils.SetRequestParams(c, map[string]string{"target": "NotExist" + indexName})
 		FieldCaps(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "does not exists")
 	})
 
 	t.Run("body json error", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestData(c, `{"fields":[x]}`)
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
+		c, w := utils.NewContext()
+		utils.SetRequestData(c, `{"fields":[x]}`)
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
 		FieldCaps(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "invalid character")
 	})
 
 	t.Run("nil body", func(t *testing.T) {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": indexName})
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": indexName})
 		FieldCaps(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"name"`)

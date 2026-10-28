@@ -17,34 +17,19 @@ package core
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	ginprometheus "github.com/zincsearch/go-gin-prometheus"
 )
 
-var ZED_METRICS *ginprometheus.Metric
-
-func init() {
-	ZED_METRICS = &ginprometheus.Metric{
-		ID:          "indexStats",                 // Identifier
-		Name:        "index_stats",                // Metric Name
-		Description: "Summary index stats metric", // Help Description
-		Type:        "gauge_vec",                  // type associated with prometheus collector
-		// Type Options:
-		//	counter, counter_vec, gauge, gauge_vec,
-		//	histogram, histogram_vec, summary, summary_vec
-		Args: []string{"index", "field"},
-	}
-}
+// ZED_METRICS holds per index stats, exported once prometheus is enabled.
+var ZED_METRICS = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Subsystem: "zed",
+	Name:      "index_stats",
+	Help:      "Summary index stats metric",
+}, []string{"index", "field"})
 
 func SetMetricStatsByIndex(index, field string, val float64) {
-	if ZED_METRICS.MetricCollector == nil {
-		return
-	}
-	ZED_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Set(val)
+	ZED_METRICS.WithLabelValues(index, field).Set(val)
 }
 
 func IncrMetricStatsByIndex(index, field string) {
-	if ZED_METRICS.MetricCollector == nil {
-		return
-	}
-	ZED_METRICS.MetricCollector.(*prometheus.GaugeVec).WithLabelValues(index, field).Inc()
+	ZED_METRICS.WithLabelValues(index, field).Inc()
 }

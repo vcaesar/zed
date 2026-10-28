@@ -18,15 +18,15 @@ package meta
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // GUI function gets all events
-func GUI(c *gin.Context) {
-	// c.JSON(http.StatusOK, gin.H{
+func GUI(c zhttp.Context) {
+	// c.JSON(http.StatusOK, zhttp.H{
 	// 	"zed": "Modern, Simpler, Lighter, Faster Search server. ",
 	// })
 
+	c.Header("Location", "./ui/")
 	c.Status(http.StatusFound)
-	c.Writer.Header().Set("Location", "./ui/")
 }

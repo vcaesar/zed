@@ -19,11 +19,10 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/auth"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -45,9 +44,9 @@ type UpdateAccountRequest struct {
 // @Failure 401 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/account [put]
-func UpdateAccount(c *gin.Context) {
+func UpdateAccount(c zhttp.Context) {
 	var req UpdateAccountRequest
-	if err := zutils.GinBindJSON(c, &req); err != nil {
+	if err := zutils.BindJSON(c, &req); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}

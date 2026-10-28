@@ -70,7 +70,7 @@ func TestHandleError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
+			c, w := utils.NewContext()
 			HandleError(c, tt.args.err)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Equal(t, tt.args.result, w.Body.String())

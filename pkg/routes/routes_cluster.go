@@ -16,9 +16,8 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/handlers/cluster"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // SetClusterRoutes installs the cluster endpoints and the ownership
@@ -27,7 +26,7 @@ import (
 // It must run before SetRoutes: gin freezes the handler chain of a route
 // when the route is registered, so ClusterRoute only covers routes added
 // after this call.
-func SetClusterRoutes(r *gin.Engine) {
+func SetClusterRoutes(r *zhttp.Engine) {
 	r.Use(ClusterRoute())
 
 	// operator facing

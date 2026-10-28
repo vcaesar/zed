@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/docker/go-units"
-	"github.com/gin-gonic/gin"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -44,6 +43,7 @@ type config struct {
 	ServerTLSCertificateFile  string        `toml:"zed_server_tls_certificate_file"`
 	ServerTLSKeyFile          string        `toml:"zed_server_tls_key_file"`
 	ServerMode                string        `toml:"zed_server_mode"`
+	ServerBodyLimit           int           `toml:"zed_server_body_limit"` // max request body in bytes, fiber builds only
 	NodeID                    int           `toml:"zed_node_id"`
 	DataPath                  string        `toml:"zed_data_path"`
 	MetadataStorage           string        `toml:"zed_metadata_storage"`
@@ -185,11 +185,6 @@ func init() {
 		log.Error().Err(logLevelErr).Msg("ZED_LOG_LEVEL is not valid")
 	}
 	zerolog.SetGlobalLevel(logLevel)
-
-	// configure gin
-	if Global.GinMode == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
 
 	// check data path
 	testPath := path.Join(Global.DataPath, "_test_")

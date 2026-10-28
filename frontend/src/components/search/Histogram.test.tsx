@@ -16,6 +16,18 @@ describe('Histogram', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }));
     expect(screen.getByRole('img')).toHaveStyle({ width: '100%' });
   });
+  it('keeps sparse bars slim and centered, and many bars inside their slots', () => {
+    const { container, rerender } = render(<Histogram histogram={histogram} interval="1s" />);
+    const bar = container.querySelector('rect')!;
+    expect(bar).toHaveAttribute('width', '24');
+    expect(bar).toHaveAttribute('x', '398');
+    expect(container.querySelector('text[text-anchor=middle]')).toHaveAttribute('x', '410');
+    const many = { buckets: Array.from({ length: 100 }, (_, i) => ({ key: histogram.buckets[0].key + i * 1000, doc_count: i + 1 })) };
+    rerender(<Histogram histogram={many} interval="1s" />);
+    const widths = Array.from(container.querySelectorAll('rect'), rect => Number(rect.getAttribute('width')));
+    expect(widths).toHaveLength(100);
+    expect(Math.max(...widths)).toBeCloseTo(7.6 * 0.9);
+  });
   it.each(['CSV', 'SVG', 'PNG'])('exports %s', async format => {
     const create = vi.fn(() => 'blob:histogram');
     vi.stubGlobal('URL', { createObjectURL: create, revokeObjectURL: vi.fn() });

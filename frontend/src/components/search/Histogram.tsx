@@ -65,9 +65,11 @@ export default function Histogram({ histogram, interval }: { histogram: NonNulla
       <div className="toolbar"><button type="button" aria-label="Zoom in histogram" onClick={() => setZoom(Math.min(8, zoom * 2))}>+</button><button type="button" aria-label="Zoom out histogram" onClick={() => setZoom(Math.max(1, zoom / 2))}>−</button><button type="button" onClick={() => setZoom(1)}>Reset zoom</button>{(['csv', 'svg', 'png'] as const).map(format => <button type="button" key={format} onClick={() => { void download(format); }}>Download {format.toUpperCase()}</button>)}</div>
       <div className="overflow-x-auto"><svg ref={chart} role="img" aria-label="Document counts over time" viewBox={`0 0 ${800 * zoom} 170`} style={{ width: `${zoom * 100}%`, minWidth: 300, height: 170 }}>
         {buckets.map((bucket, index) => {
-          const width = 760 * zoom / buckets.length;
+          const slot = 760 * zoom / buckets.length;
+          const width = Math.min(slot * 0.9, 24);
+          const center = 30 + index * slot + slot / 2;
           const height = Number(bucket.doc_count) / maximum * 125;
-          return <g key={`${bucket.key}-${index}`}><rect x={30 + index * width} y={135 - height} width={width * 0.9} height={height} fill="#26A69A"><title>{label(bucket.key)}: {bucket.doc_count}</title></rect>{index % Math.max(1, Math.ceil(buckets.length / (6 * zoom))) === 0 && <text x={30 + index * width} y="155" fontSize="10" fill="currentColor">{label(bucket.key)}</text>}</g>;
+          return <g key={`${bucket.key}-${index}`}><rect x={center - width / 2} y={135 - height} width={width} height={height} rx="2" fill="#26A69A"><title>{label(bucket.key)}: {bucket.doc_count}</title></rect>{index % Math.max(1, Math.ceil(buckets.length / (6 * zoom))) === 0 && <text x={center} y="155" fontSize="10" textAnchor="middle" fill="currentColor">{label(bucket.key)}</text>}</g>;
         })}<text x="0" y="12" fontSize="10" fill="currentColor">{maximum}</text>
       </svg></div>
     </> : <p>No data available</p>}

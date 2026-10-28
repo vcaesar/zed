@@ -21,26 +21,24 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
 var (
-	clusterEngine     *gin.Engine
+	clusterEngine     *zhttp.Engine
 	clusterEngineOnce sync.Once
 )
 
 // clusterServer registers only the cluster routes, the shared engine of
 // init.go is built from SetRoutes alone.
-func clusterServer() *gin.Engine {
+func clusterServer() *zhttp.Engine {
 	clusterEngineOnce.Do(func() {
-		gin.SetMode(gin.ReleaseMode)
-		clusterEngine = gin.New()
-		clusterEngine.Use(gin.Recovery())
+		clusterEngine = zhttp.New()
 		routes.SetClusterRoutes(clusterEngine)
 	})
 	return clusterEngine

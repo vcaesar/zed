@@ -21,7 +21,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
 	"github.com/grafana/pyroscope-go"
 	"github.com/rs/zerolog/log"
 
@@ -41,6 +40,7 @@ import (
 	"github.com/vcaesar/zedsearch/pkg/metadata"
 	"github.com/vcaesar/zedsearch/pkg/routes"
 	"github.com/vcaesar/zedsearch/pkg/webbuild"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @title           ZedSearch engine API
@@ -95,7 +95,7 @@ func main() {
 	profiling()
 
 	// HTTP init
-	app := gin.New()
+	app := zhttp.New()
 	routes.Setup(app)
 
 	// Join the cluster before serving, so the first request already routes
@@ -111,20 +111,17 @@ func main() {
 	// Run the server
 	PORT := config.Global.ServerPort
 	ADDRESS := config.Global.ServerAddress
-	server := &http.Server{
-		Addr:    ADDRESS + ":" + PORT,
-		Handler: app,
-	}
+	addr := ADDRESS + ":" + PORT
 
 	done := shutdown(func(grace bool, done chan<- struct{}) {
 		// close http server
 		if grace {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 			defer cancel()
-			if err := server.Shutdown(ctx); err != nil {
+			if err := app.Shutdown(ctx); err != nil {
 				log.Fatal().Err(err).Msg("Server Shutdown")
 			}
-		} else if err := server.Close(); err != nil {
+		} else if err := app.Close(); err != nil {
 			log.Error().Err(err).Msg("Server Close")
 		}
 
@@ -141,44 +138,47 @@ func main() {
 		done <- struct{}{}
 	})
 
-	err := func() error {
-		log.Info().Msg("Listen on " + server.Addr)
-
-		if config.Global.ServerTLSCertificateFile != "" && config.Global.ServerTLSKeyFile != "" {
-
-			// set minimum TLS version (1.2) and intermediate cipher suites
-			server.TLSConfig = &tls.Config{
-				MinVersion: tls.VersionTLS12,
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-					tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-				},
-			}
-
-			certFile := config.Global.ServerTLSCertificateFile
-			keyFile := config.Global.ServerTLSKeyFile
-
-			return server.ListenAndServeTLS(certFile, keyFile)
-
-		}
-
-		return server.ListenAndServe()
-	}()
+	ln, err := listen(addr)
 	if err != nil {
-		if err == http.ErrServerClosed {
-			log.Info().Msg("Server closed")
-		} else {
-			log.Fatal().Err(err).Msg("Server closed unexpect")
-		}
+		log.Fatal().Err(err).Msg("Listen on " + addr)
 	}
+	log.Info().Msg("Listen on " + addr + " with " + zhttp.Backend)
+	if err := app.Serve(ln); err != nil {
+		log.Fatal().Err(err).Msg("Server closed unexpect")
+	}
+	log.Info().Msg("Server closed")
 
 	<-done
 
 	log.Info().Msg("Server shutdown ok")
+}
+
+// listen opens the server socket, TLS when a certificate is configured.
+func listen(addr string) (net.Listener, error) {
+	certFile := config.Global.ServerTLSCertificateFile
+	keyFile := config.Global.ServerTLSKeyFile
+	if certFile == "" || keyFile == "" {
+		return net.Listen("tcp", addr)
+	}
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+	// set minimum TLS version (1.2) and intermediate cipher suites
+	return tls.Listen("tcp", addr, &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+		},
+		NextProtos: zhttp.TLSNextProtos,
+	})
 }
 
 func telemetry() {

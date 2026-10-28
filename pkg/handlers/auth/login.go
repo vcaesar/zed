@@ -18,10 +18,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/auth"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -34,10 +33,10 @@ import (
 // @Success 200 {object} LoginResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/login [post]
-func Login(c *gin.Context) {
+func Login(c zhttp.Context) {
 	// Read login input
 	var loginInput LoginRequest
-	if err := zutils.GinBindJSON(c, &loginInput); err != nil {
+	if err := zutils.BindJSON(c, &loginInput); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}

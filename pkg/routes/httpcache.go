@@ -16,27 +16,48 @@
 package routes
 
 import (
+	"io/fs"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
-func HTTPCacheForUI(app *gin.Engine) {
-	app.Use(func(c *gin.Context) {
-		if c.Request.Method == "GET" || c.Request.Method == "HEAD" {
-			if strings.Contains(c.Request.RequestURI, "/ui/assets/") {
-				c.Writer.Header().Set("cache-control", "public, max-age=2592000")
-				c.Writer.Header().Set("expires", time.Now().Add(time.Hour*24*30).Format(time.RFC1123))
-				if strings.Contains(c.Request.RequestURI, ".js") {
-					c.Writer.Header().Set("content-type", "application/javascript")
+func HTTPCacheForUI(app *zhttp.Engine) {
+	app.Use(func(c zhttp.Context) {
+		if c.Method() == "GET" || c.Method() == "HEAD" {
+			if strings.Contains(c.RequestURI(), "/ui/assets/") {
+				c.Header("cache-control", "public, max-age=2592000")
+				c.Header("expires", time.Now().Add(time.Hour*24*30).Format(time.RFC1123))
+				if strings.Contains(c.RequestURI(), ".js") {
+					c.Header("content-type", "application/javascript")
 				}
-				if strings.Contains(c.Request.RequestURI, ".css") {
-					c.Writer.Header().Set("content-type", "text/css; charset=utf-8")
+				if strings.Contains(c.RequestURI(), ".css") {
+					c.Header("content-type", "text/css; charset=utf-8")
 				}
 			}
 		}
 
 		c.Next()
 	})
+}
+
+// serveUI serves the console files under /ui/, a missing file goes to
+// notFound so client side routes still load index.html.
+func serveUI(front fs.FS, notFound zhttp.HandlerFunc) zhttp.HandlerFunc {
+	files := http.StripPrefix("/ui/", http.FileServer(http.FS(front)))
+	return func(c zhttp.Context) {
+		if c.Path() == "/ui" {
+			c.Redirect(http.StatusMovedPermanently, "/ui/")
+			return
+		}
+		if name := strings.TrimPrefix(c.Path(), "/ui/"); name != "" {
+			if _, err := fs.Stat(front, strings.TrimSuffix(name, "/")); err != nil {
+				notFound(c)
+				return
+			}
+		}
+		c.ServeHTTP(files)
+	}
 }

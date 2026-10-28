@@ -18,12 +18,11 @@ package search
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	v1 "github.com/vcaesar/zedsearch/pkg/meta/v1"
 	"github.com/vcaesar/zedsearch/pkg/uquery"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -40,7 +39,7 @@ import (
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/{index}/_search [post]
-func SearchV1(c *gin.Context) {
+func SearchV1(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {
@@ -50,7 +49,7 @@ func SearchV1(c *gin.Context) {
 
 	iQuery := new(v1.ZedQuery)
 	iQuery.MaxResults = 10
-	if err := zutils.GinBindJSON(c, &iQuery); err != nil {
+	if err := zutils.BindJSON(c, &iQuery); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}

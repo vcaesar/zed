@@ -51,11 +51,11 @@ La documentación está disponible en [https://zincsearch-docs.zinc.dev/](https:
 
 ## Pantalla de búsqueda
 
-![Search screen](../screenshots/search_screen.jpg)
+![Search screen](../docs/hots/search-26.png)
 
-## Pantalla de gestión de usuarios
+## Pantalla de índices
 
-![Users screen](../screenshots/users_screen.jpg)
+![Index screen](../docs/hots/index-26.png)
 
 # Primeros pasos
 

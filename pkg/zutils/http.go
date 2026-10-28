@@ -19,20 +19,19 @@ import (
 	"io"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
 
-func GinBindJSON(c *gin.Context, obj interface{}) error {
-	body, err := io.ReadAll(c.Request.Body)
+func BindJSON(c zhttp.Context, obj interface{}) error {
+	body, err := io.ReadAll(c.Body())
 	if err != nil {
 		return err
 	}
-	defer c.Request.Body.Close()
 	return json.Unmarshal(body, obj)
 }
 
-func GinRenderJSON(c *gin.Context, code int, obj interface{}) {
+func RenderJSON(c zhttp.Context, code int, obj interface{}) {
 	if requestsPrettyRendering(c) {
 		c.IndentedJSON(code, obj)
 	} else {
@@ -40,7 +39,7 @@ func GinRenderJSON(c *gin.Context, code int, obj interface{}) {
 	}
 }
 
-func requestsPrettyRendering(c *gin.Context) bool {
+func requestsPrettyRendering(c zhttp.Context) bool {
 	if p, ok := c.GetQuery("pretty"); ok && (strings.EqualFold(p, "true") || strings.EqualFold(p, "")) {
 		return true
 	}

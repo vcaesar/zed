@@ -19,12 +19,12 @@ package sql
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	zerrors "github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	zedsql "github.com/vcaesar/zedsearch/pkg/sql"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -48,7 +48,7 @@ type Request struct {
 // @Success 200 {object} sql.Response
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/_sql [post]
-func Search(c *gin.Context) {
+func Search(c zhttp.Context) {
 	req, ok := bindRequest(c)
 	if !ok {
 		return
@@ -86,7 +86,7 @@ func Search(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/_sql/translate [post]
-func Translate(c *gin.Context) {
+func Translate(c zhttp.Context) {
 	req, ok := bindRequest(c)
 	if !ok {
 		return
@@ -97,36 +97,36 @@ func Translate(c *gin.Context) {
 		renderError(c, err)
 		return
 	}
-	zutils.GinRenderJSON(c, http.StatusOK, dsl)
+	zutils.RenderJSON(c, http.StatusOK, dsl)
 }
 
-func bindRequest(c *gin.Context) (*Request, bool) {
+func bindRequest(c zhttp.Context) (*Request, bool) {
 	req := new(Request)
-	if err := zutils.GinBindJSON(c, req); err != nil {
+	if err := zutils.BindJSON(c, req); err != nil {
 		log.Printf("handlers.sql.bindRequest: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return nil, false
 	}
 	if req.Query == "" {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "query is required"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "query is required"})
 		return nil, false
 	}
 	return req, true
 }
 
 // requestFormat prefers the format of the body, then the query string.
-func requestFormat(c *gin.Context, req *Request) string {
+func requestFormat(c zhttp.Context, req *Request) string {
 	if req.Format != "" {
 		return req.Format
 	}
 	return c.Query("format")
 }
 
-func renderError(c *gin.Context, err error) {
+func renderError(c zhttp.Context, err error) {
 	var sqlErr *zedsql.Error
 	if zerrors.As(err, &sqlErr) {
 		log.Printf("handlers.sql: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 	zerrors.HandleError(c, err)

@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/routes"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 var (
@@ -80,16 +80,14 @@ var (
 )
 
 var (
-	r    *gin.Engine
+	r    *zhttp.Engine
 	once sync.Once
 )
 
-func server() *gin.Engine {
+func server() *zhttp.Engine {
 	if r == nil {
 		once.Do(func() {
-			gin.SetMode(gin.ReleaseMode)
-			r = gin.New()
-			r.Use(gin.Recovery())
+			r = zhttp.New()
 			routes.SetRoutes(r)
 		})
 	}

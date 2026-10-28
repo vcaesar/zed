@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -26,12 +26,12 @@ import (
 // @Success 200 {object} meta.HTTPResponseDeleteByQuery
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_delete_by_query [post]
-func DeleteByQuery(c *gin.Context) {
+func DeleteByQuery(c zhttp.Context) {
 	start := time.Now()
 	query := &meta.ZedQuery{Size: 10}
-	if err := zutils.GinBindJSON(c, query); err != nil {
+	if err := zutils.BindJSON(c, query); err != nil {
 		log.Printf("handlers.search.searchDSL: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -52,7 +52,7 @@ func DeleteByQuery(c *gin.Context) {
 	}
 
 	totalDeletes := resp.Hits.Total.Value - len(failures)
-	zutils.GinRenderJSON(c, http.StatusOK, meta.HTTPResponseDeleteByQuery{
+	zutils.RenderJSON(c, http.StatusOK, meta.HTTPResponseDeleteByQuery{
 		Took:             time.Since(start).Milliseconds(),
 		TimedOut:         false,
 		Total:            totalDeletes,

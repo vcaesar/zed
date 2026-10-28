@@ -18,11 +18,10 @@ package document
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/ider"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -40,12 +39,12 @@ import (
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/_bulkv2 [post]
-func Bulkv2(c *gin.Context) {
+func Bulkv2(c zhttp.Context) {
 	target := c.Param("target")
 
 	var body meta.JSONIngest
 
-	if err := zutils.GinBindJSON(c, &body); err != nil {
+	if err := zutils.BindJSON(c, &body); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
@@ -53,8 +52,6 @@ func Bulkv2(c *gin.Context) {
 	if target == "" {
 		target = body.Index
 	}
-
-	defer c.Request.Body.Close()
 	count, err := Bulkv2Worker(target, body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, meta.HTTPResponseError{Error: err.Error()})

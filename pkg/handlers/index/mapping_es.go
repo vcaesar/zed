@@ -5,10 +5,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -21,11 +21,11 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponse
 // @Router /es/{index}/_mapping [get]
-func GetESMapping(c *gin.Context) {
+func GetESMapping(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + indexName + " does not exists"})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: "index " + indexName + " does not exists"})
 		return
 	}
 
@@ -52,7 +52,7 @@ func GetESMapping(c *gin.Context) {
 	// kept in the resulting mapping.
 	es := convertToESMapping(mappings)
 
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{index.GetName(): gin.H{"mappings": es}})
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{index.GetName(): zhttp.H{"mappings": es}})
 }
 
 // convertToESMapping converts the given Zed mappings to the ElasticSearch representation.

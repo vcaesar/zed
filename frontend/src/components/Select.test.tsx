@@ -17,6 +17,59 @@ function Example({ disabled = false }: { disabled?: boolean }) {
 }
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
+it('filters from a search box inside the open list with keyboard support', () => {
+  const onValueChange = vi.fn();
+  function Searchable() {
+    const [search, setSearch] = useState('');
+    return <Select aria-label="Index" value="" onValueChange={onValueChange} search={search} onSearch={setSearch} searchLabel="Filter" emptyLabel="Nothing">
+      {['alpha', 'beta', 'gamma'].filter(name => name.includes(search)).map(name => <option key={name}>{name}</option>)}
+    </Select>;
+  }
+  render(<><Searchable /><button type="button">Outside</button></>);
+  const trigger = screen.getByRole('combobox', { name: 'Index' });
+  fireEvent.click(trigger);
+  const input = screen.getByRole('searchbox', { name: 'Filter' });
+  expect(input).toHaveFocus();
+  fireEvent.blur(trigger, { relatedTarget: input });
+  expect(screen.getByRole('listbox')).toBeInTheDocument();
+  fireEvent.change(input, { target: { value: 'a' } });
+  expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['alpha', 'beta', 'gamma']);
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  expect(input).toHaveAttribute('aria-activedescendant', screen.getAllByRole('option')[1].id);
+  fireEvent.change(input, { target: { value: 'zz' } });
+  expect(screen.getByText('Nothing')).toBeInTheDocument();
+  fireEvent.change(input, { target: { value: 'gam' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  expect(onValueChange).toHaveBeenCalledWith('gamma');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+  // the same Enter press reaches the focused trigger as a click; it must not reopen the list
+  fireEvent.click(trigger);
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  fireEvent.keyUp(trigger, { key: 'Enter' });
+  fireEvent.click(trigger);
+  fireEvent.keyDown(screen.getByRole('searchbox', { name: 'Filter' }), { key: 'Escape' });
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+  fireEvent.click(trigger);
+  fireEvent.blur(screen.getByRole('searchbox', { name: 'Filter' }), { relatedTarget: screen.getByRole('button', { name: 'Outside' }) });
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+});
+
+it('shows a muted placeholder on the trigger that is not a selectable option', () => {
+  const onValueChange = vi.fn();
+  const { rerender } = render(<Select aria-label="Index" placeholder="Pick one" value="" onValueChange={onValueChange}><option>logs</option></Select>);
+  const trigger = screen.getByRole('combobox', { name: 'Index' });
+  expect(trigger.querySelector('.ui-select-placeholder')).toHaveTextContent('Pick one');
+  fireEvent.click(trigger);
+  expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['logs']);
+  fireEvent.click(screen.getByRole('option', { name: 'logs' }));
+  expect(onValueChange).toHaveBeenCalledWith('logs');
+  rerender(<Select aria-label="Index" placeholder="Pick one" value="logs" onValueChange={onValueChange}><option>logs</option></Select>);
+  expect(trigger).toHaveTextContent('logs');
+  expect(trigger.querySelector('.ui-select-placeholder')).toBeNull();
+});
+
 it('uses a centered, fixed-size chevron independent of font metrics', () => {
   render(<Example />);
   const trigger = screen.getByRole('combobox', { name: 'Size' });

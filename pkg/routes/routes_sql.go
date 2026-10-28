@@ -16,13 +16,12 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/handlers/sql"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // SetSQLRoutes sets up the SQL endpoints, native and Elasticsearch compatible.
-func SetSQLRoutes(r *gin.Engine) {
+func SetSQLRoutes(r *zhttp.Engine) {
 	r.POST("/api/_sql", AuthMiddleware("sql.Search"), sql.Search)
 	r.POST("/es/_sql", AuthMiddleware("sql.Search"), ESMiddleware, sql.Search)
 	r.POST("/es/_sql/translate", AuthMiddleware("sql.Translate"), ESMiddleware, sql.Translate)

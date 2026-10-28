@@ -3,10 +3,9 @@ package index
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @Id Exists
@@ -18,7 +17,7 @@ import (
 // @Success 200 {object} meta.HTTPResponse
 // @Failure 404 {object} meta.HTTPResponse
 // @Router /api/index/{index} [head]
-func Exists(c *gin.Context) {
+func Exists(c zhttp.Context) {
 	indexName := c.Param("target")
 
 	_, exists := core.GetIndex(indexName)

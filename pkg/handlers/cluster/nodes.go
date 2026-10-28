@@ -19,10 +19,9 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/cluster"
 	"github.com/vcaesar/zedsearch/pkg/config"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -63,8 +62,8 @@ type PartitionsResponse struct {
 // @Produce json
 // @Success 200 {object} NodesResponse
 // @Router /api/cluster/nodes [get]
-func Nodes(c *gin.Context) {
-	zutils.GinRenderJSON(c, http.StatusOK, NodesResponse{
+func Nodes(c zhttp.Context) {
+	zutils.RenderJSON(c, http.StatusOK, NodesResponse{
 		ClusterName: config.Global.Cluster.Name,
 		Enabled:     cluster.Enabled(),
 		Nodes:       cluster.Nodes(),
@@ -84,7 +83,7 @@ func Nodes(c *gin.Context) {
 // @Param index query string false "Index"
 // @Success 200 {object} PartitionsResponse
 // @Router /api/cluster/partitions [get]
-func Partitions(c *gin.Context) {
+func Partitions(c zhttp.Context) {
 	local := ""
 	if node := cluster.Local(); node != nil {
 		local = node.ID
@@ -102,7 +101,7 @@ func Partitions(c *gin.Context) {
 			partition.Owner = owner
 			partition.Epoch = epoch
 		}
-		zutils.GinRenderJSON(c, http.StatusOK, PartitionsResponse{
+		zutils.RenderJSON(c, http.StatusOK, PartitionsResponse{
 			Enabled:    cluster.Enabled(),
 			Partitions: config.Global.Cluster.Partitions,
 			Owners:     []PartitionOwner{partition},
@@ -123,7 +122,7 @@ func Partitions(c *gin.Context) {
 	}
 	sort.Slice(owners, func(i, j int) bool { return owners[i].Partition < owners[j].Partition })
 
-	zutils.GinRenderJSON(c, http.StatusOK, PartitionsResponse{
+	zutils.RenderJSON(c, http.StatusOK, PartitionsResponse{
 		Enabled:    cluster.Enabled(),
 		Partitions: config.Global.Cluster.Partitions,
 		Owners:     owners,

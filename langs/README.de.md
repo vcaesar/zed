@@ -51,11 +51,11 @@ Die Dokumentation ist unter [https://zincsearch-docs.zinc.dev/](https://zincsear
 
 ## Suchansicht
 
-![Search screen](../screenshots/search_screen.jpg)
+![Search screen](../docs/hots/search-26.png)
 
-## Benutzerverwaltung
+## Indexansicht
 
-![Users screen](../screenshots/users_screen.jpg)
+![Index screen](../docs/hots/index-26.png)
 
 # Erste Schritte
 

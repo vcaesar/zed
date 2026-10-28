@@ -19,8 +19,8 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/vcaesar/zedsearch/pkg/auth"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @Id ListPermissions
@@ -30,6 +30,6 @@ import (
 // @Produce json
 // @Success 200 {object} []string
 // @Router /api/permissions [get]
-func ListPermissions(c *gin.Context) {
+func ListPermissions(c zhttp.Context) {
 	c.JSON(http.StatusOK, auth.GetPermissions())
 }

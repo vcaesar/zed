@@ -19,19 +19,19 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/test/utils"
 )
 
 func TestCreateLogsIndex(t *testing.T) {
 	for _, api := range []struct {
 		name    string
-		handler gin.HandlerFunc
+		handler zhttp.HandlerFunc
 	}{{"native", Create}, {"es", CreateES}} {
 		for _, tt := range []struct {
 			name string
@@ -45,9 +45,9 @@ func TestCreateLogsIndex(t *testing.T) {
 		} {
 			t.Run(api.name+"_"+tt.name, func(t *testing.T) {
 				name := "TestCreateLogsIndex." + api.name + "_" + tt.name
-				c, w := utils.NewGinContext()
-				utils.SetGinRequestData(c, tt.body)
-				utils.SetGinRequestParams(c, map[string]string{"target": name})
+				c, w := utils.NewContext()
+				utils.SetRequestData(c, tt.body)
+				utils.SetRequestParams(c, map[string]string{"target": name})
 				api.handler(c)
 				require.Equal(t, tt.code, w.Code, w.Body.String())
 				index, exists := core.GetIndex(name)
@@ -73,9 +73,9 @@ func TestCreateLogsIndex(t *testing.T) {
 
 func TestLogsIndexSettings(t *testing.T) {
 	name := "TestLogsIndexSettings.index_1"
-	c, w := utils.NewGinContext()
-	utils.SetGinRequestParams(c, map[string]string{"target": name})
-	utils.SetGinRequestData(c, `{"index_type":"logs"}`)
+	c, w := utils.NewContext()
+	utils.SetRequestParams(c, map[string]string{"target": name})
+	utils.SetRequestData(c, `{"index_type":"logs"}`)
 	SetSettings(c)
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 	t.Cleanup(func() { assert.NoError(t, core.DeleteIndex(name)) })
@@ -91,24 +91,24 @@ func TestLogsIndexSettings(t *testing.T) {
 		{`{"index_type":"unknown"}`, http.StatusBadRequest},
 		{`{"index_type":"logs"}`, http.StatusOK},
 	} {
-		c, w := utils.NewGinContext()
-		utils.SetGinRequestParams(c, map[string]string{"target": name})
-		utils.SetGinRequestData(c, tt.body)
+		c, w := utils.NewContext()
+		utils.SetRequestParams(c, map[string]string{"target": name})
+		utils.SetRequestData(c, tt.body)
 		SetSettings(c)
 		assert.Equal(t, tt.code, w.Code, w.Body.String())
 		assert.Equal(t, meta.IndexTypeLogs, index.GetIndexType())
 		assert.Zero(t, index.GetSettings().NumberOfReplicas)
 	}
 
-	c, w = utils.NewGinContext()
-	utils.SetGinRequestParams(c, map[string]string{"target": name})
+	c, w = utils.NewContext()
+	utils.SetRequestParams(c, map[string]string{"target": name})
 	GetSettings(c)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), `"index_type":"logs"`)
 
-	c, w = utils.NewGinContext()
-	utils.SetGinRequestParams(c, map[string]string{"target": name + ".bad"})
-	utils.SetGinRequestData(c, `{"index_type":"unknown"}`)
+	c, w = utils.NewContext()
+	utils.SetRequestParams(c, map[string]string{"target": name + ".bad"})
+	utils.SetRequestData(c, `{"index_type":"unknown"}`)
 	SetSettings(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	_, exists := core.GetIndex(name + ".bad")

@@ -14,7 +14,6 @@ export default function SearchBar({ value, onChange, onSearch, onRefresh, loadin
   const refreshRef = useRef(onRefresh);
   const submitRef = useRef(onSearch);
   const valueRef = useRef(value);
-  const focusedQuery = useRef(value.query);
   refreshRef.current = onRefresh;
   submitRef.current = onSearch;
   valueRef.current = value;
@@ -32,9 +31,9 @@ export default function SearchBar({ value, onChange, onSearch, onRefresh, loadin
     if (time.startDate && time.endDate) timeout.current = setTimeout(() => submitRef.current(valueRef.current), 1000);
   };
   return <form className="toolbar search-toolbar flex-wrap" onSubmit={event => { event.preventDefault(); clearTimeout(timeout.current); onSearch(value); }}>
-    <input className="min-w-48 flex-1" type="search" data-cy="search-bar-input" aria-label={t('search.typeSearch')} placeholder={t('search.typeSearch')} value={value.query} onChange={event => onChange({ ...value, query: event.target.value })} onFocus={() => { focusedQuery.current = value.query; }} onBlur={() => { if (!loading && focusedQuery.current !== value.query) onSearch(value); }} />
+    <input className="min-w-48 flex-1" type="search" data-cy="search-bar-input" aria-label={t('search.typeSearch')} placeholder={t('search.typeSearch')} value={value.query} onChange={event => onChange({ ...value, query: event.target.value })} />
     <SyntaxGuide /><DateTime value={value.time} onChange={changeTime} />
-    <button className="primary" data-cy="search-bar-refresh-button" type="submit" disabled={loading}>{loading ? 'Searching…' : 'Search'}</button>
+    <button className="primary" data-cy="search-bar-refresh-button" type="submit" disabled={loading}>Search</button>
     <label>Auto refresh<Select data-cy="search-bar-button-dropdown" value={refresh} onValueChange={value => setRefresh(Number(value))}>{refreshTimes.map(([label, seconds]) => <option value={seconds} key={seconds}>{label}</option>)}</Select></label>
   </form>;
 }

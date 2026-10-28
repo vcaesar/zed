@@ -21,13 +21,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -45,13 +45,13 @@ import (
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/{index}/_search [post]
-func SearchDSL(c *gin.Context) {
+func SearchDSL(c zhttp.Context) {
 	indexName := c.Param("target")
 
 	query := &meta.ZedQuery{Size: 10}
-	if err := zutils.GinBindJSON(c, query); err != nil {
+	if err := zutils.BindJSON(c, query); err != nil {
 		log.Printf("handlers.search.searchDSL: %s", err.Error())
-		zutils.GinRenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
+		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
 
@@ -76,7 +76,7 @@ func SearchDSL(c *gin.Context) {
 		}
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, resp)
+	zutils.RenderJSON(c, http.StatusOK, resp)
 }
 
 // MultipleSearch like bulk searches
@@ -91,7 +91,7 @@ func SearchDSL(c *gin.Context) {
 // @Success 200 {object} meta.SearchResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /es/_msearch [post]
-func MultipleSearch(c *gin.Context) {
+func MultipleSearch(c zhttp.Context) {
 	indexName := c.Param("target")
 	defaultIndexNames := make([]string, 0)
 	if indexName != "" {
@@ -101,8 +101,7 @@ func MultipleSearch(c *gin.Context) {
 	responses := make([]interface{}, 0)
 
 	// Prepare to read the entire raw text of the body
-	scanner := bufio.NewScanner(c.Request.Body)
-	defer c.Request.Body.Close()
+	scanner := bufio.NewScanner(c.Body())
 
 	maxCapacityPerLine := config.Global.MaxDocumentSize
 	buf := make([]byte, maxCapacityPerLine)
@@ -152,7 +151,7 @@ func MultipleSearch(c *gin.Context) {
 		}
 	}
 
-	zutils.GinRenderJSON(c, http.StatusOK, gin.H{"responses": responses})
+	zutils.RenderJSON(c, http.StatusOK, zhttp.H{"responses": responses})
 }
 
 func searchIndex(indexNames []string, query *meta.ZedQuery) (*meta.SearchResponse, error) {

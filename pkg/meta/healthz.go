@@ -18,7 +18,7 @@ package meta
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // GetHealthz function gets all events
@@ -28,7 +28,7 @@ import (
 // @Produce json
 // @Success 200 {object} HealthzResponse
 // @Router /healthz [get]
-func GetHealthz(c *gin.Context) {
+func GetHealthz(c zhttp.Context) {
 	c.JSON(http.StatusOK, HealthzResponse{Status: "ok"})
 }
 

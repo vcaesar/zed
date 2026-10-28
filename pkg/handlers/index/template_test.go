@@ -133,14 +133,14 @@ func TestTemplate(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				c, w := utils.NewGinContext()
+				c, w := utils.NewContext()
 				if tt.args.data != nil {
-					utils.SetGinRequestData(c, tt.args.data)
+					utils.SetRequestData(c, tt.args.data)
 				}
 				if tt.args.rawData != "" {
-					utils.SetGinRequestData(c, tt.args.rawData)
+					utils.SetRequestData(c, tt.args.rawData)
 				}
-				utils.SetGinRequestParams(c, map[string]string{"target": tt.args.target})
+				utils.SetRequestParams(c, map[string]string{"target": tt.args.target})
 				CreateTemplate(c)
 				assert.Equal(t, tt.args.code, w.Code)
 				assert.Contains(t, w.Body.String(), tt.args.result)
@@ -189,8 +189,8 @@ func TestTemplate(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				c, w := utils.NewGinContext()
-				utils.SetGinRequestParams(c, map[string]string{"target": tt.args.target})
+				c, w := utils.NewContext()
+				utils.SetRequestParams(c, map[string]string{"target": tt.args.target})
 				GetTemplate(c)
 				assert.Equal(t, tt.args.code, w.Code)
 				assert.Contains(t, w.Body.String(), tt.args.result)
@@ -230,8 +230,8 @@ func TestTemplate(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				c, w := utils.NewGinContext()
-				utils.SetGinRequestURL(c, "", map[string]string{"pattern": tt.args.target})
+				c, w := utils.NewContext()
+				utils.SetRequestURL(c, "", map[string]string{"pattern": tt.args.target})
 				ListTemplate(c)
 				assert.Equal(t, tt.args.code, w.Code)
 				assert.Contains(t, w.Body.String(), tt.args.result)
@@ -280,8 +280,8 @@ func TestTemplate(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				c, w := utils.NewGinContext()
-				utils.SetGinRequestParams(c, map[string]string{"target": tt.args.target})
+				c, w := utils.NewContext()
+				utils.SetRequestParams(c, map[string]string{"target": tt.args.target})
 				DeleteTemplate(c)
 				assert.Equal(t, tt.args.code, w.Code)
 				assert.Contains(t, w.Body.String(), tt.args.result)

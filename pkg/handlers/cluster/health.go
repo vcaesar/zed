@@ -18,11 +18,10 @@ package cluster
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/cluster"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta/elastic"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -39,10 +38,10 @@ import (
 // @Param   index  path  string  false  "Index"
 // @Success 200 {object} elastic.ClusterHealthResponse
 // @Router /es/_cluster/health [get]
-func Health(c *gin.Context) {
+func Health(c zhttp.Context) {
 	shards := activeShards(c.Param("target"))
 	nodes := len(cluster.Nodes())
-	zutils.GinRenderJSON(c, http.StatusOK, elastic.ClusterHealthResponse{
+	zutils.RenderJSON(c, http.StatusOK, elastic.ClusterHealthResponse{
 		ClusterName:                 clusterName(),
 		Status:                      statusGreen,
 		TimedOut:                    false,

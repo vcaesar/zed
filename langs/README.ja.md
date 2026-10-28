@@ -51,11 +51,11 @@ go + gin + react
 
 ## 検索画面
 
-![Search screen](../screenshots/search_screen.jpg)
+![Search screen](../docs/hots/search-26.png)
 
-## ユーザー管理画面
+## インデックス画面
 
-![Users screen](../screenshots/users_screen.jpg)
+![Index screen](../docs/hots/index-26.png)
 
 # はじめに
 

@@ -21,6 +21,9 @@ var index = {
   nameList: (name: string) => {
     return http().get("/api/index_name?name=" + name);
   },
+  mapping: (name: string) => {
+    return http().get(`/api/${encodeURIComponent(name)}/_mapping`);
+  },
 };
 
 export default index;

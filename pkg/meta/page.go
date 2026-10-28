@@ -3,7 +3,7 @@ package meta
 import (
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 type Page struct {
@@ -12,7 +12,7 @@ type Page struct {
 	Total    int64 `json:"total"`
 }
 
-func NewPage(c *gin.Context) *Page {
+func NewPage(c zhttp.Context) *Page {
 	pageNum, _ := strconv.ParseInt(c.DefaultQuery("page_num", "1"), 10, 64)
 	pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "0"), 10, 64)
 	if pageNum < 1 {

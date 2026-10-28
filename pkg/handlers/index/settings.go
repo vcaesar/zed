@@ -20,12 +20,11 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	zedanalysis "github.com/vcaesar/zedsearch/pkg/uquery/analysis"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 	"github.com/vcaesar/zedsearch/pkg/zutils"
 )
 
@@ -38,7 +37,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/{index}/_settings [get]
-func GetSettings(c *gin.Context) {
+func GetSettings(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {
@@ -51,7 +50,7 @@ func GetSettings(c *gin.Context) {
 		settings = new(meta.IndexSettings)
 	}
 
-	c.JSON(http.StatusOK, gin.H{index.GetName(): gin.H{"settings": settings}})
+	c.JSON(http.StatusOK, zhttp.H{index.GetName(): zhttp.H{"settings": settings}})
 }
 
 // @Id SetSettings
@@ -66,7 +65,7 @@ func GetSettings(c *gin.Context) {
 // @Failure 400 {object} meta.HTTPResponseError
 // @Failure 500 {object} meta.HTTPResponseError
 // @Router /api/{index}/_settings [put]
-func SetSettings(c *gin.Context) {
+func SetSettings(c zhttp.Context) {
 	indexName := c.Param("target")
 	if indexName == "" {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: "index.name should be not empty"})
@@ -74,7 +73,7 @@ func SetSettings(c *gin.Context) {
 	}
 
 	var settings *meta.IndexSettings
-	if err := zutils.GinBindJSON(c, &settings); err != nil {
+	if err := zutils.BindJSON(c, &settings); err != nil {
 		c.JSON(http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}

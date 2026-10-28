@@ -21,10 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @Id ListIndexes
@@ -39,7 +38,7 @@ import (
 // @Produce json
 // @Success 200 {object} IndexListResponse
 // @Router /api/index [get]
-func List(c *gin.Context) {
+func List(c zhttp.Context) {
 	page := meta.NewPage(c)
 	sortBy := c.DefaultQuery("sort_by", "name")
 	desc, _ := strconv.ParseBool(c.DefaultQuery("desc", "false"))
@@ -132,7 +131,7 @@ func List(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} []string
 // @Router /api/index_name [get]
-func IndexNameList(c *gin.Context) {
+func IndexNameList(c zhttp.Context) {
 	queryName := strings.ToLower(c.DefaultQuery("name", ""))
 	var items []string
 	names := core.ZED_INDEX_LIST.ListName()

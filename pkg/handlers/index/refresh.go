@@ -18,10 +18,9 @@ package index
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/vcaesar/zedsearch/pkg/core"
 	"github.com/vcaesar/zedsearch/pkg/meta"
+	"github.com/vcaesar/zedsearch/pkg/zhttp"
 )
 
 // @Id Refresh
@@ -33,7 +32,7 @@ import (
 // @Success 200 {object} meta.HTTPResponse
 // @Failure 400 {object} meta.HTTPResponseError
 // @Router /api/index/{index}/refresh [post]
-func Refresh(c *gin.Context) {
+func Refresh(c zhttp.Context) {
 	indexName := c.Param("target")
 	index, exists := core.GetIndex(indexName)
 	if !exists {

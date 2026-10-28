@@ -5,6 +5,8 @@
 # zed_first_admin_password = ""
 zed_server_port = "4080"
 zed_server_mode = "node"
+# Max request body in bytes (fiber builds; gin builds are unlimited), 100 MB like Elasticsearch.
+zed_server_body_limit = 104857600
 zed_node_id = 1
 zed_data_path = "./data"
 zed_metadata_storage = "bolt"

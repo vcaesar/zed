@@ -70,8 +70,8 @@ func TestCreateUpdateUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestData(c, tt.args.data)
+			c, w := utils.NewContext()
+			utils.SetRequestData(c, tt.args.data)
 			CreateUpdateUser(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)
@@ -98,7 +98,7 @@ func TestListUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
+			c, w := utils.NewContext()
 			ListUser(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)
@@ -143,8 +143,8 @@ func TestDeleteUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, w := utils.NewGinContext()
-			utils.SetGinRequestParams(c, tt.args.data)
+			c, w := utils.NewContext()
+			utils.SetRequestParams(c, tt.args.data)
 			DeleteUser(c)
 			assert.Equal(t, tt.args.code, w.Code)
 			assert.Contains(t, w.Body.String(), tt.args.result)
