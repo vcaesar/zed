@@ -23,6 +23,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/meta"
 	"github.com/vcaesar/zedsearch/pkg/zutils/json"
 )
@@ -42,6 +43,7 @@ const PartialAggName = "_partial"
 func MergeSearch(responses []*meta.SearchResponse, query *meta.ZedQuery) *meta.SearchResponse {
 	out := &meta.SearchResponse{Hits: meta.Hits{Hits: []meta.Hit{}}}
 	aggs := make(map[string]map[string]interface{})
+	aggDocs := make(map[string]float64) // docs matched by the responses merged so far
 	var names []string
 
 	for _, resp := range responses {
@@ -65,15 +67,17 @@ func MergeSearch(responses []*meta.SearchResponse, query *meta.ZedQuery) *meta.S
 		}
 		out.Hits.Hits = append(out.Hits.Hits, resp.Hits.Hits...)
 
+		docs := float64(resp.Hits.Total.Value)
 		for name, agg := range resp.Aggregations {
 			generic := aggToGeneric(agg)
 			existing, ok := aggs[name]
 			if !ok {
 				names = append(names, name)
 				aggs[name] = generic
-				continue
+			} else {
+				aggs[name] = mergeAgg(existing, generic, aggDef(query, name), name, aggDocs[name], docs)
 			}
-			aggs[name] = mergeAgg(existing, generic, aggDef(query, name), name)
+			aggDocs[name] += docs
 		}
 	}
 
@@ -113,23 +117,28 @@ func stripPartial(value interface{}) {
 // the "_partial" counters. This restores every object key that is not a
 // field of AggregationResponse as a sub-aggregation.
 func DecodeSearchResponse(data []byte) (*meta.SearchResponse, error) {
-	resp := new(meta.SearchResponse)
-	if err := json.Unmarshal(data, resp); err != nil {
-		return nil, err
-	}
-
-	var envelope struct {
+	// aggregations are decoded generically only: a sub-aggregation named
+	// like a field of AggregationResponse ("max") fails the typed decode
+	var wire struct {
+		Took         int                    `json:"took"`
+		TimedOut     bool                   `json:"timed_out"`
+		Shards       meta.Shards            `json:"_shards"`
+		Hits         meta.Hits              `json:"hits"`
 		Aggregations map[string]interface{} `json:"aggregations"`
+		Error        string                 `json:"error,omitempty"`
 	}
-	if err := json.Unmarshal(data, &envelope); err != nil {
+	if err := json.Unmarshal(data, &wire); err != nil {
 		return nil, err
 	}
-	if len(envelope.Aggregations) == 0 {
+	resp := &meta.SearchResponse{
+		Took: wire.Took, TimedOut: wire.TimedOut, Shards: wire.Shards, Hits: wire.Hits, Error: wire.Error,
+	}
+	if len(wire.Aggregations) == 0 {
 		return resp, nil
 	}
 
-	resp.Aggregations = make(map[string]meta.AggregationResponse, len(envelope.Aggregations))
-	for name, value := range envelope.Aggregations {
+	resp.Aggregations = make(map[string]meta.AggregationResponse, len(wire.Aggregations))
+	for name, value := range wire.Aggregations {
 		generic, ok := value.(map[string]interface{})
 		if !ok {
 			continue
@@ -146,6 +155,21 @@ var aggFields = map[string]bool{
 	"count": true, "min": true, "max": true, "avg": true, "sum": true,
 	"sum_of_squares": true, "variance": true, "std_deviation": true,
 	"std_deviation_bounds": true, "values": true, "doc_count": true, "hits": true,
+}
+
+// aggObjectFields are the aggFields whose value is an object, any other
+// object valued key is a sub-aggregation, even one named "max" or "sum".
+var aggObjectFields = map[string]bool{
+	"value": true, "buckets": true, "std_deviation_bounds": true, "values": true, "hits": true,
+}
+
+// subAgg returns the sub-aggregation stored under key, if it is one.
+func subAgg(key string, value interface{}) (map[string]interface{}, bool) {
+	sub, ok := value.(map[string]interface{})
+	if !ok || aggObjectFields[key] {
+		return nil, false
+	}
+	return sub, true
 }
 
 // aggToGeneric renders a typed aggregation as the map form the merge works
@@ -166,7 +190,13 @@ func aggToGeneric(agg meta.AggregationResponse) map[string]interface{} {
 
 // aggFromGeneric is the inverse of aggToGeneric.
 func aggFromGeneric(m map[string]interface{}) meta.AggregationResponse {
-	data, err := json.Marshal(m)
+	own := make(map[string]interface{}, len(m))
+	for key, value := range m {
+		if _, ok := subAgg(key, value); !ok && aggFields[key] {
+			own[key] = value
+		}
+	}
+	data, err := json.Marshal(own)
 	if err != nil {
 		log.Error().Err(err).Msg("cluster: encode aggregation")
 		return meta.AggregationResponse{}
@@ -177,10 +207,7 @@ func aggFromGeneric(m map[string]interface{}) meta.AggregationResponse {
 		return meta.AggregationResponse{}
 	}
 	for key, value := range m {
-		if aggFields[key] {
-			continue
-		}
-		sub, ok := value.(map[string]interface{})
+		sub, ok := subAgg(key, value)
 		if !ok {
 			continue
 		}
@@ -222,8 +249,10 @@ func aggKind(def meta.Aggregations) string {
 	}
 }
 
-// mergeAgg merges one aggregation of two responses.
-func mergeAgg(dst, src map[string]interface{}, def meta.Aggregations, name string) map[string]interface{} {
+// mergeAgg merges one aggregation of two responses. dstDocs and srcDocs are
+// the documents each side matched in the enclosing scope: a scope without
+// documents renders min and max as 0, that placeholder must not win.
+func mergeAgg(dst, src map[string]interface{}, def meta.Aggregations, name string, dstDocs, srcDocs float64) map[string]interface{} {
 	kind := aggKind(def)
 	if kind == "unknown" {
 		// no definition (or one we cannot merge): fall back to the shape
@@ -237,23 +266,24 @@ func mergeAgg(dst, src map[string]interface{}, def meta.Aggregations, name strin
 	switch kind {
 	case "sum":
 		dst["value"] = numeric(dst["value"]) + numeric(src["value"])
-	case "max":
-		// a node without matching docs reports null, it must not win as 0
-		if src["value"] != nil && (dst["value"] == nil || numeric(src["value"]) > numeric(dst["value"])) {
-			dst["value"] = numeric(src["value"])
+	case "max", "min":
+		// a node without matching docs reports null or 0, it must not win
+		if src["value"] == nil || srcDocs == 0 {
+			break
 		}
-	case "min":
-		if src["value"] != nil && (dst["value"] == nil || numeric(src["value"]) < numeric(dst["value"])) {
+		less := numeric(src["value"]) < numeric(dst["value"])
+		if dst["value"] == nil || dstDocs == 0 || less == (kind == "min") {
 			dst["value"] = numeric(src["value"])
 		}
 	case "avg":
-		mergeAvg(dst, src, name)
+		mergeAvg(dst, src, name, dstDocs, srcDocs)
 	case "bucket":
 		dst["buckets"] = mergeBuckets(dst["buckets"], src["buckets"], def)
 		sumDocCount(dst, src)
 	case "single":
+		dstCount, srcCount := numeric(dst["doc_count"]), numeric(src["doc_count"])
 		sumDocCount(dst, src)
-		mergeSubAggs(dst, src, def.Aggregations)
+		mergeSubAggs(dst, src, def.Aggregations, dstCount, srcCount)
 	default:
 		log.Warn().Str("aggregation", name).
 			Msg("cluster: aggregation cannot be merged across nodes, keeping first node result")
@@ -262,16 +292,16 @@ func mergeAgg(dst, src map[string]interface{}, def meta.Aggregations, name strin
 }
 
 // mergeAvg weights the per-node averages by the "_partial" counters the
-// owning node attached. Without them an unweighted mean is the best we can
-// do, which is only correct when the nodes matched the same number of docs.
-func mergeAvg(dst, src map[string]interface{}, name string) {
+// owning node attached. Without them (averages inside buckets) each side is
+// weighted by the documents of its scope, exact when the averaged field is
+// present in every document.
+func mergeAvg(dst, src map[string]interface{}, name string, dstDocs, srcDocs float64) {
 	dstPartial, dstOK := partial(dst)
 	srcPartial, srcOK := partial(src)
 	if !dstOK || !srcOK {
-		log.Warn().Str("aggregation", name).
-			Msg("cluster: avg without _partial counters, merged unweighted")
-		dst["value"] = (numeric(dst["value"]) + numeric(src["value"])) / 2
-		return
+		log.Debug().Str("aggregation", name).Msg("cluster: avg without _partial counters, weighted by doc count")
+		dstPartial = [2]float64{dstDocs, numeric(dst["value"]) * dstDocs}
+		srcPartial = [2]float64{srcDocs, numeric(src["value"]) * srcDocs}
 	}
 
 	count := dstPartial[0] + srcPartial[0]
@@ -307,13 +337,11 @@ func sumDocCount(dst, src map[string]interface{}) {
 	dst["doc_count"] = numeric(dst["doc_count"]) + numeric(src["doc_count"])
 }
 
-// mergeSubAggs merges every sub-aggregation of a single bucket.
-func mergeSubAggs(dst, src map[string]interface{}, defs map[string]meta.Aggregations) {
+// mergeSubAggs merges every sub-aggregation of a single bucket, dstDocs and
+// srcDocs are the doc counts of the bucket on each side.
+func mergeSubAggs(dst, src map[string]interface{}, defs map[string]meta.Aggregations, dstDocs, srcDocs float64) {
 	for key, value := range src {
-		if aggFields[key] || key == "key" || key == "key_as_string" {
-			continue
-		}
-		srcSub, ok := value.(map[string]interface{})
+		srcSub, ok := subAgg(key, value)
 		if !ok {
 			continue
 		}
@@ -322,7 +350,7 @@ func mergeSubAggs(dst, src map[string]interface{}, defs map[string]meta.Aggregat
 			dst[key] = srcSub
 			continue
 		}
-		dst[key] = mergeAgg(dstSub, srcSub, defs[key], key)
+		dst[key] = mergeAgg(dstSub, srcSub, defs[key], key, dstDocs, srcDocs)
 	}
 }
 
@@ -392,8 +420,7 @@ func mergeBucketList(dst, src []interface{}, def meta.Aggregations) []interface{
 
 	switch {
 	case def.Terms != nil, def.MultiTerms != nil:
-		// terms keys may be numbers too, they still rank by doc_count
-		sortBucketsByCount(out)
+		sortTerms(out, termsOrder(def))
 		if size := termsSize(def); size > 0 && len(out) > size {
 			out = out[:size]
 		}
@@ -405,22 +432,56 @@ func mergeBucketList(dst, src []interface{}, def meta.Aggregations) []interface{
 	return out
 }
 
+// termsSize is the bucket limit every node applied, the default included.
 func termsSize(def meta.Aggregations) int {
+	size := 0
 	if def.Terms != nil {
-		return def.Terms.Size
+		size = def.Terms.Size
+	} else {
+		size = def.MultiTerms.Size
 	}
-	return def.MultiTerms.Size
+	if size <= 0 {
+		size = config.Global.AggregationTermsSize
+	}
+	return size
 }
 
-// sortBucketsByCount orders like the terms aggregation: doc_count
-// descending, key ascending on ties.
-func sortBucketsByCount(buckets []interface{}) {
+func termsOrder(def meta.Aggregations) map[string]string {
+	if def.Terms != nil {
+		return def.Terms.Order
+	}
+	return def.MultiTerms.Order
+}
+
+// sortTerms orders like the terms aggregation: by the requested order, which
+// defaults to doc_count descending, then by key ascending on ties.
+func sortTerms(buckets []interface{}, order map[string]string) {
+	by, asc := "_count", false
+	for key, dir := range order {
+		by, asc = key, strings.EqualFold(dir, "asc")
+	}
+	value := func(bucket map[string]interface{}) interface{} {
+		switch by {
+		case "_count":
+			return numeric(bucket["doc_count"])
+		case "_key":
+			return bucket["key"]
+		}
+		// sub-aggregation order, "name" or "name.metric"
+		name, metric := by, "value"
+		if _, ok := bucket[name]; !ok {
+			if i := strings.LastIndex(by, "."); i > 0 {
+				name, metric = by[:i], by[i+1:]
+			}
+		}
+		sub, _ := bucket[name].(map[string]interface{})
+		return numeric(sub[metric])
+	}
 	sort.SliceStable(buckets, func(i, j int) bool {
 		left, _ := buckets[i].(map[string]interface{})
 		right, _ := buckets[j].(map[string]interface{})
-		lcount, rcount := numeric(left["doc_count"]), numeric(right["doc_count"])
-		if lcount != rcount {
-			return lcount > rcount
+		if cmp := compareValues(value(left), value(right)); cmp != 0 {
+			return (cmp < 0) == asc
 		}
 		return bucketKey(left) < bucketKey(right)
 	})
@@ -429,7 +490,8 @@ func sortBucketsByCount(buckets []interface{}) {
 // mergeBucket adds src into dst: doc_count sums, sub-aggregations recurse,
 // the key and its formatted forms stay as they are.
 func mergeBucket(dst, src map[string]interface{}, defs map[string]meta.Aggregations) {
-	dst["doc_count"] = numeric(dst["doc_count"]) + numeric(src["doc_count"])
+	dstDocs, srcDocs := numeric(dst["doc_count"]), numeric(src["doc_count"])
+	dst["doc_count"] = dstDocs + srcDocs
 	for key, value := range src {
 		switch key {
 		case "key", "key_as_string", "doc_count", "from", "to", "from_as_string", "to_as_string":
@@ -444,7 +506,7 @@ func mergeBucket(dst, src map[string]interface{}, defs map[string]meta.Aggregati
 			dst[key] = srcSub
 			continue
 		}
-		dst[key] = mergeAgg(dstSub, srcSub, defs[key], key)
+		dst[key] = mergeAgg(dstSub, srcSub, defs[key], key, dstDocs, srcDocs)
 	}
 }
 
@@ -591,6 +653,10 @@ func sortOrderDesc(value interface{}) bool {
 }
 
 func hitValue(hit meta.Hit, field string) (interface{}, bool) {
+	// _source may be filtered, the hit always carries its timestamp
+	if field == meta.TimeFieldName && !hit.Timestamp.IsZero() {
+		return hit.Timestamp, true
+	}
 	if value, ok := hit.Fields[field]; ok {
 		if list, isList := value.([]interface{}); isList {
 			if len(list) == 0 {
@@ -628,6 +694,9 @@ func compareValues(left, right interface{}) int {
 func windowHits(hits []meta.Hit, query *meta.ZedQuery) []meta.Hit {
 	if query == nil {
 		return hits
+	}
+	if query.Size == 0 {
+		return []meta.Hit{}
 	}
 	if query.From > 0 {
 		if query.From >= len(hits) {

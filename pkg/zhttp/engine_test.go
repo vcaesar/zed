@@ -204,6 +204,38 @@ func TestEngineNextBuffered(t *testing.T) {
 	assert.JSONEq(t, `{"error":"moved"}`, w.Body.String())
 }
 
+func TestEngineNextBufferedPanic(t *testing.T) {
+	e := New()
+	e.Use(func(c Context) {
+		flush := c.NextBuffered()
+		require.NoError(t, flush())
+	})
+	e.POST("/panic", func(c Context) {
+		c.JSON(http.StatusCreated, H{"written": true})
+		panic("boom")
+	})
+
+	w := do(e, http.MethodPost, "/panic", nil)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Empty(t, w.Body.String())
+}
+
+func TestEngineStatusAfterWrite(t *testing.T) {
+	e := New()
+	var status int
+	e.Use(func(c Context) {
+		c.Next()
+		status = c.ResponseStatus()
+	})
+	e.GET("/late", func(c Context) {
+		c.Data(http.StatusOK, "text/plain", []byte("ok"))
+		c.Status(http.StatusInternalServerError)
+	})
+
+	// the status reported is the one the client got
+	assert.Equal(t, do(e, http.MethodGet, "/late", nil).Code, status)
+}
+
 func TestEngineResponse(t *testing.T) {
 	e := New()
 	var status, size int

@@ -46,6 +46,7 @@ type Election struct {
 	mu      sync.RWMutex
 	leader  string
 	lease   LeaseID
+	rev     int64     // revision of the leader key we created
 	renewed time.Time // start of the last successful grant or renewal
 }
 
@@ -99,19 +100,26 @@ func (e *Election) setRenewed(leader string, lease LeaseID, renewed time.Time) {
 // the round.
 func (e *Election) Campaign(ctx context.Context) (bool, error) {
 	e.mu.RLock()
-	lease, leading := e.lease, e.leader == e.nodeID
+	lease, rev, leading := e.lease, e.rev, e.leader == e.nodeID
 	e.mu.RUnlock()
 
 	if leading && lease != NoLease {
 		start := time.Now()
 		err := e.store.KeepAlive(ctx, lease)
 		if err == nil {
-			e.mu.Lock()
-			e.renewed = start
-			e.mu.Unlock()
-			return true, nil
-		}
-		if !errors.Is(err, errors.ErrKeyNotFound) {
+			kv, err := e.store.Get(ctx, e.key)
+			if err != nil && !errors.Is(err, errors.ErrKeyNotFound) {
+				return false, err
+			}
+			if err == nil && kv.Revision == rev {
+				e.mu.Lock()
+				e.renewed = start
+				e.mu.Unlock()
+				return true, nil
+			}
+			// the key was deleted or rewritten behind our back: step down
+			e.revoke(ctx, lease)
+		} else if !errors.Is(err, errors.ErrKeyNotFound) {
 			return false, err
 		}
 		log.Warn().Str("node", e.nodeID).Msg("cluster: leader lease lost")
@@ -123,13 +131,16 @@ func (e *Election) Campaign(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_, won, err := e.store.Create(ctx, e.key, []byte(e.nodeID), lease)
+	created, won, err := e.store.Create(ctx, e.key, []byte(e.nodeID), lease)
 	if err != nil {
 		e.revoke(ctx, lease)
 		return false, err
 	}
 	if won {
 		e.setRenewed(e.nodeID, lease, start)
+		e.mu.Lock()
+		e.rev = created
+		e.mu.Unlock()
 		log.Info().Str("node", e.nodeID).Msg("cluster: elected leader")
 		return true, nil
 	}
@@ -150,20 +161,16 @@ func (e *Election) Campaign(ctx context.Context) (bool, error) {
 }
 
 // Resign gives up leadership so another node can take over immediately
-// instead of waiting for the lease to expire.
+// instead of waiting for the lease to expire. Revoking the lease removes the
+// key only while it is still ours; deleting it by name could remove the key
+// of a leader elected after our lease expired.
 func (e *Election) Resign(ctx context.Context) error {
 	e.mu.Lock()
 	lease, leading := e.lease, e.leader == e.nodeID
 	e.leader, e.lease = "", NoLease
 	e.mu.Unlock()
 
-	if !leading {
-		return nil
-	}
-	if err := e.store.Delete(ctx, e.key); err != nil {
-		return err
-	}
-	if lease == NoLease {
+	if !leading || lease == NoLease {
 		return nil
 	}
 	return e.store.Revoke(ctx, lease)
@@ -186,7 +193,8 @@ func (e *Election) Run(ctx context.Context) {
 }
 
 func (e *Election) revoke(ctx context.Context, lease LeaseID) {
-	if err := e.store.Revoke(ctx, lease); err != nil {
+	// ctx may be the cancelled run context during shutdown
+	if err := e.store.Revoke(context.WithoutCancel(ctx), lease); err != nil {
 		log.Warn().Err(err).Msg("cluster: revoke unused election lease")
 	}
 }

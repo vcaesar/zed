@@ -162,6 +162,62 @@ func TestCoordinatorRebalanceOnce(t *testing.T) {
 	assert.Equal(t, before, after)
 }
 
+// A leader that lost its lease must not delete the key of the leader elected
+// after it, else a third node takes the key while the second still leads.
+func TestElectionStaleResignKeepsNewLeader(t *testing.T) {
+	ctx := context.Background()
+	clock := newFakeClock()
+	store := NewMemoryStore()
+	store.SetClock(clock.Now)
+	defer func() { require.NoError(t, store.Close()) }()
+
+	ttl := 15 * time.Second
+	a := NewElection(store, "/test/", "node-a", ttl, ttl/3)
+	b := NewElection(store, "/test/", "node-b", ttl, ttl/3)
+	c := NewElection(store, "/test/", "node-c", ttl, ttl/3)
+
+	won, err := a.Campaign(ctx)
+	require.NoError(t, err)
+	require.True(t, won)
+	clock.Advance(2 * ttl)
+	won, err = b.Campaign(ctx)
+	require.NoError(t, err)
+	require.True(t, won)
+
+	require.NoError(t, a.Resign(ctx))
+	kv, err := store.Get(ctx, a.Key())
+	require.NoError(t, err)
+	assert.Equal(t, "node-b", string(kv.Value))
+
+	won, err = c.Campaign(ctx)
+	require.NoError(t, err)
+	assert.False(t, won)
+}
+
+// A leader whose key vanished behind its back must step down, so only one
+// node leads after the next rounds.
+func TestElectionStepsDownWhenKeyLost(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	defer func() { require.NoError(t, store.Close()) }()
+
+	b := NewElection(store, "/test/", "node-b", time.Minute, time.Second)
+	c := NewElection(store, "/test/", "node-c", time.Minute, time.Second)
+	won, err := b.Campaign(ctx)
+	require.NoError(t, err)
+	require.True(t, won)
+
+	require.NoError(t, store.Delete(ctx, b.Key()))
+	wonC, err := c.Campaign(ctx)
+	require.NoError(t, err)
+	require.True(t, wonC)
+	wonB, err := b.Campaign(ctx)
+	require.NoError(t, err)
+	assert.False(t, wonB)
+	assert.False(t, b.IsLeader())
+	assert.Equal(t, "node-c", b.Leader())
+}
+
 // failingKeepAlive is a store whose lease renewals fail with a transient error.
 type failingKeepAlive struct {
 	Store

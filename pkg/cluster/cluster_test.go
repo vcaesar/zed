@@ -17,6 +17,9 @@ package cluster
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -136,6 +139,61 @@ func TestClusterSecondNodeSharesPartitions(t *testing.T) {
 		assert.Equal(t, 2, node.Partitions)
 		assert.Equal(t, node.ID == "node-a", node.IsLeader)
 	}
+}
+
+// failingList is a store whose List fails for keys under prefix.
+type failingList struct {
+	Store
+	prefix string
+}
+
+func (s *failingList) List(ctx context.Context, prefix string) ([]KV, error) {
+	if strings.HasPrefix(prefix, s.prefix) {
+		return nil, errors.New("list failed")
+	}
+	return s.Store.List(ctx, prefix)
+}
+
+// A start that fails after joining must not leave a phantom member behind.
+func TestClusterFailedStartLeaves(t *testing.T) {
+	previous := config.Global.Cluster
+	t.Cleanup(func() { config.Global.Cluster = previous })
+	config.Global.Cluster.Name = "test-cluster"
+	config.Global.Cluster.NodeID = "node-a"
+
+	store := NewMemoryStore()
+	defer func() { require.NoError(t, store.Close()) }()
+	require.Error(t, StartWith(context.Background(), &failingList{Store: store, prefix: KeyPrefix() + "assign/"}))
+	assert.False(t, Enabled())
+
+	nodes, err := NewMembership(store, KeyPrefix(), Node{ID: "probe"}, time.Minute, time.Second).ListNodes(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, nodes)
+}
+
+func TestClusterConcurrentStart(t *testing.T) {
+	previous := config.Global.Cluster
+	config.Global.Cluster.Name = "test-cluster"
+	config.Global.Cluster.NodeID = "node-a"
+	t.Cleanup(func() {
+		Stop()
+		config.Global.Cluster = previous
+	})
+
+	stores := []*MemoryStore{NewMemoryStore(), NewMemoryStore()}
+	var wg sync.WaitGroup
+	for _, store := range stores {
+		wg.Go(func() { assert.NoError(t, StartWith(context.Background(), store)) })
+	}
+	wg.Wait()
+
+	joined := 0
+	for _, store := range stores {
+		nodes, err := NewMembership(store, KeyPrefix(), Node{ID: "probe"}, time.Minute, time.Second).ListNodes(context.Background())
+		require.NoError(t, err)
+		joined += len(nodes)
+	}
+	assert.Equal(t, 1, joined, "only one start may join")
 }
 
 func TestKeyPrefix(t *testing.T) {

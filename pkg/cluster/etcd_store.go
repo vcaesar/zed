@@ -83,6 +83,9 @@ func (s *EtcdStore) Revoke(ctx context.Context, id LeaseID) error {
 	ctx, cancel := s.ctx(ctx)
 	defer cancel()
 	_, err := s.cli.Revoke(ctx, client.LeaseID(id))
+	if errors.Is(err, rpctypes.ErrLeaseNotFound) {
+		return nil // already expired, like MemoryStore
+	}
 	return err
 }
 
