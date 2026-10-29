@@ -230,11 +230,18 @@ curl -u admin:Complexpass#123 http://10.0.0.1:4080/es/_cat/health?v
 
 ## Limits
 
-* replica state (term, sequence numbers, segment-mode kept entries) is in
-  memory: a restarted replica copies the index from the owner again, and
-  a restarted owner starts a new term, which makes its replicas recover
-* recovery and segment checkpoints copy every segment of the index, not
-  only the new ones; checkpoints are skipped when nothing changed
+* a replica records its position (term, last operation, installed files)
+  in `_replica.json` beside the index data, on every replication tick, after
+  each install and on shutdown; a restarted replica resumes from it and is
+  caught up from the owner's retained log. Segment-mode kept entries are in
+  memory and are fetched again. A restarted owner starts a new term, which
+  makes its replicas recover
+* recovery and segment checkpoints send only the segments the replica does
+  not already hold (matched by path, size and sha256); the owner still makes
+  a full local snapshot of the index for each one, and checkpoints are
+  skipped when nothing changed
+* replicas and owners must run the same version for incremental recovery:
+  a newer replica asks with `POST`, an older owner only serves `GET`
 * with `zed_cluster_replicas = 0`, or `zed_cluster_replication = "none"`,
   disk indexes are back to failover by reassignment
 * index metadata is shared through etcd: cluster mode always stores it

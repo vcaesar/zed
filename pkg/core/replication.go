@@ -150,6 +150,22 @@ func (index *Index) WaitApplied(timeout time.Duration) error {
 	return nil
 }
 
+// SyncWAL flushes the open WAL of every shard to stable storage.
+func (index *Index) SyncWAL() error {
+	for _, shard := range index.shards {
+		shard.lock.RLock()
+		var err error
+		if shard.wal != nil {
+			err = shard.wal.Sync()
+		}
+		shard.lock.RUnlock()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SnapshotTo copies a point in time view of every second layer shard of a
 // disk index into dir, laid out like the data path, after the WAL written
 // so far was applied. It returns the index metadata of that view.

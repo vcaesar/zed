@@ -122,7 +122,7 @@ type loopTransport struct {
 	down      map[string]bool
 	batches   []*Batch
 	recovered []string
-	snapshot  func(owner, index string, have Checkpoint, dir string) (*SnapshotInfo, error)
+	snapshot  func(owner string, req *SnapshotRequest, dir string) (*SnapshotInfo, error)
 }
 
 func newLoopTransport() *loopTransport {
@@ -147,11 +147,11 @@ func (l *loopTransport) Recover(_ context.Context, node, index string) error {
 	return nil
 }
 
-func (l *loopTransport) Snapshot(_ context.Context, owner, index string, have Checkpoint, dir string) (*SnapshotInfo, error) {
+func (l *loopTransport) Snapshot(_ context.Context, owner string, req *SnapshotRequest, dir string) (*SnapshotInfo, error) {
 	if l.snapshot == nil {
 		return nil, errors.New("no snapshot source")
 	}
-	return l.snapshot(owner, index, have, dir)
+	return l.snapshot(owner, req, dir)
 }
 
 func (l *loopTransport) recoveries() []string {

@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -79,11 +78,22 @@ type Checkpoint struct {
 	Seq  uint64 `json:"seq"`
 }
 
+// SnapshotRequest asks the owner for a file copy of Index unless it is
+// still at Have. Files are the segments the replica holds: the owner does
+// not send the ones it has too.
+type SnapshotRequest struct {
+	Index string     `json:"index"`
+	Have  Checkpoint `json:"have"`
+	Files []FileSum  `json:"files,omitempty"`
+}
+
 // SnapshotInfo describes a file copy: the history point it contains at
-// least and the index metadata matching the files.
+// least, the index metadata matching the files and the files of the
+// request left out of the archive, which the replica takes from its copy.
 type SnapshotInfo struct {
 	Checkpoint
-	Index json.RawMessage `json:"index"`
+	Index  json.RawMessage `json:"index"`
+	Reused []string        `json:"reused,omitempty"`
 }
 
 // Transport is how replication reaches other nodes.
@@ -92,9 +102,9 @@ type Transport interface {
 	Replicate(ctx context.Context, node string, batch *Batch) (Ack, error)
 	// Recover asks a replica to copy the index from its owner.
 	Recover(ctx context.Context, node, index string) error
-	// Snapshot copies the files of index from owner into dir, unless the
-	// owner is still at have (ErrNotModified).
-	Snapshot(ctx context.Context, owner, index string, have Checkpoint, dir string) (*SnapshotInfo, error)
+	// Snapshot copies the files of req.Index from owner into dir, unless
+	// the owner is still at req.Have (ErrNotModified).
+	Snapshot(ctx context.Context, owner string, req *SnapshotRequest, dir string) (*SnapshotInfo, error)
 }
 
 // HTTPTransport calls the internal endpoints of the other nodes.
@@ -182,11 +192,14 @@ func (t *HTTPTransport) Recover(ctx context.Context, node, index string) error {
 }
 
 // Snapshot implements Transport.
-func (t *HTTPTransport) Snapshot(ctx context.Context, owner, index string, have Checkpoint, dir string) (*SnapshotInfo, error) {
+func (t *HTTPTransport) Snapshot(ctx context.Context, owner string, req *SnapshotRequest, dir string) (*SnapshotInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, snapshotTimeout)
 	defer cancel()
-	query := url.Values{"index": {index}, "term": {have.Term}, "seq": {strconv.FormatUint(have.Seq, 10)}}
-	resp, err := t.do(ctx, http.MethodGet, owner, SnapshotPath+"?"+query.Encode(), nil)
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := t.do(ctx, http.MethodPost, owner, SnapshotPath, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +215,13 @@ func (t *HTTPTransport) Snapshot(ctx context.Context, owner, index string, have 
 	}
 }
 
-// WriteSnapshot streams info and every file under dir as a tar archive.
+// WriteSnapshot streams info and every file under dir but info.Reused as a
+// tar archive.
 func WriteSnapshot(w io.Writer, info *SnapshotInfo, dir string) error {
+	reused := make(map[string]bool, len(info.Reused))
+	for _, rel := range info.Reused {
+		reused[rel] = true
+	}
 	tw := tar.NewWriter(w)
 	header, err := json.Marshal(info)
 	if err != nil {
@@ -217,7 +235,7 @@ func WriteSnapshot(w io.Writer, info *SnapshotInfo, dir string) error {
 			return err
 		}
 		rel, err := filepath.Rel(dir, path)
-		if err != nil {
+		if err != nil || reused[filepath.ToSlash(rel)] {
 			return err
 		}
 		f, err := os.Open(path)
@@ -290,5 +308,8 @@ func writeFile(path string, r io.Reader) error {
 		return err
 	}
 	_, err = io.Copy(f, r)
+	if err == nil {
+		err = f.Sync() // the replica state recorded after the install refers to it
+	}
 	return errors.Join(err, f.Close())
 }

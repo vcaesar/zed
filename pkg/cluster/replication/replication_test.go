@@ -298,9 +298,9 @@ func TestSegmentCheckpointAndPromotion(t *testing.T) {
 		active = nil
 		activeMu.Unlock()
 	})
-	env.transport.snapshot = func(_, index string, have Checkpoint, dir string) (*SnapshotInfo, error) {
+	env.transport.snapshot = func(_ string, req *SnapshotRequest, dir string) (*SnapshotInfo, error) {
 		var buf bytes.Buffer
-		if err := ServeSnapshot(ctx, index, have, func() io.Writer { return &buf }); err != nil {
+		if err := ServeSnapshot(ctx, req, func() io.Writer { return &buf }); err != nil {
 			return nil, err
 		}
 		return ReadSnapshot(&buf, dir)

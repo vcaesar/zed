@@ -40,7 +40,9 @@ type replica struct {
 	filesSeq   uint64 // the installed files contain at least this operation
 	ready      bool   // the local copy was installed from the owner
 	recovering bool
-	pending    []Op // segment: operations newer than the installed files
+	pending    []Op         // segment: operations newer than the installed files
+	saved      replicaState // last persisted position
+	sums       sumCache     // of the local segments, used by recoveries only
 }
 
 func (r *replica) isReady() bool {
@@ -65,9 +67,24 @@ func (m *manager) replicaFor(name string) *replica {
 	r, ok := m.replicas[name]
 	if !ok {
 		r = new(replica)
+		// a restarted node resumes from the persisted position, the owner
+		// catches it up instead of copying the index again
+		if st, ok := loadState(name, m.mode); ok {
+			r.term, r.seq, r.filesSeq, r.ready, r.saved = st.Term, st.Seq, st.FilesSeq, true, st
+		}
 		m.replicas[name] = r
 	}
 	return r
+}
+
+// persist records the position of a replica, logging failures: a missing
+// record only costs a copy after a restart.
+func (m *manager) persist(name string, r *replica) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.persist(name, m.mode); err != nil {
+		log.Warn().Err(err).Str("index", name).Msg("replication: persist replica state")
+	}
 }
 
 // Apply handles a batch shipped by the owner. ErrOutOfSync comes with the
@@ -224,13 +241,31 @@ func (m *manager) recover(name string, r *replica, have Checkpoint) error {
 		}
 	}()
 
+	local := filepath.Join(dir, "local")
+	held, err := stageSegments(name, local, &r.sums)
+	if err != nil {
+		return err
+	}
 	files := filepath.Join(dir, "files")
-	info, err := m.transport.Snapshot(m.ctx, owner, name, have, files)
+	info, err := m.transport.Snapshot(m.ctx, owner, &SnapshotRequest{Index: name, Have: have, Files: held}, files)
 	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(files, 0o750); err != nil { // an index without data has no files
 		return err
+	}
+	for _, path := range info.Reused {
+		rel := filepath.FromSlash(path)
+		if !filepath.IsLocal(rel) {
+			return fmt.Errorf("replication: reused file %q escapes the target", path)
+		}
+		target := filepath.Join(files, rel)
+		if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
+			return err
+		}
+		if err := os.Rename(filepath.Join(local, rel), target); err != nil {
+			return err
+		}
 	}
 	// hold the state while swapping, so no batch lands on the old copy
 	r.mu.Lock()
@@ -252,7 +287,12 @@ func (m *manager) recover(name string, r *replica, have Checkpoint) error {
 	r.seq = max(info.Seq, lastSeq(kept))
 	r.filesSeq = info.Seq
 	r.ready = true
-	log.Info().Str("index", name).Str("owner", owner).Uint64("seq", info.Seq).Msg("replication: copy installed")
+	r.saved = replicaState{} // the record went away with the old files
+	if err := r.persist(name, m.mode); err != nil {
+		log.Warn().Err(err).Str("index", name).Msg("replication: persist replica state")
+	}
+	log.Info().Str("index", name).Str("owner", owner).Uint64("seq", info.Seq).
+		Int("reused", len(info.Reused)).Msg("replication: copy installed")
 	return nil
 }
 
@@ -265,7 +305,8 @@ func lastSeq(ops []Op) uint64 {
 
 // ServeSnapshot writes a file copy of an owned disk index to w. It answers
 // ErrNotModified when the replica already is at have.
-func ServeSnapshot(ctx context.Context, name string, have Checkpoint, w func() io.Writer) error {
+func ServeSnapshot(ctx context.Context, req *SnapshotRequest, w func() io.Writer) error {
+	name, have := req.Index, req.Have
 	m := get()
 	if m == nil {
 		return errors.New("replication: not enabled")
@@ -304,5 +345,10 @@ func ServeSnapshot(ctx context.Context, name string, have Checkpoint, w func() i
 	if err != nil {
 		return err
 	}
-	return WriteSnapshot(w(), &SnapshotInfo{Checkpoint: Checkpoint{Term: term, Seq: seq}, Index: indexMeta}, dir)
+	info := &SnapshotInfo{
+		Checkpoint: Checkpoint{Term: term, Seq: seq},
+		Index:      indexMeta,
+		Reused:     reusable(name, dir, req.Files, &p.sums),
+	}
+	return WriteSnapshot(w(), info, dir)
 }

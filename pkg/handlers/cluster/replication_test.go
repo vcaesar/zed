@@ -41,6 +41,8 @@ func TestReplicationHandlersDisabled(t *testing.T) {
 		{name: "recover while disabled", handler: ReplicationRecover, method: http.MethodPost, target: "/x?index=a", want: http.StatusBadRequest},
 		{name: "bad seq", handler: ReplicationSnapshot, method: http.MethodGet, target: "/x?index=a&seq=x", want: http.StatusBadRequest},
 		{name: "snapshot while disabled", handler: ReplicationSnapshot, method: http.MethodGet, target: "/x?index=a", want: http.StatusServiceUnavailable},
+		{name: "bad snapshot request", handler: ReplicationSnapshot, method: http.MethodPost, target: "/x", body: "{", want: http.StatusBadRequest},
+		{name: "snapshot request while disabled", handler: ReplicationSnapshot, method: http.MethodPost, target: "/x", body: `{"index":"a","files":[{"path":"s/1.seg","size":1,"sum":"x"}]}`, want: http.StatusServiceUnavailable},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
