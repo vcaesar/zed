@@ -256,6 +256,17 @@ describe('Search migration', () => {
     expect(screen.getByRole('checkbox', { name: 'nested.city' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+  it('keeps the timestamp column on one line next to long sources', async () => {
+    render(<Search />);
+    await selectIndex();
+    const header = screen.getByRole('columnheader', { name: 'search.timestamp' });
+    expect(header).toHaveClass('whitespace-nowrap');
+    const row = screen.getByLabelText('Expand document 0').closest('tr')!;
+    const [, time, source] = Array.from(row.querySelectorAll('td'));
+    expect(time).toHaveClass('whitespace-nowrap');
+    expect(time).not.toHaveClass('break-all');
+    expect(source).toHaveClass('break-all');
+  });
   it('does not search when the query loses focus', async () => {
     render(<Search />);
     await selectIndex();
