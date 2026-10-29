@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"time"
 
+	blugeindex "github.com/vcaesar/riot/index"
+
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/errors"
 	"github.com/vcaesar/zedsearch/pkg/meta"
@@ -186,9 +188,13 @@ func (index *Index) SnapshotTo(dir string) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			target := filepath.Join(dir, shard.GetID(), fmt.Sprintf("%06x", j))
+			second := fmt.Sprintf("%06x", j)
+			target := filepath.Join(dir, shard.GetID(), second)
 			if err = os.MkdirAll(target, 0o750); err == nil {
 				err = r.Backup(target, nil)
+			}
+			if err == nil {
+				err = linkGraphs(filepath.Join(config.Global.DataPath, index.GetName(), shard.GetID(), second), target)
 			}
 			if closeErr := r.Close(); err == nil {
 				err = closeErr
@@ -199,6 +205,23 @@ func (index *Index) SnapshotTo(dir string) ([]byte, error) {
 		}
 	}
 	return data, nil
+}
+
+// linkGraphs hard links the persisted HNSW graphs of src into dst, which a
+// riot backup leaves out. Opening dst loads them instead of rebuilding them
+// on the first knn search, and removes those whose segment is not there.
+func linkGraphs(src, dst string) error {
+	graphs, err := filepath.Glob(filepath.Join(src, "*"+blugeindex.ItemKindGraph))
+	if err != nil {
+		return err
+	}
+	for _, path := range graphs {
+		err := os.Link(path, filepath.Join(dst, filepath.Base(path)))
+		if err != nil && !os.IsNotExist(err) { // a merge removed it
+			return err
+		}
+	}
+	return nil
 }
 
 // InstallSnapshot replaces the local copy of an index with a snapshot made

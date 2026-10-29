@@ -63,14 +63,14 @@ func TestReusable(t *testing.T) {
 	t.Cleanup(func() { assert.NoError(t, os.RemoveAll(live)) })
 	snapshot := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(snapshot, "s", "000000"), 0o750))
-	for file, data := range map[string]string{"1.seg": "same", "2.seg": "changed", "3.snp": "meta"} {
+	for file, data := range map[string]string{"1.seg": "same", "2.seg": "changed", "3.snp": "meta", "10001.hnsw": "graph"} {
 		require.NoError(t, os.WriteFile(filepath.Join(live, "s", "000000", file), []byte(data), 0o640))
 		require.NoError(t, os.WriteFile(filepath.Join(snapshot, "s", "000000", file), []byte(data), 0o640))
 	}
 
 	var held []FileSum
 	var replica sumCache
-	for _, file := range []string{"1.seg", "2.seg", "3.snp"} {
+	for _, file := range []string{"1.seg", "2.seg", "3.snp", "10001.hnsw"} {
 		path := filepath.Join(live, "s", "000000", file)
 		sum, size, err := replica.sum(path, path)
 		require.NoError(t, err)
@@ -82,11 +82,11 @@ func TestReusable(t *testing.T) {
 		FileSum{Path: "s/000000/9.seg", Size: 4, Sum: held[0].Sum})
 
 	var owner sumCache
-	assert.Equal(t, []string{"s/000000/1.seg"}, reusable(name, snapshot, held, &owner))
+	assert.Equal(t, []string{"s/000000/1.seg", "s/000000/10001.hnsw"}, reusable(name, snapshot, held, &owner))
 
 	// merged away on the owner after the copy: the copy is compared
 	require.NoError(t, os.Remove(filepath.Join(live, "s", "000000", "1.seg")))
-	assert.Equal(t, []string{"s/000000/1.seg"}, reusable(name, snapshot, held, &owner))
+	assert.Equal(t, []string{"s/000000/1.seg", "s/000000/10001.hnsw"}, reusable(name, snapshot, held, &owner))
 }
 
 // stageSegments links the local segments, so a merge cannot remove them
@@ -98,6 +98,7 @@ func TestStageSegments(t *testing.T) {
 	t.Cleanup(func() { assert.NoError(t, os.RemoveAll(live)) })
 	require.NoError(t, os.WriteFile(filepath.Join(live, "s", "000000", "1.seg"), []byte("segment"), 0o640))
 	require.NoError(t, os.WriteFile(filepath.Join(live, "s", "000000", "1.snp"), []byte("meta"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(live, "s", "000000", "10001.hnsw"), []byte("graph"), 0o640))
 
 	var c sumCache
 	// under the data path like a recovery: links do not cross drives
@@ -106,9 +107,10 @@ func TestStageSegments(t *testing.T) {
 	t.Cleanup(func() { assert.NoError(t, os.RemoveAll(staged)) })
 	files, err := stageSegments(name, staged, &c)
 	require.NoError(t, err)
-	require.Len(t, files, 1)
+	require.Len(t, files, 2)
 	assert.Equal(t, "s/000000/1.seg", files[0].Path)
 	assert.Equal(t, int64(7), files[0].Size)
+	assert.Equal(t, "s/000000/10001.hnsw", files[1].Path, "graphs are offered too")
 
 	require.NoError(t, os.Remove(filepath.Join(live, "s", "000000", "1.seg")))
 	data, err := os.ReadFile(filepath.Join(staged, "s", "000000", "1.seg"))
