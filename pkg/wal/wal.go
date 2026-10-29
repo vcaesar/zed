@@ -19,7 +19,7 @@ package wal
 import (
 	"path"
 
-	"github.com/zincsearch/wal"
+	"github.com/zedsearch/wal"
 
 	"github.com/vcaesar/zedsearch/pkg/config"
 	"github.com/vcaesar/zedsearch/pkg/errors"
