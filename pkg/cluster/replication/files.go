@@ -26,11 +26,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/vcaesar/riot/index"
+
 	"github.com/vcaesar/zedsearch/pkg/config"
 )
 
 // segmentExt names the immutable segment files a recovery may reuse.
 const segmentExt = ".seg"
+
+// reusableFile reports whether a recovery may reuse the file at path: a
+// segment, or the HNSW graph riot persists for one. Both are matched by
+// content, so a graph rebuilt since is copied again.
+func reusableFile(path string) bool {
+	ext := filepath.Ext(path)
+	return ext == segmentExt || ext == index.ItemKindGraph
+}
 
 // FileSum identifies a segment file of a local copy by content.
 type FileSum struct {
@@ -122,7 +132,7 @@ func stageSegments(name, dir string, cache *sumCache) ([]FileSum, error) {
 			}
 			return err
 		}
-		if entry.IsDir() || filepath.Ext(path) != segmentExt {
+		if entry.IsDir() || !reusableFile(path) {
 			return nil
 		}
 		rel, err := filepath.Rel(root, path)
@@ -156,7 +166,7 @@ func reusable(name, dir string, held []FileSum, cache *sumCache) []string {
 	var reused []string
 	for _, f := range held {
 		rel := filepath.FromSlash(f.Path)
-		if !filepath.IsLocal(rel) || filepath.Ext(rel) != segmentExt {
+		if !filepath.IsLocal(rel) || !reusableFile(rel) {
 			continue
 		}
 		if stat, err := os.Stat(filepath.Join(dir, rel)); err != nil || stat.Size() != f.Size {
