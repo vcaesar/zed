@@ -168,6 +168,11 @@ func TestIncrementalRecovery(t *testing.T) {
 	var held [][]FileSum
 	var sent [][]string
 	env.transport.snapshot = func(_ string, req *SnapshotRequest, dir string) (*SnapshotInfo, error) {
+		if len(infos) == 0 {
+			// both nodes share the data path here: the first copy acts as
+			// a fresh replica, which holds none of the owner's segments
+			req.Files = nil
+		}
 		var buf bytes.Buffer
 		if err := ServeSnapshot(ctx, req, func() io.Writer { return &buf }); err != nil {
 			return nil, err
@@ -188,6 +193,7 @@ func TestIncrementalRecovery(t *testing.T) {
 	installed, ok := core.GetIndex(name)
 	require.True(t, ok)
 	waitDocs(t, installed, 1)
+	assert.Empty(t, infos[0].Reused, "a fresh replica reuses nothing")
 	assert.Contains(t, segmentNames(sent[0]), true, "the first copy carries the segments")
 
 	// an empty checkpoint forces a new copy although nothing changed
