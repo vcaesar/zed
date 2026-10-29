@@ -44,7 +44,8 @@ func SetClusterRoutes(r *zhttp.Engine) {
 	// replication, authenticated with the cluster secret only
 	r.POST(replication.ReplicatePath, ClusterSecretMiddleware, cluster.ReplicationReplicate)
 	r.POST(replication.RecoverPath, ClusterSecretMiddleware, cluster.ReplicationRecover)
-	r.GET(replication.SnapshotPath, ClusterSecretMiddleware, cluster.ReplicationSnapshot)
+	r.POST(replication.SnapshotPath, ClusterSecretMiddleware, cluster.ReplicationSnapshot)
+	r.GET(replication.SnapshotPath, ClusterSecretMiddleware, cluster.ReplicationSnapshot) // nodes before incremental recovery
 }
 
 // ClusterSecretMiddleware admits node to node calls carrying

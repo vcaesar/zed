@@ -53,7 +53,8 @@ type primary struct {
 	ops      []Op   // retained operations, ascending and contiguous
 	acked    map[string]uint64
 	insync   []string
-	uploaded uint64 // remote: last operation in the bucket
+	uploaded uint64   // remote: last operation in the bucket
+	sums     sumCache // of the owned segments, for incremental snapshots
 
 	// commitMu serializes shipping, a commit that waited finds its
 	// operations already acknowledged by the one before it
@@ -203,6 +204,9 @@ func (m *manager) promote(ctx context.Context, p *primary) error {
 	}
 	if p.remote {
 		return m.replayRemote(p)
+	}
+	if err := removeState(p.index); err != nil {
+		return err
 	}
 
 	insync, err := m.topo.InSync(ctx)

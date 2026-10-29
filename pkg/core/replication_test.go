@@ -145,6 +145,7 @@ func TestWALHookAndApplyReplicaEntries(t *testing.T) {
 func TestSnapshotInstall(t *testing.T) {
 	source := newTierIndex(t, "TestSnapshotInstall.index_1")
 	require.NoError(t, source.CreateDocument("2", map[string]interface{}{"name": "second"}, false))
+	require.NoError(t, source.SyncWAL())
 
 	// stage under the data path like the replica does: t.TempDir may be on
 	// another drive (Windows CI), where rename fails

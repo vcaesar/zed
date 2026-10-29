@@ -58,18 +58,19 @@ func ReplicationRecover(c zhttp.Context) {
 	zutils.RenderJSON(c, http.StatusOK, zhttp.H{"recovering": true})
 }
 
-// ReplicationSnapshot streams a file copy of an owned index as a tar.
+// ReplicationSnapshot streams a file copy of an owned index as a tar. POST
+// carries a replication.SnapshotRequest, GET (older nodes) the checkpoint
+// in the query and no held files.
 func ReplicationSnapshot(c zhttp.Context) {
-	seq, err := strconv.ParseUint(c.DefaultQuery("seq", "0"), 10, 64)
+	req, err := snapshotRequest(c)
 	if err != nil {
 		zutils.RenderJSON(c, http.StatusBadRequest, meta.HTTPResponseError{Error: err.Error()})
 		return
 	}
-	have := replication.Checkpoint{Term: c.Query("term"), Seq: seq}
-	index := c.Query("index")
+	index := req.Index
 	c.ServeHTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := false
-		err := replication.ServeSnapshot(r.Context(), index, have, func() io.Writer {
+		err := replication.ServeSnapshot(r.Context(), req, func() io.Writer {
 			started = true
 			w.Header().Set("Content-Type", "application/x-tar")
 			w.WriteHeader(http.StatusOK)
@@ -87,4 +88,18 @@ func ReplicationSnapshot(c zhttp.Context) {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		}
 	}))
+}
+
+func snapshotRequest(c zhttp.Context) (*replication.SnapshotRequest, error) {
+	req := new(replication.SnapshotRequest)
+	if c.Method() == http.MethodPost {
+		return req, zutils.BindJSON(c, req)
+	}
+	seq, err := strconv.ParseUint(c.DefaultQuery("seq", "0"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	req.Index = c.Query("index")
+	req.Have = replication.Checkpoint{Term: c.Query("term"), Seq: seq}
+	return req, nil
 }

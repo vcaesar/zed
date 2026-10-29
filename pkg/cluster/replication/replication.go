@@ -36,6 +36,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -232,6 +233,12 @@ func Stop() {
 	core.WriteGuard = nil
 	m.cancel()
 	m.wg.Wait()
+	m.mu.Lock()
+	replicas := maps.Clone(m.replicas)
+	m.mu.Unlock()
+	for name, r := range replicas {
+		m.persist(name, r)
+	}
 }
 
 // mayStore keeps a replica from writing the owner's index metadata.
@@ -344,7 +351,9 @@ func (m *manager) replicaTick(name string) {
 	r := m.replicaFor(name)
 	if m.mode == ModeSegment || !r.isReady() {
 		m.startRecovery(name)
+		return
 	}
+	m.persist(name, r)
 }
 
 // cleanup drops the state of indexes this node no longer owns or
