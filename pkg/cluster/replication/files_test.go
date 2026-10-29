@@ -83,6 +83,10 @@ func TestReusable(t *testing.T) {
 
 	var owner sumCache
 	assert.Equal(t, []string{"s/000000/1.seg"}, reusable(name, snapshot, held, &owner))
+
+	// merged away on the owner after the copy: the copy is compared
+	require.NoError(t, os.Remove(filepath.Join(live, "s", "000000", "1.seg")))
+	assert.Equal(t, []string{"s/000000/1.seg"}, reusable(name, snapshot, held, &owner))
 }
 
 // stageSegments links the local segments, so a merge cannot remove them
@@ -143,7 +147,8 @@ func TestWriteSnapshotSkipsReused(t *testing.T) {
 }
 
 // A second recovery of a segment replica takes the segments it already has
-// from its copy and copies only the new ones.
+// from its copy instead of receiving them again. No write happens between
+// the two, so no background merge can replace the segment meanwhile.
 func TestIncrementalRecovery(t *testing.T) {
 	name := "TestIncrementalRecovery.index_1"
 	env := setupTwoNodes(t, ModeSegment, name)
@@ -161,14 +166,19 @@ func TestIncrementalRecovery(t *testing.T) {
 	})
 	var infos []*SnapshotInfo
 	var held [][]FileSum
+	var sent [][]string
 	env.transport.snapshot = func(_ string, req *SnapshotRequest, dir string) (*SnapshotInfo, error) {
 		var buf bytes.Buffer
 		if err := ServeSnapshot(ctx, req, func() io.Writer { return &buf }); err != nil {
 			return nil, err
 		}
+		names, err := tarNames(buf.Bytes())
+		if err != nil {
+			return nil, err
+		}
 		info, err := ReadSnapshot(&buf, dir)
 		if err == nil {
-			infos, held = append(infos, info), append(held, req.Files)
+			infos, held, sent = append(infos, info), append(held, req.Files), append(sent, names)
 		}
 		return info, err
 	}
@@ -178,18 +188,47 @@ func TestIncrementalRecovery(t *testing.T) {
 	installed, ok := core.GetIndex(name)
 	require.True(t, ok)
 	waitDocs(t, installed, 1)
+	assert.Contains(t, segmentNames(sent[0]), true, "the first copy carries the segments")
 
-	require.NoError(t, installed.CreateDocument("2", map[string]interface{}{"name": "two"}, false))
-	waitDocs(t, installed, 2)
+	// an empty checkpoint forces a new copy although nothing changed
 	require.NoError(t, env.replica.recover(name, r, Checkpoint{}))
 	installed, ok = core.GetIndex(name)
 	require.True(t, ok)
-	waitDocs(t, installed, 2)
+	waitDocs(t, installed, 1)
 
 	require.Len(t, infos, 2)
-	assert.NotEmpty(t, held[1], "the replica offers the segments it holds")
-	assert.NotEmpty(t, infos[1].Reused, "segments of the first copy are not sent again")
+	require.NotEmpty(t, held[1], "the replica offers the segments it holds")
+	offered := make([]string, 0, len(held[1]))
+	for _, f := range held[1] {
+		offered = append(offered, f.Path)
+	}
+	assert.ElementsMatch(t, offered, infos[1].Reused, "every held segment is reused")
+	assert.NotContains(t, segmentNames(sent[1]), true, "no segment is sent again")
 	st, ok := loadState(name, ModeSegment)
 	require.True(t, ok, "the installed copy is recorded")
 	assert.Equal(t, infos[1].Seq, st.FilesSeq)
+}
+
+func tarNames(data []byte) ([]string, error) {
+	tr := tar.NewReader(bytes.NewReader(data))
+	var names []string
+	for {
+		header, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return names, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		names = append(names, header.Name)
+	}
+}
+
+// segmentNames maps each archive entry to whether it is a segment.
+func segmentNames(names []string) []bool {
+	segments := make([]bool, len(names))
+	for i, name := range names {
+		segments[i] = filepath.Ext(name) == segmentExt
+	}
+	return segments
 }

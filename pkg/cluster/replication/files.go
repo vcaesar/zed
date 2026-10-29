@@ -65,16 +65,11 @@ func (c *sumCache) sum(key, path string) (string, int64, error) {
 		return e.sum, e.size, nil
 	}
 
-	f, err := os.Open(path)
+	sum, err := fileSum(path)
 	if err != nil {
 		return "", 0, err
 	}
-	h := sha256.New()
-	_, err = io.Copy(h, f)
-	if err = errors.Join(err, f.Close()); err != nil {
-		return "", 0, err
-	}
-	e = cachedSum{size: info.Size(), mod: info.ModTime(), sum: hex.EncodeToString(h.Sum(nil))}
+	e = cachedSum{size: info.Size(), mod: info.ModTime(), sum: sum}
 	c.mu.Lock()
 	if c.entries == nil {
 		c.entries = make(map[string]cachedSum)
@@ -82,6 +77,20 @@ func (c *sumCache) sum(key, path string) (string, int64, error) {
 	c.entries[key] = e
 	c.mu.Unlock()
 	return e.sum, e.size, nil
+}
+
+// fileSum returns the hex sha256 of the file at path.
+func fileSum(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	_, err = io.Copy(h, f)
+	if err = errors.Join(err, f.Close()); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // prune forgets the files that are gone, merged away segments.
@@ -140,7 +149,8 @@ func stageSegments(name, dir string, cache *sumCache) ([]FileSum, error) {
 
 // reusable lists the files of the snapshot in dir the replica holds with
 // the same content. Segments are immutable, so the live file of the owner
-// under the same name is the one copied into dir and its sum is cached.
+// under the same name is the one copied into dir and its sum is cached;
+// one merged away since the copy is read from dir.
 func reusable(name, dir string, held []FileSum, cache *sumCache) []string {
 	root := indexDir(name)
 	var reused []string
@@ -153,8 +163,11 @@ func reusable(name, dir string, held []FileSum, cache *sumCache) []string {
 			continue // not part of the snapshot
 		}
 		live := filepath.Join(root, rel)
-		sum, size, err := cache.sum(live, live)
-		if err == nil && size == f.Size && sum == f.Sum {
+		sum, _, err := cache.sum(live, live)
+		if errors.Is(err, fs.ErrNotExist) {
+			sum, err = fileSum(filepath.Join(dir, rel))
+		}
+		if err == nil && sum == f.Sum {
 			reused = append(reused, f.Path)
 		}
 	}
