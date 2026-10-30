@@ -19,7 +19,6 @@ package search
 import (
 	"container/heap"
 	"context"
-	"sync/atomic"
 
 	"github.com/vcaesar/riot"
 	"github.com/vcaesar/riot/analysis"
@@ -61,36 +60,21 @@ func MultiSearch(
 
 	eg := &errgroup.Group{}
 	eg.SetLimit(config.Global.Shard.GoroutineNum)
-	docs := make(chan *search.DocumentMatch, len(readers)*10)
-	aggs := make(chan *search.Bucket, len(readers))
 
 	docList := &DocumentList{
 		bucket: search.NewBucket("", bucketAggs),
 		from:   int64(query.From),
 		size:   int64(query.Size),
 	}
-	heap.Init(docList)
 	// handle skip and limit
-	maxSize := int64(query.Size)
 	query.Size += query.From
 	query.From = 0
 
-	egDoc := &errgroup.Group{}
-	egDoc.Go(func() error {
-		for doc := range docs {
-			heap.Push(docList, &Document{doc})
-		}
-		return nil
-	})
-	egDoc.Go(func() error {
-		for agg := range aggs {
-			docList.bucket.Merge(agg)
-		}
-		return nil
-	})
-
-	for _, r := range readers {
-		r := r
+	// each shard collects into its own slot, merged once all are done, so
+	// no per-document channel hand-off between goroutines is needed
+	docs := make([][]*search.DocumentMatch, len(readers))
+	aggs := make([]*search.Bucket, len(readers))
+	for i, r := range readers {
 		req, err := uquery.ParseQueryDSL(query, mappings, analyzers)
 		if err != nil {
 			return nil, err
@@ -101,23 +85,16 @@ func MultiSearch(
 			}
 		}
 		eg.Go(func() error {
-			var n int64
 			dmi, err := r.Search(ctx, req)
 			if err != nil {
 				return err
 			}
 			next, err := dmi.Next()
 			for err == nil && next != nil {
-				n++
-				docs <- next
+				docs[i] = append(docs[i], next)
 				next, err = dmi.Next()
 			}
-			aggs <- dmi.Aggregations()
-
-			if n > atomic.LoadInt64(&docList.size) {
-				atomic.StoreInt64(&docList.size, n)
-			}
-
+			aggs[i] = dmi.Aggregations()
 			return err
 		})
 	}
@@ -125,22 +102,21 @@ func MultiSearch(
 		return nil, err
 	}
 
-	close(docs)
-	close(aggs)
-	_ = egDoc.Wait()
+	n := 0
+	for _, d := range docs {
+		n += len(d)
+	}
+	docList.docs = make([]*search.DocumentMatch, 0, n)
+	for i := range readers {
+		docList.docs = append(docList.docs, docs[i]...)
+		docList.bucket.Merge(aggs[i])
+	}
+	heap.Init(docList)
 
 	docList.Done()
 	docList.bucket.Aggregation("duration").Finish()
 
-	if docList.size > maxSize {
-		docList.size = maxSize
-	}
-
 	return docList, nil
-}
-
-type Document struct {
-	doc *search.DocumentMatch
 }
 
 type DocumentList struct {
@@ -148,7 +124,7 @@ type DocumentList struct {
 	size   int64
 	len    int64
 	next   int64
-	docs   []*Document
+	docs   []*search.DocumentMatch
 	bucket *search.Bucket
 	sort   search.SortOrder
 }
@@ -169,7 +145,7 @@ func (d *DocumentList) Next() (*search.DocumentMatch, error) {
 	}
 	doc := heap.Pop(d)
 	d.next++
-	return doc.(*Document).doc, nil
+	return doc.(*search.DocumentMatch), nil
 }
 
 func (d *DocumentList) Aggregations() *search.Bucket {
@@ -177,7 +153,7 @@ func (d *DocumentList) Aggregations() *search.Bucket {
 }
 
 func (d *DocumentList) Push(doc interface{}) {
-	d.docs = append(d.docs, doc.(*Document))
+	d.docs = append(d.docs, doc.(*search.DocumentMatch))
 }
 
 func (d *DocumentList) Pop() interface{} {
@@ -188,5 +164,5 @@ func (d *DocumentList) Pop() interface{} {
 }
 
 func (d *DocumentList) Len() int           { return len(d.docs) }
-func (d *DocumentList) Less(i, j int) bool { return d.sort.Compare(d.docs[i].doc, d.docs[j].doc) < 0 }
+func (d *DocumentList) Less(i, j int) bool { return d.sort.Compare(d.docs[i], d.docs[j]) < 0 }
 func (d *DocumentList) Swap(i, j int)      { d.docs[i], d.docs[j] = d.docs[j], d.docs[i] }

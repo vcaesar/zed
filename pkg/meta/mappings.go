@@ -190,6 +190,19 @@ func (t *Mappings) ListProperty() map[string]Property {
 	return m
 }
 
+// RangeProperty calls fn for each property until fn returns false. Unlike
+// ListProperty it does not copy the map; fn runs under the read lock and must
+// not modify t.
+func (t *Mappings) RangeProperty(fn func(field string, prop Property) bool) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	for k, v := range t.Properties {
+		if !fn(k, v) {
+			return
+		}
+	}
+}
+
 // DeepClone returns a full copy of the mapping.
 func (t *Mappings) DeepClone() *Mappings {
 	m := NewMappings()
