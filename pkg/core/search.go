@@ -101,14 +101,15 @@ func searchV2(shardNum, readerNum int64, dmi search.DocumentMatchIterator, query
 	}
 
 	Hits := make([]meta.Hit, 0)
+	// declared once and reset per hit: the stored fields closure below makes
+	// them escape, so per-hit declarations would cost one allocation each
+	var id, indexName string
+	var timestamp time.Time
+	var sourceData, fieldsData, highlightData map[string]interface{}
 	next, err := dmi.Next()
 	for err == nil && next != nil {
-		var id string
-		var indexName string
-		var timestamp time.Time
-		var sourceData map[string]interface{}
-		var fieldsData map[string]interface{}
-		var highlightData map[string]interface{}
+		id, indexName, timestamp = "", "", time.Time{}
+		sourceData, fieldsData, highlightData = nil, nil, nil
 		if query.Highlight != nil {
 			highlightData = make(map[string]interface{})
 		}

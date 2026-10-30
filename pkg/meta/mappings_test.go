@@ -22,3 +22,28 @@ func TestProperty_DeepClone(t *testing.T) {
 	clone := prop.DeepClone()
 	assert.Equal(t, prop, clone)
 }
+
+func TestMappings_RangeProperty(t *testing.T) {
+	m := NewMappings()
+	m.SetProperty("a", NewProperty("text"))
+	m.SetProperty("b", NewProperty("keyword"))
+	m.SetProperty("c", NewProperty("nested"))
+
+	t.Run("visits all", func(t *testing.T) {
+		got := map[string]string{}
+		m.RangeProperty(func(field string, prop Property) bool {
+			got[field] = prop.Type
+			return true
+		})
+		assert.Equal(t, map[string]string{"a": "text", "b": "keyword", "c": "nested"}, got)
+	})
+
+	t.Run("stops early", func(t *testing.T) {
+		n := 0
+		m.RangeProperty(func(string, Property) bool {
+			n++
+			return false
+		})
+		assert.Equal(t, 1, n)
+	})
+}

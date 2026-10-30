@@ -17,11 +17,14 @@
 package core
 
 import (
+	"context"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/vcaesar/riot"
 
 	"github.com/vcaesar/zedsearch/pkg/meta"
 )
@@ -292,4 +295,47 @@ func waitForDocs(t *testing.T, index *Index, n int) {
 		res, err := index.Search(query)
 		return err == nil && res.Hits.Total.Value == n
 	}, 30*time.Second, 50*time.Millisecond, "expected %d documents to be indexed", n)
+}
+
+func TestSearchV2_ResetsFieldsPerHit(t *testing.T) {
+	w, err := riot.OpenWriter(riot.InMemoryOnlyConfig())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, w.Close()) }()
+
+	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	batch := riot.NewBatch()
+	first := riot.NewDocument("a").
+		AddField(riot.NewNumericField("n", 1).Sortable()).
+		AddField(riot.NewStoredOnlyField("_index", []byte("idx"))).
+		AddField(riot.NewDateTimeField("@timestamp", ts).StoreValue()).
+		AddField(riot.NewStoredOnlyField("_source", []byte(`{"x":1}`)))
+	second := riot.NewDocument("b").
+		AddField(riot.NewNumericField("n", 2).Sortable()).
+		AddField(riot.NewStoredOnlyField("_source", []byte(`{"x":2}`)))
+	batch.Update(first.ID(), first)
+	batch.Update(second.ID(), second)
+	require.NoError(t, w.Batch(batch))
+
+	r, err := w.Reader()
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, r.Close()) }()
+	req := riot.NewTopNSearch(10, riot.NewMatchAllQuery()).SortBy([]string{"n"}).WithStandardAggregations()
+	dmi, err := r.Search(context.Background(), req)
+	require.NoError(t, err)
+
+	query := &meta.ZedQuery{Source: &meta.Source{Enable: true}}
+	resp, err := searchV2(1, 1, dmi, query, meta.NewMappings())
+	require.NoError(t, err)
+	require.Len(t, resp.Hits.Hits, 2)
+
+	got := resp.Hits.Hits
+	assert.Equal(t, "a", got[0].ID)
+	assert.Equal(t, "idx", got[0].Index)
+	assert.True(t, ts.Equal(got[0].Timestamp))
+	assert.Equal(t, float64(1), got[0].Source.(map[string]interface{})["x"])
+
+	assert.Equal(t, "b", got[1].ID)
+	assert.Empty(t, got[1].Index, "_index must not leak from the previous hit")
+	assert.True(t, got[1].Timestamp.IsZero(), "@timestamp must not leak from the previous hit")
+	assert.Equal(t, float64(2), got[1].Source.(map[string]interface{})["x"])
 }

@@ -413,9 +413,9 @@ func (s *IndexShard) checkField(mappings *meta.Mappings, data map[string]interfa
 // "key.lat"/"key.lon" or "key.type"/"key.coordinates" back into flatDoc[key],
 // and collapses a single [lon, lat] array so it isn't indexed element-wise.
 func mergeGeoPoints(mappings *meta.Mappings, flatDoc map[string]interface{}) {
-	for key, prop := range mappings.ListProperty() {
+	mappings.RangeProperty(func(key string, prop meta.Property) bool {
 		if prop.Type != "geo_point" {
-			continue
+			return true
 		}
 		if coords, ok := flatDoc[key+".coordinates"]; ok {
 			flatDoc[key] = coords
@@ -433,7 +433,8 @@ func mergeGeoPoints(mappings *meta.Mappings, flatDoc map[string]interface{}) {
 				flatDoc[key] = p
 			}
 		}
-	}
+		return true
+	})
 }
 
 // nestedCountField holds number of hidden documents created for nested
@@ -449,11 +450,12 @@ type nestedChild struct {
 // nestedPaths returns sorted names of properties mapped as "nested".
 func nestedPaths(mappings *meta.Mappings) []string {
 	var paths []string
-	for field, prop := range mappings.ListProperty() {
+	mappings.RangeProperty(func(field string, prop meta.Property) bool {
 		if prop.Type == "nested" {
 			paths = append(paths, field)
 		}
-	}
+		return true
+	})
 	sort.Strings(paths)
 	return paths
 }
@@ -463,14 +465,12 @@ func nestedPaths(mappings *meta.Mappings) []string {
 func joinProperty(mappings *meta.Mappings) (string, meta.Property, bool) {
 	name := ""
 	var joinProp meta.Property
-	for field, prop := range mappings.ListProperty() {
-		if prop.Type != "join" {
-			continue
-		}
-		if name == "" || field < name {
+	mappings.RangeProperty(func(field string, prop meta.Property) bool {
+		if prop.Type == "join" && (name == "" || field < name) {
 			name, joinProp = field, prop
 		}
-	}
+		return true
+	})
 	return name, joinProp, name != ""
 }
 
