@@ -122,3 +122,26 @@ func BenchmarkMultiSearch(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkMultiSearchParallel(b *testing.B) {
+	readers := shardReaders(b, 8, 2000)
+	mappings := meta.NewMappings()
+	mappings.SetProperty("n", meta.NewProperty("numeric"))
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			query := &meta.ZedQuery{Query: map[string]interface{}{"match_all": map[string]interface{}{}}, Sort: "-n", Size: 100}
+			dmi, err := MultiSearch(context.Background(), query, mappings, nil, readers...)
+			if err != nil {
+				b.Error(err)
+				return
+			}
+			for next, err := dmi.Next(); next != nil; next, err = dmi.Next() {
+				if err != nil {
+					b.Error(err)
+					return
+				}
+			}
+		}
+	})
+}

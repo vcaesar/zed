@@ -30,7 +30,7 @@ require (
 	github.com/vcaesar/bluge_segment_api v1.2.2
 	github.com/vcaesar/ice v1.4.0
 	github.com/vcaesar/query_string v0.6.0
-	github.com/vcaesar/riot v1.61.0
+	github.com/vcaesar/riot v1.61.3
 	github.com/zedsearch/wal v1.3.0
 	go.etcd.io/bbolt v1.5.0
 	go.etcd.io/etcd/api/v3 v3.7.3
